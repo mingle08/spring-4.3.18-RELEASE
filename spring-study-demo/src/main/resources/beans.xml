@@ -20,4 +20,13 @@
 		<property name="phone" value="15900000000"/>
 	</bean>
 
+	<bean id="girl" class="factoryBeanDemo.Girl">
+		<property name="name" value="Rachel"/>
+		<property name="age" value="10"/>
+	</bean>
+
+	<bean id="girlFromFB" class="factoryBeanDemo.GirlFactoryBean">
+		<property name="nameAgeStr" value="16,Lily"/>
+	</bean>
+
 </beans>
