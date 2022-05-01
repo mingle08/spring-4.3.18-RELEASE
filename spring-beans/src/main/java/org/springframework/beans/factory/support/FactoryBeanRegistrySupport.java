@@ -134,6 +134,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 			}
 		}
 		else {
+			// do开头的方法，是真正执行逻辑的地方
 			Object object = doGetObjectFromFactoryBean(factory, beanName);
 			if (object != null && shouldPostProcess) {
 				try {
@@ -175,6 +176,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 				}
 			}
 			else {
+				// 执行自定义的FactoryBean实现类中覆盖的getObject方法
 				object = factory.getObject();
 			}
 		}

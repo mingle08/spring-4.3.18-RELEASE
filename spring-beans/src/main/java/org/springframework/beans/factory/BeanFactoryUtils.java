@@ -71,6 +71,10 @@ public abstract class BeanFactoryUtils {
 	public static String transformedBeanName(String name) {
 		Assert.notNull(name, "'name' must not be null");
 		String beanName = name;
+		/*
+		因为无论是通过FactoryBean获取目标bean，还是获取FactoryBean本身，都需要知道xml中配置的自定义FactoryBean的id，即beanName
+		所以要去掉名字前的&
+		 */
 		while (beanName.startsWith(BeanFactory.FACTORY_BEAN_PREFIX)) {
 			beanName = beanName.substring(BeanFactory.FACTORY_BEAN_PREFIX.length());
 		}

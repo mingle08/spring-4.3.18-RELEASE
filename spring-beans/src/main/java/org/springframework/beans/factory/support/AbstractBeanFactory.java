@@ -1614,6 +1614,10 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			Object beanInstance, String name, String beanName, RootBeanDefinition mbd) {
 
 		// Don't let calling code try to dereference the factory if the bean isn't a factory.
+		/**
+		 * 如果getBean(name)的入参name是带&号：即BeanFactoryUtils.isFactoryDereference(name)
+		 * 说明是要获取FactoryBean本身，那么beanInstance一定是自定义的FactoryBean实现类，即beanInstance instanceof FactoryBean
+		 */
 		if (BeanFactoryUtils.isFactoryDereference(name) && !(beanInstance instanceof FactoryBean)) {
 			throw new BeanIsNotAFactoryException(transformedBeanName(name), beanInstance.getClass());
 		}
@@ -1621,10 +1625,21 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		// Now we have the bean instance, which may be a normal bean or a FactoryBean.
 		// If it's a FactoryBean, we use it to create a bean instance, unless the
 		// caller actually wants a reference to the factory.
+		/**
+		 * !(beanInstance instanceof FactoryBean)  如果beanInstance不是自定义的FactoryBean实现类：a normal bean
+		 *
+		 * BeanFactoryUtils.isFactoryDereference(name)
+		 * 如果beanInstance是自定义的FactoryBean实现类，而且name带&号，就说明要获取的是自定义的FactoryBean实现类本身:a FactoryBean
+		 */
 		if (!(beanInstance instanceof FactoryBean) || BeanFactoryUtils.isFactoryDereference(name)) {
 			return beanInstance;
 		}
 
+		/**
+		 * 正常情况下，我们都是通过FactoryBean来获取目标bean，而不是FactoryBean本身
+		 * 也就是说 beanInstance是自定义的FactoryBean实现类，且getBean(name)传入的name是不带&号的
+		 * beanInstance instanceof FactoryBean && !BeanFactoryUtils.isFactoryDereference(name)
+		 */
 		Object object = null;
 		if (mbd == null) {
 			object = getCachedObjectForFactoryBean(beanName);
