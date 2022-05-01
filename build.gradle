@@ -3,6 +3,7 @@ buildscript {
 		maven { url 'https://maven.aliyun.com/repository/jcenter' }
 		maven { url 'https://maven.aliyun.com/repository/google' }
 		maven { url 'https://maven.aliyun.com/repository/central' }
+		maven { url "https://maven.aliyun.com/repository/spring-plugin" }
 		maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
 		maven { url "https://repo.spring.io/plugins-release" }
 	}
@@ -15,9 +16,16 @@ buildscript {
 }
 
 plugins {
-	id "org.sonarqube" version "1.1"
+	id "org.sonarqube" version "2.5"
+}
+sonarqube {
+	properties {
+		property "sonar.host.url", "http://sonarqube:9000"
+		property "sonar.sources", "src"
+	}
 }
 
+//tasks['sonarqube'].dependsOn test
 ext {
 	linkHomepage = 'https://projects.spring.io/spring-framework'
 	linkCi = 'https://build.spring.io/browse/SPR'
@@ -172,7 +180,7 @@ configure(allprojects) { project ->
 		dependsOn compileJava
 		dependsOn copyJavaApiSignature
 
-		inputs.dir sourceSets.main.output.classesDir
+		inputs.dir sourceSets.main.output.classesDirs
 		inputs.dir copyJavaApiSignature.to
 
 		doLast {
@@ -185,7 +193,7 @@ configure(allprojects) { project ->
 			ant.animalSniffer(
 					signature: "$buildDir/javaApiSignature/javaApi.signature",
 					classpath: sourceSets.main.compileClasspath.asPath) {
-				path(path: sourceSets.main.output.classesDir)
+				path(path: sourceSets.main.output.classesDirs)
 				annotation(className: "org.springframework.lang.UsesJava7")
 				annotation(className: "org.springframework.lang.UsesJava8")
 				annotation(className: "org.springframework.lang.UsesSunHttpServer")
@@ -1373,21 +1381,21 @@ configure(rootProject) {
 		archives distZip
 	}
 
-	task wrapper(type: Wrapper) {
-		description = "Generates gradlew[.bat] scripts"
-		gradleVersion = "2.14.1"
-
-		doLast() {
-			def gradleOpts = "-XX:MaxMetaspaceSize=1024m -Xmx1024m"
-			def gradleBatOpts = "$gradleOpts -XX:MaxHeapSize=256m"
-			File wrapperFile = file("gradlew")
-			wrapperFile.text = wrapperFile.text.replace("DEFAULT_JVM_OPTS=",
-				"GRADLE_OPTS=\"$gradleOpts \$GRADLE_OPTS\"\nDEFAULT_JVM_OPTS=")
-			File wrapperBatFile = file("gradlew.bat")
-			wrapperBatFile.text = wrapperBatFile.text.replace("set DEFAULT_JVM_OPTS=",
-				"set GRADLE_OPTS=$gradleBatOpts %GRADLE_OPTS%\nset DEFAULT_JVM_OPTS=")
-		}
-	}
+//	task wrapper(type: Wrapper) {
+//		description = "Generates gradlew[.bat] scripts"
+//		gradleVersion = "2.14.1"
+//
+//		doLast() {
+//			def gradleOpts = "-XX:MaxMetaspaceSize=1024m -Xmx1024m"
+//			def gradleBatOpts = "$gradleOpts -XX:MaxHeapSize=256m"
+//			File wrapperFile = file("gradlew")
+//			wrapperFile.text = wrapperFile.text.replace("DEFAULT_JVM_OPTS=",
+//				"GRADLE_OPTS=\"$gradleOpts \$GRADLE_OPTS\"\nDEFAULT_JVM_OPTS=")
+//			File wrapperBatFile = file("gradlew.bat")
+//			wrapperBatFile.text = wrapperBatFile.text.replace("set DEFAULT_JVM_OPTS=",
+//				"set GRADLE_OPTS=$gradleBatOpts %GRADLE_OPTS%\nset DEFAULT_JVM_OPTS=")
+//		}
+//	}
 
 }
 
