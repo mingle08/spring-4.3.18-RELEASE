@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,8 +15,6 @@
  */
 
 package org.springframework.core;
-
-import org.springframework.lang.Nullable;
 
 /**
  * Handy class for wrapping runtime {@code Exceptions} with a root cause.
@@ -38,7 +36,7 @@ import org.springframework.lang.Nullable;
  */
 public abstract class NestedRuntimeException extends RuntimeException {
 
-	/** Use serialVersionUID from Spring 1.2 for interoperability. */
+	/** Use serialVersionUID from Spring 1.2 for interoperability */
 	private static final long serialVersionUID = 5439915454935047936L;
 
 	static {
@@ -62,7 +60,7 @@ public abstract class NestedRuntimeException extends RuntimeException {
 	 * @param msg the detail message
 	 * @param cause the nested exception
 	 */
-	public NestedRuntimeException(@Nullable String msg, @Nullable Throwable cause) {
+	public NestedRuntimeException(String msg, Throwable cause) {
 		super(msg, cause);
 	}
 
@@ -72,7 +70,6 @@ public abstract class NestedRuntimeException extends RuntimeException {
 	 * if there is one.
 	 */
 	@Override
-	@Nullable
 	public String getMessage() {
 		return NestedExceptionUtils.buildMessage(super.getMessage(), getCause());
 	}
@@ -83,7 +80,6 @@ public abstract class NestedRuntimeException extends RuntimeException {
 	 * @return the innermost exception, or {@code null} if none
 	 * @since 2.0
 	 */
-	@Nullable
 	public Throwable getRootCause() {
 		return NestedExceptionUtils.getRootCause(this);
 	}
@@ -108,7 +104,7 @@ public abstract class NestedRuntimeException extends RuntimeException {
 	 * @param exType the exception type to look for
 	 * @return whether there is a nested exception of the specified type
 	 */
-	public boolean contains(@Nullable Class<?> exType) {
+	public boolean contains(Class<?> exType) {
 		if (exType == null) {
 			return false;
 		}

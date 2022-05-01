@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,10 +18,9 @@ package org.springframework.web.servlet;
 
 import java.io.IOException;
 import java.util.Locale;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.MutablePropertyValues;
@@ -34,9 +33,11 @@ import org.springframework.web.context.support.StaticWebApplicationContext;
 import org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping;
 import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver;
 import org.springframework.web.servlet.mvc.Controller;
+import org.springframework.web.servlet.mvc.LastModified;
 import org.springframework.web.servlet.support.RequestContextUtils;
 import org.springframework.web.servlet.theme.AbstractThemeResolver;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
+import org.springframework.web.servlet.view.XmlViewResolver;
 
 /**
  * @author Juergen Hoeller
@@ -45,8 +46,11 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 public class SimpleWebApplicationContext extends StaticWebApplicationContext {
 
 	@Override
-	@SuppressWarnings("deprecation")
 	public void refresh() throws BeansException {
+		MutablePropertyValues pvs = new MutablePropertyValues();
+		pvs.add("commandClass", "org.springframework.tests.sample.beans.TestBean");
+		pvs.add("formView", "form");
+
 		registerSingleton("/locale.do", LocaleChecker.class);
 
 		addMessage("test", Locale.ENGLISH, "test message");
@@ -59,22 +63,21 @@ public class SimpleWebApplicationContext extends StaticWebApplicationContext {
 		registerSingleton("handlerMapping", BeanNameUrlHandlerMapping.class);
 		registerSingleton("viewResolver", InternalResourceViewResolver.class);
 
-		MutablePropertyValues pvs = new MutablePropertyValues();
+		pvs = new MutablePropertyValues();
 		pvs.add("location", "org/springframework/web/context/WEB-INF/sessionContext.xml");
-		registerSingleton("viewResolver2", org.springframework.web.servlet.view.XmlViewResolver.class, pvs);
+		registerSingleton("viewResolver2", XmlViewResolver.class, pvs);
 
 		super.refresh();
 	}
 
 
-	@SuppressWarnings("deprecation")
-	public static class LocaleChecker implements Controller, org.springframework.web.servlet.mvc.LastModified {
+	public static class LocaleChecker implements Controller, LastModified {
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response)
 				throws ServletException, IOException {
-
-			if (!(RequestContextUtils.findWebApplicationContext(request) instanceof SimpleWebApplicationContext)) {
+			if (!(RequestContextUtils.getWebApplicationContext(request) instanceof SimpleWebApplicationContext)) {
 				throw new ServletException("Incorrect WebApplicationContext");
 			}
 			if (!(RequestContextUtils.getLocaleResolver(request) instanceof AcceptHeaderLocaleResolver)) {

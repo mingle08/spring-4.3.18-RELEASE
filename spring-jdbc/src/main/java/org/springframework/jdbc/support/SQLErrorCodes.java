@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,6 @@
 
 package org.springframework.jdbc.support;
 
-import org.springframework.lang.Nullable;
-import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -35,7 +33,6 @@ import org.springframework.util.StringUtils;
  */
 public class SQLErrorCodes {
 
-	@Nullable
 	private String[] databaseProductNames;
 
 	private boolean useSqlStateForTranslation = false;
@@ -60,10 +57,8 @@ public class SQLErrorCodes {
 
 	private String[] cannotSerializeTransactionCodes = new String[0];
 
-	@Nullable
 	private CustomSQLErrorCodesTranslation[] customTranslations;
 
-	@Nullable
 	private SQLExceptionTranslator customSqlExceptionTranslator;
 
 
@@ -71,11 +66,10 @@ public class SQLErrorCodes {
 	 * Set this property if the database name contains spaces,
 	 * in which case we can not use the bean name for lookup.
 	 */
-	public void setDatabaseProductName(@Nullable String databaseProductName) {
+	public void setDatabaseProductName(String databaseProductName) {
 		this.databaseProductNames = new String[] {databaseProductName};
 	}
 
-	@Nullable
 	public String getDatabaseProductName() {
 		return (this.databaseProductNames != null && this.databaseProductNames.length > 0 ?
 				this.databaseProductNames[0] : null);
@@ -85,11 +79,10 @@ public class SQLErrorCodes {
 	 * Set this property to specify multiple database names that contains spaces,
 	 * in which case we can not use bean names for lookup.
 	 */
-	public void setDatabaseProductNames(@Nullable String... databaseProductNames) {
+	public void setDatabaseProductNames(String... databaseProductNames) {
 		this.databaseProductNames = databaseProductNames;
 	}
 
-	@Nullable
 	public String[] getDatabaseProductNames() {
 		return this.databaseProductNames;
 	}
@@ -123,7 +116,7 @@ public class SQLErrorCodes {
 	}
 
 	public String[] getDuplicateKeyCodes() {
-		return this.duplicateKeyCodes;
+		return duplicateKeyCodes;
 	}
 
 	public void setDuplicateKeyCodes(String... duplicateKeyCodes) {
@@ -190,16 +183,14 @@ public class SQLErrorCodes {
 		this.customTranslations = customTranslations;
 	}
 
-	@Nullable
 	public CustomSQLErrorCodesTranslation[] getCustomTranslations() {
 		return this.customTranslations;
 	}
 
-	public void setCustomSqlExceptionTranslatorClass(@Nullable Class<? extends SQLExceptionTranslator> customTranslatorClass) {
+	public void setCustomSqlExceptionTranslatorClass(Class<? extends SQLExceptionTranslator> customTranslatorClass) {
 		if (customTranslatorClass != null) {
 			try {
-				this.customSqlExceptionTranslator =
-						ReflectionUtils.accessibleConstructor(customTranslatorClass).newInstance();
+				this.customSqlExceptionTranslator = customTranslatorClass.newInstance();
 			}
 			catch (Throwable ex) {
 				throw new IllegalStateException("Unable to instantiate custom translator", ex);
@@ -210,11 +201,10 @@ public class SQLErrorCodes {
 		}
 	}
 
-	public void setCustomSqlExceptionTranslator(@Nullable SQLExceptionTranslator customSqlExceptionTranslator) {
+	public void setCustomSqlExceptionTranslator(SQLExceptionTranslator customSqlExceptionTranslator) {
 		this.customSqlExceptionTranslator = customSqlExceptionTranslator;
 	}
 
-	@Nullable
 	public SQLExceptionTranslator getCustomSqlExceptionTranslator() {
 		return this.customSqlExceptionTranslator;
 	}

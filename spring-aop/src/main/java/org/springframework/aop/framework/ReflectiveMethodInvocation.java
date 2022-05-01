@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,7 +28,6 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.aop.ProxyMethodInvocation;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.core.BridgeMethodResolver;
-import org.springframework.lang.Nullable;
 
 /**
  * Spring's implementation of the AOP Alliance
@@ -63,20 +62,17 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 
 	protected final Object proxy;
 
-	@Nullable
 	protected final Object target;
 
 	protected final Method method;
 
 	protected Object[] arguments;
 
-	@Nullable
 	private final Class<?> targetClass;
 
 	/**
 	 * Lazily initialized map of user-specific attributes for this invocation.
 	 */
-	@Nullable
 	private Map<String, Object> userAttributes;
 
 	/**
@@ -106,8 +102,8 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 	 * but would complicate the code. And it would work only for static pointcuts.
 	 */
 	protected ReflectiveMethodInvocation(
-			Object proxy, @Nullable Object target, Method method, @Nullable Object[] arguments,
-			@Nullable Class<?> targetClass, List<Object> interceptorsAndDynamicMethodMatchers) {
+			Object proxy, Object target, Method method, Object[] arguments,
+			Class<?> targetClass, List<Object> interceptorsAndDynamicMethodMatchers) {
 
 		this.proxy = proxy;
 		this.target = target;
@@ -124,7 +120,6 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 	}
 
 	@Override
-	@Nullable
 	public final Object getThis() {
 		return this.target;
 	}
@@ -146,7 +141,7 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 
 	@Override
 	public final Object[] getArguments() {
-		return this.arguments;
+		return (this.arguments != null ? this.arguments : new Object[0]);
 	}
 
 	@Override
@@ -156,20 +151,20 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 
 
 	@Override
-	@Nullable
 	public Object proceed() throws Throwable {
-		// We start with an index of -1 and increment early.
+		//	We start with an index of -1 and increment early.
 		if (this.currentInterceptorIndex == this.interceptorsAndDynamicMethodMatchers.size() - 1) {
 			return invokeJoinpoint();
 		}
 
 		Object interceptorOrInterceptionAdvice =
 				this.interceptorsAndDynamicMethodMatchers.get(++this.currentInterceptorIndex);
-		if (interceptorOrInterceptionAdvice instanceof InterceptorAndDynamicMethodMatcher dm) {
+		if (interceptorOrInterceptionAdvice instanceof InterceptorAndDynamicMethodMatcher) {
 			// Evaluate dynamic method matcher here: static part will already have
 			// been evaluated and found to match.
-			Class<?> targetClass = (this.targetClass != null ? this.targetClass : this.method.getDeclaringClass());
-			if (dm.methodMatcher.matches(this.method, targetClass, this.arguments)) {
+			InterceptorAndDynamicMethodMatcher dm =
+					(InterceptorAndDynamicMethodMatcher) interceptorOrInterceptionAdvice;
+			if (dm.methodMatcher.matches(this.method, this.targetClass, this.arguments)) {
 				return dm.interceptor.invoke(this);
 			}
 			else {
@@ -191,7 +186,6 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 	 * @return the return value of the joinpoint
 	 * @throws Throwable if invoking the joinpoint resulted in an exception
 	 */
-	@Nullable
 	protected Object invokeJoinpoint() throws Throwable {
 		return AopUtils.invokeJoinpointUsingReflection(this.target, this.method, this.arguments);
 	}
@@ -207,10 +201,11 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 	 */
 	@Override
 	public MethodInvocation invocableClone() {
-		Object[] cloneArguments = this.arguments;
-		if (this.arguments.length > 0) {
+		Object[] cloneArguments = null;
+		if (this.arguments != null) {
 			// Build an independent copy of the arguments array.
-			cloneArguments = this.arguments.clone();
+			cloneArguments = new Object[this.arguments.length];
+			System.arraycopy(this.arguments, 0, cloneArguments, 0, this.arguments.length);
 		}
 		return invocableClone(cloneArguments);
 	}
@@ -228,7 +223,7 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 		// Force initialization of the user attributes Map,
 		// for having a shared Map reference in the clone.
 		if (this.userAttributes == null) {
-			this.userAttributes = new HashMap<>();
+			this.userAttributes = new HashMap<String, Object>();
 		}
 
 		// Create the MethodInvocation clone.
@@ -245,10 +240,10 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 
 
 	@Override
-	public void setUserAttribute(String key, @Nullable Object value) {
+	public void setUserAttribute(String key, Object value) {
 		if (value != null) {
 			if (this.userAttributes == null) {
-				this.userAttributes = new HashMap<>();
+				this.userAttributes = new HashMap<String, Object>();
 			}
 			this.userAttributes.put(key, value);
 		}
@@ -260,7 +255,6 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 	}
 
 	@Override
-	@Nullable
 	public Object getUserAttribute(String key) {
 		return (this.userAttributes != null ? this.userAttributes.get(key) : null);
 	}
@@ -274,7 +268,7 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 	 */
 	public Map<String, Object> getUserAttributes() {
 		if (this.userAttributes == null) {
-			this.userAttributes = new HashMap<>();
+			this.userAttributes = new HashMap<String, Object>();
 		}
 		return this.userAttributes;
 	}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,23 +19,17 @@ package org.springframework.web.servlet.view.script;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import javax.script.SimpleBindings;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactoryUtils;
@@ -44,14 +38,13 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextException;
 import org.springframework.core.NamedThreadLocal;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.Nullable;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.scripting.support.StandardScriptEvalException;
 import org.springframework.scripting.support.StandardScriptUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.servlet.support.RequestContextUtils;
 import org.springframework.web.servlet.view.AbstractUrlBasedView;
 
 /**
@@ -74,48 +67,35 @@ import org.springframework.web.servlet.view.AbstractUrlBasedView;
  */
 public class ScriptTemplateView extends AbstractUrlBasedView {
 
-	/**
-	 * The default content type for the view.
-	 */
 	public static final String DEFAULT_CONTENT_TYPE = "text/html";
 
-	private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
+	private static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
 
 	private static final String DEFAULT_RESOURCE_LOADER_PATH = "classpath:";
 
 
 	private static final ThreadLocal<Map<Object, ScriptEngine>> enginesHolder =
-			new NamedThreadLocal<>("ScriptTemplateView engines");
+			new NamedThreadLocal<Map<Object, ScriptEngine>>("ScriptTemplateView engines");
 
 
-	@Nullable
 	private ScriptEngine engine;
 
-	@Nullable
-	private Supplier<ScriptEngine> engineSupplier;
-
-	@Nullable
 	private String engineName;
 
-	@Nullable
 	private Boolean sharedEngine;
 
-	@Nullable
 	private String[] scripts;
 
-	@Nullable
 	private String renderObject;
 
-	@Nullable
 	private String renderFunction;
 
-	@Nullable
 	private Charset charset;
 
-	@Nullable
 	private String[] resourceLoaderPaths;
 
-	@Nullable
+	private ResourceLoader resourceLoader;
+
 	private volatile ScriptEngineManager scriptEngineManager;
 
 
@@ -141,15 +121,8 @@ public class ScriptTemplateView extends AbstractUrlBasedView {
 	 * See {@link ScriptTemplateConfigurer#setEngine(ScriptEngine)} documentation.
 	 */
 	public void setEngine(ScriptEngine engine) {
+		Assert.isInstanceOf(Invocable.class, engine, "ScriptEngine must implement Invocable");
 		this.engine = engine;
-	}
-
-	/**
-	 * See {@link ScriptTemplateConfigurer#setEngineSupplier(Supplier)} documentation.
-	 * @since 5.2
-	 */
-	public void setEngineSupplier(Supplier<ScriptEngine> engineSupplier) {
-		this.engineSupplier = engineSupplier;
 	}
 
 	/**
@@ -188,6 +161,15 @@ public class ScriptTemplateView extends AbstractUrlBasedView {
 	}
 
 	/**
+	 * See {@link ScriptTemplateConfigurer#setContentType(String)}} documentation.
+	 * @since 4.2.1
+	 */
+	@Override
+	public void setContentType(String contentType) {
+		super.setContentType(contentType);
+	}
+
+	/**
 	 * See {@link ScriptTemplateConfigurer#setCharset(Charset)} documentation.
 	 */
 	public void setCharset(Charset charset) {
@@ -217,10 +199,7 @@ public class ScriptTemplateView extends AbstractUrlBasedView {
 
 		ScriptTemplateConfig viewConfig = autodetectViewConfig();
 		if (this.engine == null && viewConfig.getEngine() != null) {
-			this.engine = viewConfig.getEngine();
-		}
-		if (this.engineSupplier == null && viewConfig.getEngineSupplier() != null) {
-			this.engineSupplier = viewConfig.getEngineSupplier();
+			setEngine(viewConfig.getEngine());
 		}
 		if (this.engineName == null && viewConfig.getEngineName() != null) {
 			this.engineName = viewConfig.getEngineName();
@@ -242,93 +221,63 @@ public class ScriptTemplateView extends AbstractUrlBasedView {
 		}
 		if (this.resourceLoaderPaths == null) {
 			String resourceLoaderPath = viewConfig.getResourceLoaderPath();
-			setResourceLoaderPath(resourceLoaderPath != null ? resourceLoaderPath : DEFAULT_RESOURCE_LOADER_PATH);
+			setResourceLoaderPath(resourceLoaderPath == null ? DEFAULT_RESOURCE_LOADER_PATH : resourceLoaderPath);
+		}
+		if (this.resourceLoader == null) {
+			this.resourceLoader = getApplicationContext();
 		}
 		if (this.sharedEngine == null && viewConfig.isSharedEngine() != null) {
 			this.sharedEngine = viewConfig.isSharedEngine();
 		}
 
-		int engineCount = 0;
-		if (this.engine != null) {
-			engineCount++;
-		}
-		if (this.engineSupplier != null) {
-			engineCount++;
-		}
-		if (this.engineName != null) {
-			engineCount++;
-		}
-		Assert.isTrue(engineCount == 1,
-				"You should define either 'engine', 'engineSupplier' or 'engineName'.");
+		Assert.isTrue(!(this.engine != null && this.engineName != null),
+				"You should define either 'engine' or 'engineName', not both.");
+		Assert.isTrue(!(this.engine == null && this.engineName == null),
+				"No script engine found, please specify either 'engine' or 'engineName'.");
 
 		if (Boolean.FALSE.equals(this.sharedEngine)) {
-			Assert.isTrue(this.engine == null,
+			Assert.isTrue(this.engineName != null,
 					"When 'sharedEngine' is set to false, you should specify the " +
-					"script engine using 'engineName' or 'engineSupplier' , not 'engine'.");
+					"script engine using the 'engineName' property, not the 'engine' one.");
 		}
 		else if (this.engine != null) {
 			loadScripts(this.engine);
 		}
-		else if (this.engineName != null) {
-			setEngine(createEngineFromName(this.engineName));
-		}
 		else {
-			setEngine(createEngineFromSupplier());
+			setEngine(createEngineFromName());
 		}
 
-		if (this.renderFunction != null && this.engine != null) {
-			Assert.isInstanceOf(Invocable.class, this.engine,
-					"ScriptEngine must implement Invocable when 'renderFunction' is specified");
-		}
+		Assert.isTrue(this.renderFunction != null, "The 'renderFunction' property must be defined.");
 	}
 
 	protected ScriptEngine getEngine() {
 		if (Boolean.FALSE.equals(this.sharedEngine)) {
 			Map<Object, ScriptEngine> engines = enginesHolder.get();
 			if (engines == null) {
-				engines = new HashMap<>(4);
+				engines = new HashMap<Object, ScriptEngine>(4);
 				enginesHolder.set(engines);
 			}
-			String name = (this.engineName != null ? this.engineName : "");
-			Object engineKey = (!ObjectUtils.isEmpty(this.scripts) ? new EngineKey(name, this.scripts) : name);
+			Object engineKey = (!ObjectUtils.isEmpty(this.scripts) ?
+					new EngineKey(this.engineName, this.scripts) : this.engineName);
 			ScriptEngine engine = engines.get(engineKey);
 			if (engine == null) {
-				if (this.engineName != null) {
-					engine = createEngineFromName(this.engineName);
-				}
-				else {
-					engine = createEngineFromSupplier();
-				}
+				engine = createEngineFromName();
 				engines.put(engineKey, engine);
 			}
 			return engine;
 		}
 		else {
 			// Simply return the configured ScriptEngine...
-			Assert.state(this.engine != null, "No shared engine available");
 			return this.engine;
 		}
 	}
 
-	protected ScriptEngine createEngineFromName(String engineName) {
-		ScriptEngineManager scriptEngineManager = this.scriptEngineManager;
-		if (scriptEngineManager == null) {
-			scriptEngineManager = new ScriptEngineManager(obtainApplicationContext().getClassLoader());
-			this.scriptEngineManager = scriptEngineManager;
+	protected ScriptEngine createEngineFromName() {
+		if (this.scriptEngineManager == null) {
+			this.scriptEngineManager = new ScriptEngineManager(getApplicationContext().getClassLoader());
 		}
 
-		ScriptEngine engine = StandardScriptUtils.retrieveEngineByName(scriptEngineManager, engineName);
-		loadScripts(engine);
-		return engine;
-	}
-
-	private ScriptEngine createEngineFromSupplier() {
-		Assert.state(this.engineSupplier != null, "No engine supplier available");
-		ScriptEngine engine = this.engineSupplier.get();
-		if (this.renderFunction != null) {
-			Assert.isInstanceOf(Invocable.class, engine,
-					"ScriptEngine must implement Invocable when 'renderFunction' is specified");
-		}
+		ScriptEngine engine = StandardScriptUtils.retrieveEngineByName(this.scriptEngineManager, this.engineName);
 		loadScripts(engine);
 		return engine;
 	}
@@ -350,14 +299,11 @@ public class ScriptTemplateView extends AbstractUrlBasedView {
 		}
 	}
 
-	@Nullable
 	protected Resource getResource(String location) {
-		if (this.resourceLoaderPaths != null) {
-			for (String path : this.resourceLoaderPaths) {
-				Resource resource = obtainApplicationContext().getResource(path + location);
-				if (resource.exists()) {
-					return resource;
-				}
+		for (String path : this.resourceLoaderPaths) {
+			Resource resource = this.resourceLoader.getResource(path + location);
+			if (resource.exists()) {
+				return resource;
 			}
 		}
 		return null;
@@ -366,7 +312,7 @@ public class ScriptTemplateView extends AbstractUrlBasedView {
 	protected ScriptTemplateConfig autodetectViewConfig() throws BeansException {
 		try {
 			return BeanFactoryUtils.beanOfTypeIncludingAncestors(
-					obtainApplicationContext(), ScriptTemplateConfig.class, true, false);
+					getApplicationContext(), ScriptTemplateConfig.class, true, false);
 		}
 		catch (NoSuchBeanDefinitionException ex) {
 			throw new ApplicationContextException("Expected a single ScriptTemplateConfig bean in the current " +
@@ -378,9 +324,7 @@ public class ScriptTemplateView extends AbstractUrlBasedView {
 
 	@Override
 	public boolean checkResource(Locale locale) throws Exception {
-		String url = getUrl();
-		Assert.state(url != null, "'url' not set");
-		return (getResource(url) != null);
+		return (getResource(getUrl()) != null);
 	}
 
 	@Override
@@ -388,9 +332,7 @@ public class ScriptTemplateView extends AbstractUrlBasedView {
 		super.prepareResponse(request, response);
 
 		setResponseContentType(request, response);
-		if (this.charset != null) {
-			response.setCharacterEncoding(this.charset.name());
-		}
+		response.setCharacterEncoding(this.charset.name());
 	}
 
 	@Override
@@ -399,35 +341,17 @@ public class ScriptTemplateView extends AbstractUrlBasedView {
 
 		try {
 			ScriptEngine engine = getEngine();
+			Invocable invocable = (Invocable) engine;
 			String url = getUrl();
-			Assert.state(url != null, "'url' not set");
 			String template = getTemplate(url);
 
-			Function<String, String> templateLoader = path -> {
-				try {
-					return getTemplate(path);
-				}
-				catch (IOException ex) {
-					throw new IllegalStateException(ex);
-				}
-			};
-
-			Locale locale = RequestContextUtils.getLocale(request);
-			RenderingContext context = new RenderingContext(obtainApplicationContext(), locale, templateLoader, url);
-
 			Object html;
-			if (this.renderFunction == null) {
-				SimpleBindings bindings = new SimpleBindings();
-				bindings.putAll(model);
-				model.put("renderingContext", context);
-				html = engine.eval(template, bindings);
-			}
-			else if (this.renderObject != null) {
+			if (this.renderObject != null) {
 				Object thiz = engine.eval(this.renderObject);
-				html = ((Invocable) engine).invokeMethod(thiz, this.renderFunction, template, model, context);
+				html = invocable.invokeMethod(thiz, this.renderFunction, template, model, url);
 			}
 			else {
-				html = ((Invocable) engine).invokeFunction(this.renderFunction, template, model, context);
+				html = invocable.invokeFunction(this.renderFunction, template, model, url);
 			}
 
 			response.getWriter().write(String.valueOf(html));
@@ -442,9 +366,7 @@ public class ScriptTemplateView extends AbstractUrlBasedView {
 		if (resource == null) {
 			throw new IllegalStateException("Template resource [" + path + "] not found");
 		}
-		InputStreamReader reader = (this.charset != null ?
-				new InputStreamReader(resource.getInputStream(), this.charset) :
-				new InputStreamReader(resource.getInputStream()));
+		InputStreamReader reader = new InputStreamReader(resource.getInputStream(), this.charset);
 		return FileCopyUtils.copyToString(reader);
 	}
 
@@ -466,13 +388,14 @@ public class ScriptTemplateView extends AbstractUrlBasedView {
 		}
 
 		@Override
-		public boolean equals(@Nullable Object other) {
+		public boolean equals(Object other) {
 			if (this == other) {
 				return true;
 			}
-			if (!(other instanceof EngineKey otherKey)) {
+			if (!(other instanceof EngineKey)) {
 				return false;
 			}
+			EngineKey otherKey = (EngineKey) other;
 			return (this.engineName.equals(otherKey.engineName) && Arrays.equals(this.scripts, otherKey.scripts));
 		}
 

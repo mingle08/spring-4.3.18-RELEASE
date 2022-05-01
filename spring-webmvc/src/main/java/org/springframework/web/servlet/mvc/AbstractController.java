@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,13 +16,11 @@
 
 package org.springframework.web.servlet.mvc;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.lang.Nullable;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.support.WebContentGenerator;
 import org.springframework.web.util.WebUtils;
@@ -31,7 +29,7 @@ import org.springframework.web.util.WebUtils;
  * Convenient superclass for controller implementations, using the Template Method
  * design pattern.
  *
- * <p><b>Workflow
+ * <p><b><a name="workflow">Workflow
  * (<a href="Controller.html#workflow">and that defined by interface</a>):</b><br>
  * <ol>
  * <li>{@link #handleRequest(HttpServletRequest, HttpServletResponse) handleRequest()}
@@ -40,8 +38,7 @@ import org.springframework.web.util.WebUtils;
  * is not support)</li>
  * <li>If session is required, try to get it (ServletException if not found)</li>
  * <li>Set caching headers if needed according to the cacheSeconds property</li>
- * <li>Call abstract method
- * {@link #handleRequestInternal(HttpServletRequest, HttpServletResponse) handleRequestInternal()}
+ * <li>Call abstract method {@link #handleRequestInternal(HttpServletRequest, HttpServletResponse) handleRequestInternal()}
  * (optionally synchronizing around the call on the HttpSession),
  * which should be implemented by extending classes to provide actual
  * functionality to return {@link org.springframework.web.servlet.ModelAndView ModelAndView} objects.</li>
@@ -51,7 +48,7 @@ import org.springframework.web.util.WebUtils;
  * (<a href="Controller.html#config">and those defined by interface</a>):</b><br>
  * <table border="1">
  * <tr>
- * <td><b>name</b></td>
+ * <td><b>name</b></th>
  * <td><b>default</b></td>
  * <td><b>description</b></td>
  * </tr>
@@ -136,7 +133,7 @@ public abstract class AbstractController extends WebContentGenerator implements 
 	 * different servlet containers; the only 100% safe way is a session mutex.
 	 * @see AbstractController#handleRequestInternal
 	 * @see org.springframework.web.util.HttpSessionMutexListener
-	 * @see org.springframework.web.util.WebUtils#getSessionMutex(jakarta.servlet.http.HttpSession)
+	 * @see org.springframework.web.util.WebUtils#getSessionMutex(javax.servlet.http.HttpSession)
 	 */
 	public final void setSynchronizeOnSession(boolean synchronizeOnSession) {
 		this.synchronizeOnSession = synchronizeOnSession;
@@ -151,12 +148,11 @@ public abstract class AbstractController extends WebContentGenerator implements 
 
 
 	@Override
-	@Nullable
 	public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response)
 			throws Exception {
 
 		if (HttpMethod.OPTIONS.matches(request.getMethod())) {
-			response.setHeader(HttpHeaders.ALLOW, getAllowHeader());
+			response.setHeader("Allow", getAllowHeader());
 			return null;
 		}
 
@@ -183,7 +179,6 @@ public abstract class AbstractController extends WebContentGenerator implements 
 	 * The contract is the same as for {@code handleRequest}.
 	 * @see #handleRequest
 	 */
-	@Nullable
 	protected abstract ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response)
 			throws Exception;
 

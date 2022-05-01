@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,6 @@ package org.springframework.context.support;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -28,7 +27,8 @@ import org.springframework.util.StringUtils;
  * of specified config locations. Serves as base class for XML-based application
  * context implementations such as {@link ClassPathXmlApplicationContext} and
  * {@link FileSystemXmlApplicationContext}, as well as
- * {@link org.springframework.web.context.support.XmlWebApplicationContext}.
+ * {@link org.springframework.web.context.support.XmlWebApplicationContext} and
+ * {@link org.springframework.web.portlet.context.XmlPortletApplicationContext}.
  *
  * @author Juergen Hoeller
  * @since 2.5.2
@@ -39,7 +39,6 @@ import org.springframework.util.StringUtils;
 public abstract class AbstractRefreshableConfigApplicationContext extends AbstractRefreshableApplicationContext
 		implements BeanNameAware, InitializingBean {
 
-	@Nullable
 	private String[] configLocations;
 
 	private boolean setIdCalled = false;
@@ -55,7 +54,7 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 	 * Create a new AbstractRefreshableConfigApplicationContext with the given parent context.
 	 * @param parent the parent context
 	 */
-	public AbstractRefreshableConfigApplicationContext(@Nullable ApplicationContext parent) {
+	public AbstractRefreshableConfigApplicationContext(ApplicationContext parent) {
 		super(parent);
 	}
 
@@ -73,7 +72,7 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 	 * Set the config locations for this application context.
 	 * <p>If not set, the implementation may use a default as appropriate.
 	 */
-	public void setConfigLocations(@Nullable String... locations) {
+	public void setConfigLocations(String... locations) {
 		if (locations != null) {
 			Assert.noNullElements(locations, "Config locations must not be null");
 			this.configLocations = new String[locations.length];
@@ -96,7 +95,6 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 	 * @see #getResources
 	 * @see #getResourcePatternResolver
 	 */
-	@Nullable
 	protected String[] getConfigLocations() {
 		return (this.configLocations != null ? this.configLocations : getDefaultConfigLocations());
 	}
@@ -109,7 +107,6 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 	 * @return an array of default config locations, if any
 	 * @see #setConfigLocations
 	 */
-	@Nullable
 	protected String[] getDefaultConfigLocations() {
 		return null;
 	}

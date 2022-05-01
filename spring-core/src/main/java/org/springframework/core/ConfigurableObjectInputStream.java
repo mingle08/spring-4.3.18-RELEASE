@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,20 +22,18 @@ import java.io.NotSerializableException;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamClass;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 
 /**
- * Special {@link ObjectInputStream} subclass that resolves class names
- * against a specific {@link ClassLoader}.
+ * Special ObjectInputStream subclass that resolves class names
+ * against a specific ClassLoader. Serves as base class for
+ * {@link org.springframework.remoting.rmi.CodebaseAwareObjectInputStream}.
  *
  * @author Juergen Hoeller
  * @since 2.5.5
- * @see org.springframework.core.serializer.DefaultDeserializer
  */
 public class ConfigurableObjectInputStream extends ObjectInputStream {
 
-	@Nullable
 	private final ClassLoader classLoader;
 
 	private final boolean acceptProxyClasses;
@@ -47,7 +45,7 @@ public class ConfigurableObjectInputStream extends ObjectInputStream {
 	 * @param classLoader the ClassLoader to use for loading local classes
 	 * @see java.io.ObjectInputStream#ObjectInputStream(java.io.InputStream)
 	 */
-	public ConfigurableObjectInputStream(InputStream in, @Nullable ClassLoader classLoader) throws IOException {
+	public ConfigurableObjectInputStream(InputStream in, ClassLoader classLoader) throws IOException {
 		this(in, classLoader, true);
 	}
 
@@ -60,7 +58,7 @@ public class ConfigurableObjectInputStream extends ObjectInputStream {
 	 * @see java.io.ObjectInputStream#ObjectInputStream(java.io.InputStream)
 	 */
 	public ConfigurableObjectInputStream(
-			InputStream in, @Nullable ClassLoader classLoader, boolean acceptProxyClasses) throws IOException {
+			InputStream in, ClassLoader classLoader, boolean acceptProxyClasses) throws IOException {
 
 		super(in);
 		this.classLoader = classLoader;
@@ -144,7 +142,6 @@ public class ConfigurableObjectInputStream extends ObjectInputStream {
 	 * <p>The default implementation simply returns {@code null}, indicating
 	 * that no specific fallback is available.
 	 */
-	@Nullable
 	protected ClassLoader getFallbackClassLoader() throws IOException {
 		return null;
 	}

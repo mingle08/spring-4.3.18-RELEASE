@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,14 +30,7 @@ import org.springframework.core.Ordered;
  * Enables Spring's annotation-driven transaction management capability, similar to
  * the support found in Spring's {@code <tx:*>} XML namespace. To be used on
  * {@link org.springframework.context.annotation.Configuration @Configuration}
- * classes to configure traditional, imperative transaction management or
- * reactive transaction management.
- *
- * <p>The following example demonstrates imperative transaction management
- * using a {@link org.springframework.transaction.PlatformTransactionManager
- * PlatformTransactionManager}. For reactive transaction management, configure a
- * {@link org.springframework.transaction.ReactiveTransactionManager
- * ReactiveTransactionManager} instead.
+ * classes as follows:
  *
  * <pre class="code">
  * &#064;Configuration
@@ -65,37 +58,38 @@ import org.springframework.core.Ordered;
  * configuration:
  *
  * <pre class="code">
- * &lt;beans&gt;
+ * {@code
+ * <beans>
  *
- *     &lt;tx:annotation-driven/&gt;
+ *     <tx:annotation-driven/>
  *
- *     &lt;bean id="fooRepository" class="com.foo.JdbcFooRepository"&gt;
- *         &lt;constructor-arg ref="dataSource"/&gt;
- *     &lt;/bean&gt;
+ *     <bean id="fooRepository" class="com.foo.JdbcFooRepository">
+ *         <constructor-arg ref="dataSource"/>
+ *     </bean>
  *
- *     &lt;bean id="dataSource" class="com.vendor.VendorDataSource"/&gt;
+ *     <bean id="dataSource" class="com.vendor.VendorDataSource"/>
  *
- *     &lt;bean id="transactionManager" class="org.sfwk...DataSourceTransactionManager"&gt;
- *         &lt;constructor-arg ref="dataSource"/&gt;
- *     &lt;/bean&gt;
+ *     <bean id="transactionManager" class="org.sfwk...DataSourceTransactionManager">
+ *         <constructor-arg ref="dataSource"/>
+ *     </bean>
  *
- * &lt;/beans&gt;
- * </pre>
+ * </beans>
+ * }</pre>
  *
  * In both of the scenarios above, {@code @EnableTransactionManagement} and {@code
  * <tx:annotation-driven/>} are responsible for registering the necessary Spring
  * components that power annotation-driven transaction management, such as the
- * TransactionInterceptor and the proxy- or AspectJ-based advice that weaves the
+ * TransactionInterceptor and the proxy- or AspectJ-based advice that weave the
  * interceptor into the call stack when {@code JdbcFooRepository}'s {@code @Transactional}
  * methods are invoked.
  *
  * <p>A minor difference between the two examples lies in the naming of the {@code
- * TransactionManager} bean: In the {@code @Bean} case, the name is
+ * PlatformTransactionManager} bean: In the {@code @Bean} case, the name is
  * <em>"txManager"</em> (per the name of the method); in the XML case, the name is
- * <em>"transactionManager"</em>. {@code <tx:annotation-driven/>} is hard-wired to
+ * <em>"transactionManager"</em>. The {@code <tx:annotation-driven/>} is hard-wired to
  * look for a bean named "transactionManager" by default, however
  * {@code @EnableTransactionManagement} is more flexible; it will fall back to a by-type
- * lookup for any {@code TransactionManager} bean in the container. Thus the name
+ * lookup for any {@code PlatformTransactionManager} bean in the container. Thus the name
  * can be "txManager", "transactionManager", or "tm": it simply does not matter.
  *
  * <p>For those that wish to establish a more direct relationship between
@@ -130,8 +124,8 @@ import org.springframework.core.Ordered;
  *     }
  * }</pre>
  *
- * <p>This approach may be desirable simply because it is more explicit, or it may be
- * necessary in order to distinguish between two {@code TransactionManager} beans
+ * This approach may be desirable simply because it is more explicit, or it may be
+ * necessary in order to distinguish between two {@code PlatformTransactionManager} beans
  * present in the same container.  As the name suggests, the
  * {@code annotationDrivenTransactionManager()} will be the one used for processing
  * {@code @Transactional} methods. See {@link TransactionManagementConfigurer} Javadoc

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,6 @@ import java.io.Serializable;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.ConfigurablePropertyAccessor;
 import org.springframework.beans.PropertyAccessorFactory;
-import org.springframework.lang.Nullable;
 
 /**
  * Default implementation of the {@link Errors} and {@link BindingResult}
@@ -43,14 +42,12 @@ import org.springframework.lang.Nullable;
 @SuppressWarnings("serial")
 public class BeanPropertyBindingResult extends AbstractPropertyBindingResult implements Serializable {
 
-	@Nullable
 	private final Object target;
 
 	private final boolean autoGrowNestedPaths;
 
 	private final int autoGrowCollectionLimit;
 
-	@Nullable
 	private transient BeanWrapper beanWrapper;
 
 
@@ -59,7 +56,7 @@ public class BeanPropertyBindingResult extends AbstractPropertyBindingResult imp
 	 * @param target the target bean to bind onto
 	 * @param objectName the name of the target object
 	 */
-	public BeanPropertyBindingResult(@Nullable Object target, String objectName) {
+	public BeanPropertyBindingResult(Object target, String objectName) {
 		this(target, objectName, true, Integer.MAX_VALUE);
 	}
 
@@ -70,9 +67,7 @@ public class BeanPropertyBindingResult extends AbstractPropertyBindingResult imp
 	 * @param autoGrowNestedPaths whether to "auto-grow" a nested path that contains a null value
 	 * @param autoGrowCollectionLimit the limit for array and collection auto-growing
 	 */
-	public BeanPropertyBindingResult(@Nullable Object target, String objectName,
-			boolean autoGrowNestedPaths, int autoGrowCollectionLimit) {
-
+	public BeanPropertyBindingResult(Object target, String objectName, boolean autoGrowNestedPaths, int autoGrowCollectionLimit) {
 		super(objectName);
 		this.target = target;
 		this.autoGrowNestedPaths = autoGrowNestedPaths;
@@ -81,7 +76,6 @@ public class BeanPropertyBindingResult extends AbstractPropertyBindingResult imp
 
 
 	@Override
-	@Nullable
 	public final Object getTarget() {
 		return this.target;
 	}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,6 @@ import java.util.List;
 
 import org.springframework.context.Lifecycle;
 import org.springframework.http.HttpHeaders;
-import org.springframework.lang.Nullable;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.ListenableFutureCallback;
 import org.springframework.web.socket.WebSocketHandler;
@@ -35,7 +34,6 @@ import org.springframework.web.socket.handler.LoggingWebSocketHandlerDecorator;
  * this will be done automatically when the Spring ApplicationContext is refreshed.
  *
  * @author Rossen Stoyanchev
- * @author Sam Brannen
  * @since 4.0
  */
 public class WebSocketConnectionManager extends ConnectionManagerSupport {
@@ -44,10 +42,9 @@ public class WebSocketConnectionManager extends ConnectionManagerSupport {
 
 	private final WebSocketHandler webSocketHandler;
 
-	@Nullable
 	private WebSocketSession webSocketSession;
 
-	private final WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
+	private WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
 
 
 	public WebSocketConnectionManager(WebSocketClient client,
@@ -87,14 +84,13 @@ public class WebSocketConnectionManager extends ConnectionManagerSupport {
 	/**
 	 * Set the origin to use.
 	 */
-	public void setOrigin(@Nullable String origin) {
+	public void setOrigin(String origin) {
 		this.headers.setOrigin(origin);
 	}
 
 	/**
 	 * Return the configured origin.
 	 */
-	@Nullable
 	public String getOrigin() {
 		return this.headers.getOrigin();
 	}
@@ -117,16 +113,16 @@ public class WebSocketConnectionManager extends ConnectionManagerSupport {
 
 	@Override
 	public void startInternal() {
-		if (this.client instanceof Lifecycle lifecycle && !lifecycle.isRunning()) {
-			lifecycle.start();
+		if (this.client instanceof Lifecycle && !((Lifecycle) client).isRunning()) {
+			((Lifecycle) client).start();
 		}
 		super.startInternal();
 	}
 
 	@Override
 	public void stopInternal() throws Exception {
-		if (this.client instanceof Lifecycle lifecycle && lifecycle.isRunning()) {
-			lifecycle.stop();
+		if (this.client instanceof Lifecycle && ((Lifecycle) client).isRunning()) {
+			((Lifecycle) client).stop();
 		}
 		super.stopInternal();
 	}
@@ -142,7 +138,7 @@ public class WebSocketConnectionManager extends ConnectionManagerSupport {
 
 		future.addCallback(new ListenableFutureCallback<WebSocketSession>() {
 			@Override
-			public void onSuccess(@Nullable WebSocketSession result) {
+			public void onSuccess(WebSocketSession result) {
 				webSocketSession = result;
 				logger.info("Successfully connected");
 			}

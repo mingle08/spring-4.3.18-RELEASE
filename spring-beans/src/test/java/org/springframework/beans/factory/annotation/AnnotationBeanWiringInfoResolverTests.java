@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2008 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,55 +16,58 @@
 
 package org.springframework.beans.factory.annotation;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.wiring.BeanWiringInfo;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.*;
 
 /**
  * @author Rick Evans
  * @author Chris Beams
  */
-public class AnnotationBeanWiringInfoResolverTests {
+public final class AnnotationBeanWiringInfoResolverTests {
 
 	@Test
 	public void testResolveWiringInfo() throws Exception {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				new AnnotationBeanWiringInfoResolver().resolveWiringInfo(null));
+		try {
+			new AnnotationBeanWiringInfoResolver().resolveWiringInfo(null);
+			fail("Must have thrown an IllegalArgumentException by this point (null argument)");
+		}
+		catch (IllegalArgumentException expected) {
+		}
 	}
 
 	@Test
 	public void testResolveWiringInfoWithAnInstanceOfANonAnnotatedClass() {
 		AnnotationBeanWiringInfoResolver resolver = new AnnotationBeanWiringInfoResolver();
 		BeanWiringInfo info = resolver.resolveWiringInfo("java.lang.String is not @Configurable");
-		assertThat(info).as("Must be returning null for a non-@Configurable class instance").isNull();
+		assertNull("Must be returning null for a non-@Configurable class instance", info);
 	}
 
 	@Test
 	public void testResolveWiringInfoWithAnInstanceOfAnAnnotatedClass() {
 		AnnotationBeanWiringInfoResolver resolver = new AnnotationBeanWiringInfoResolver();
 		BeanWiringInfo info = resolver.resolveWiringInfo(new Soap());
-		assertThat(info).as("Must *not* be returning null for a non-@Configurable class instance").isNotNull();
+		assertNotNull("Must *not* be returning null for a non-@Configurable class instance", info);
 	}
 
 	@Test
 	public void testResolveWiringInfoWithAnInstanceOfAnAnnotatedClassWithAutowiringTurnedOffExplicitly() {
 		AnnotationBeanWiringInfoResolver resolver = new AnnotationBeanWiringInfoResolver();
 		BeanWiringInfo info = resolver.resolveWiringInfo(new WirelessSoap());
-		assertThat(info).as("Must *not* be returning null for an @Configurable class instance even when autowiring is NO").isNotNull();
-		assertThat(info.indicatesAutowiring()).isFalse();
-		assertThat(info.getBeanName()).isEqualTo(WirelessSoap.class.getName());
+		assertNotNull("Must *not* be returning null for an @Configurable class instance even when autowiring is NO", info);
+		assertFalse(info.indicatesAutowiring());
+		assertEquals(WirelessSoap.class.getName(), info.getBeanName());
 	}
 
 	@Test
 	public void testResolveWiringInfoWithAnInstanceOfAnAnnotatedClassWithAutowiringTurnedOffExplicitlyAndCustomBeanName() {
 		AnnotationBeanWiringInfoResolver resolver = new AnnotationBeanWiringInfoResolver();
 		BeanWiringInfo info = resolver.resolveWiringInfo(new NamedWirelessSoap());
-		assertThat(info).as("Must *not* be returning null for an @Configurable class instance even when autowiring is NO").isNotNull();
-		assertThat(info.indicatesAutowiring()).isFalse();
-		assertThat(info.getBeanName()).isEqualTo("DerBigStick");
+		assertNotNull("Must *not* be returning null for an @Configurable class instance even when autowiring is NO", info);
+		assertFalse(info.indicatesAutowiring());
+		assertEquals("DerBigStick", info.getBeanName());
 	}
 
 

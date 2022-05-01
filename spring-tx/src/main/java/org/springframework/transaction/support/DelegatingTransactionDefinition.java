@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.transaction.support;
 
 import java.io.Serializable;
 
-import org.springframework.lang.Nullable;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.util.Assert;
 
@@ -68,15 +67,14 @@ public abstract class DelegatingTransactionDefinition implements TransactionDefi
 	}
 
 	@Override
-	@Nullable
 	public String getName() {
 		return this.targetDefinition.getName();
 	}
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
-		return this.targetDefinition.equals(other);
+	public boolean equals(Object obj) {
+		return this.targetDefinition.equals(obj);
 	}
 
 	@Override

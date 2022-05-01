@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,16 +23,15 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.factory.BeanCreationException;
-import org.springframework.beans.testfixture.beans.TestBean;
 import org.springframework.core.io.Resource;
-import org.springframework.web.testfixture.servlet.MockServletContext;
+import org.springframework.mock.web.test.MockServletContext;
+import org.springframework.tests.sample.beans.TestBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * Tests for various ServletContext-related support classes.
@@ -44,7 +43,6 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 public class ServletContextSupportTests {
 
 	@Test
-	@SuppressWarnings("resource")
 	public void testServletContextAttributeFactoryBean() {
 		MockServletContext sc = new MockServletContext();
 		sc.setAttribute("myAttr", "myValue");
@@ -57,11 +55,10 @@ public class ServletContextSupportTests {
 		wac.refresh();
 
 		Object value = wac.getBean("importedAttr");
-		assertThat(value).isEqualTo("myValue");
+		assertEquals("myValue", value);
 	}
 
 	@Test
-	@SuppressWarnings("resource")
 	public void testServletContextAttributeFactoryBeanWithAttributeNotFound() {
 		MockServletContext sc = new MockServletContext();
 
@@ -71,14 +68,18 @@ public class ServletContextSupportTests {
 		pvs.add("attributeName", "myAttr");
 		wac.registerSingleton("importedAttr", ServletContextAttributeFactoryBean.class, pvs);
 
-		assertThatExceptionOfType(BeanCreationException.class).isThrownBy(
-				wac::refresh)
-			.withCauseInstanceOf(IllegalStateException.class)
-			.withMessageContaining("myAttr");
+		try {
+			wac.refresh();
+			fail("Should have thrown BeanCreationException");
+		}
+		catch (BeanCreationException ex) {
+			// expected
+			assertTrue(ex.getCause() instanceof IllegalStateException);
+			assertTrue(ex.getCause().getMessage().contains("myAttr"));
+		}
 	}
 
 	@Test
-	@SuppressWarnings("resource")
 	public void testServletContextParameterFactoryBean() {
 		MockServletContext sc = new MockServletContext();
 		sc.addInitParameter("myParam", "myValue");
@@ -91,11 +92,10 @@ public class ServletContextSupportTests {
 		wac.refresh();
 
 		Object value = wac.getBean("importedParam");
-		assertThat(value).isEqualTo("myValue");
+		assertEquals("myValue", value);
 	}
 
 	@Test
-	@SuppressWarnings("resource")
 	public void testServletContextParameterFactoryBeanWithAttributeNotFound() {
 		MockServletContext sc = new MockServletContext();
 
@@ -105,16 +105,21 @@ public class ServletContextSupportTests {
 		pvs.add("initParamName", "myParam");
 		wac.registerSingleton("importedParam", ServletContextParameterFactoryBean.class, pvs);
 
-		assertThatExceptionOfType(BeanCreationException.class).isThrownBy(
-				wac::refresh)
-			.withCauseInstanceOf(IllegalStateException.class)
-			.withMessageContaining("myParam");
+		try {
+			wac.refresh();
+			fail("Should have thrown BeanCreationException");
+		}
+		catch (BeanCreationException ex) {
+			// expected
+			assertTrue(ex.getCause() instanceof IllegalStateException);
+			assertTrue(ex.getCause().getMessage().contains("myParam"));
+		}
 	}
 
 	@Test
 	public void testServletContextAttributeExporter() {
 		TestBean tb = new TestBean();
-		Map<String, Object> attributes = new HashMap<>();
+		Map<String, Object> attributes = new HashMap<String, Object>();
 		attributes.put("attr1", "value1");
 		attributes.put("attr2", tb);
 
@@ -123,23 +128,23 @@ public class ServletContextSupportTests {
 		exporter.setAttributes(attributes);
 		exporter.setServletContext(sc);
 
-		assertThat(sc.getAttribute("attr1")).isEqualTo("value1");
-		assertThat(sc.getAttribute("attr2")).isSameAs(tb);
+		assertEquals("value1", sc.getAttribute("attr1"));
+		assertSame(tb, sc.getAttribute("attr2"));
 	}
 
 	@Test
 	public void testServletContextResourceLoader() {
 		MockServletContext sc = new MockServletContext("classpath:org/springframework/web/context");
 		ServletContextResourceLoader rl = new ServletContextResourceLoader(sc);
-		assertThat(rl.getResource("/WEB-INF/web.xml").exists()).isTrue();
-		assertThat(rl.getResource("WEB-INF/web.xml").exists()).isTrue();
-		assertThat(rl.getResource("../context/WEB-INF/web.xml").exists()).isTrue();
-		assertThat(rl.getResource("/../context/WEB-INF/web.xml").exists()).isTrue();
+		assertTrue(rl.getResource("/WEB-INF/web.xml").exists());
+		assertTrue(rl.getResource("WEB-INF/web.xml").exists());
+		assertTrue(rl.getResource("../context/WEB-INF/web.xml").exists());
+		assertTrue(rl.getResource("/../context/WEB-INF/web.xml").exists());
 	}
 
 	@Test
 	public void testServletContextResourcePatternResolver() throws IOException {
-		final Set<String> paths = new HashSet<>();
+		final Set<String> paths = new HashSet<String>();
 		paths.add("/WEB-INF/context1.xml");
 		paths.add("/WEB-INF/context2.xml");
 
@@ -155,18 +160,18 @@ public class ServletContextSupportTests {
 
 		ServletContextResourcePatternResolver rpr = new ServletContextResourcePatternResolver(sc);
 		Resource[] found = rpr.getResources("/WEB-INF/*.xml");
-		Set<String> foundPaths = new HashSet<>();
+		Set<String> foundPaths = new HashSet<String>();
 		for (Resource resource : found) {
 			foundPaths.add(((ServletContextResource) resource).getPath());
 		}
-		assertThat(foundPaths.size()).isEqualTo(2);
-		assertThat(foundPaths.contains("/WEB-INF/context1.xml")).isTrue();
-		assertThat(foundPaths.contains("/WEB-INF/context2.xml")).isTrue();
+		assertEquals(2, foundPaths.size());
+		assertTrue(foundPaths.contains("/WEB-INF/context1.xml"));
+		assertTrue(foundPaths.contains("/WEB-INF/context2.xml"));
 	}
 
 	@Test
 	public void testServletContextResourcePatternResolverWithPatternPath() throws IOException {
-		final Set<String> dirs = new HashSet<>();
+		final Set<String> dirs = new HashSet<String>();
 		dirs.add("/WEB-INF/mydir1/");
 		dirs.add("/WEB-INF/mydir2/");
 
@@ -188,22 +193,22 @@ public class ServletContextSupportTests {
 
 		ServletContextResourcePatternResolver rpr = new ServletContextResourcePatternResolver(sc);
 		Resource[] found = rpr.getResources("/WEB-INF/*/*.xml");
-		Set<String> foundPaths = new HashSet<>();
+		Set<String> foundPaths = new HashSet<String>();
 		for (Resource resource : found) {
 			foundPaths.add(((ServletContextResource) resource).getPath());
 		}
-		assertThat(foundPaths.size()).isEqualTo(2);
-		assertThat(foundPaths.contains("/WEB-INF/mydir1/context1.xml")).isTrue();
-		assertThat(foundPaths.contains("/WEB-INF/mydir2/context2.xml")).isTrue();
+		assertEquals(2, foundPaths.size());
+		assertTrue(foundPaths.contains("/WEB-INF/mydir1/context1.xml"));
+		assertTrue(foundPaths.contains("/WEB-INF/mydir2/context2.xml"));
 	}
 
 	@Test
 	public void testServletContextResourcePatternResolverWithUnboundedPatternPath() throws IOException {
-		final Set<String> dirs = new HashSet<>();
+		final Set<String> dirs = new HashSet<String>();
 		dirs.add("/WEB-INF/mydir1/");
 		dirs.add("/WEB-INF/mydir2/");
 
-		final Set<String> paths = new HashSet<>();
+		final Set<String> paths = new HashSet<String>();
 		paths.add("/WEB-INF/mydir2/context2.xml");
 		paths.add("/WEB-INF/mydir2/mydir3/");
 
@@ -228,19 +233,19 @@ public class ServletContextSupportTests {
 
 		ServletContextResourcePatternResolver rpr = new ServletContextResourcePatternResolver(sc);
 		Resource[] found = rpr.getResources("/WEB-INF/**/*.xml");
-		Set<String> foundPaths = new HashSet<>();
+		Set<String> foundPaths = new HashSet<String>();
 		for (Resource resource : found) {
 			foundPaths.add(((ServletContextResource) resource).getPath());
 		}
-		assertThat(foundPaths.size()).isEqualTo(3);
-		assertThat(foundPaths.contains("/WEB-INF/mydir1/context1.xml")).isTrue();
-		assertThat(foundPaths.contains("/WEB-INF/mydir2/context2.xml")).isTrue();
-		assertThat(foundPaths.contains("/WEB-INF/mydir2/mydir3/context3.xml")).isTrue();
+		assertEquals(3, foundPaths.size());
+		assertTrue(foundPaths.contains("/WEB-INF/mydir1/context1.xml"));
+		assertTrue(foundPaths.contains("/WEB-INF/mydir2/context2.xml"));
+		assertTrue(foundPaths.contains("/WEB-INF/mydir2/mydir3/context3.xml"));
 	}
 
 	@Test
 	public void testServletContextResourcePatternResolverWithAbsolutePaths() throws IOException {
-		final Set<String> paths = new HashSet<>();
+		final Set<String> paths = new HashSet<String>();
 		paths.add("C:/webroot/WEB-INF/context1.xml");
 		paths.add("C:/webroot/WEB-INF/context2.xml");
 		paths.add("C:/webroot/someOtherDirThatDoesntContainPath");
@@ -257,13 +262,13 @@ public class ServletContextSupportTests {
 
 		ServletContextResourcePatternResolver rpr = new ServletContextResourcePatternResolver(sc);
 		Resource[] found = rpr.getResources("/WEB-INF/*.xml");
-		Set<String> foundPaths = new HashSet<>();
+		Set<String> foundPaths = new HashSet<String>();
 		for (Resource resource : found) {
 			foundPaths.add(((ServletContextResource) resource).getPath());
 		}
-		assertThat(foundPaths.size()).isEqualTo(2);
-		assertThat(foundPaths.contains("/WEB-INF/context1.xml")).isTrue();
-		assertThat(foundPaths.contains("/WEB-INF/context2.xml")).isTrue();
+		assertEquals(2, foundPaths.size());
+		assertTrue(foundPaths.contains("/WEB-INF/context1.xml"));
+		assertTrue(foundPaths.contains("/WEB-INF/context2.xml"));
 	}
 
 }

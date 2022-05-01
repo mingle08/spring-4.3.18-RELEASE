@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,22 +16,21 @@
 
 package org.springframework.orm.jpa.support;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.lang.Nullable;
 import org.springframework.orm.jpa.EntityManagerFactoryAccessor;
 import org.springframework.orm.jpa.EntityManagerFactoryInfo;
 import org.springframework.orm.jpa.SharedEntityManagerCreator;
 import org.springframework.util.Assert;
 
 /**
- * {@link FactoryBean} that exposes a shared JPA {@link jakarta.persistence.EntityManager}
+ * {@link FactoryBean} that exposes a shared JPA {@link javax.persistence.EntityManager}
  * reference for a given EntityManagerFactory. Typically used for an EntityManagerFactory
  * created by {@link org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean},
- * as direct alternative to a JNDI lookup for a Jakarta EE server's EntityManager reference.
+ * as direct alternative to a JNDI lookup for a Java EE server's EntityManager reference.
  *
  * <p>The shared EntityManager will behave just like an EntityManager fetched from an
  * application server's JNDI environment, as defined by the JPA specification.
@@ -52,12 +51,10 @@ import org.springframework.util.Assert;
 public class SharedEntityManagerBean extends EntityManagerFactoryAccessor
 		implements FactoryBean<EntityManager>, InitializingBean {
 
-	@Nullable
 	private Class<? extends EntityManager> entityManagerInterface;
 
 	private boolean synchronizedWithTransaction = true;
 
-	@Nullable
 	private EntityManager shared;
 
 
@@ -65,9 +62,9 @@ public class SharedEntityManagerBean extends EntityManagerFactoryAccessor
 	 * Specify the EntityManager interface to expose.
 	 * <p>Default is the EntityManager interface as defined by the
 	 * EntityManagerFactoryInfo, if available. Else, the standard
-	 * {@code jakarta.persistence.EntityManager} interface will be used.
+	 * {@code javax.persistence.EntityManager} interface will be used.
 	 * @see org.springframework.orm.jpa.EntityManagerFactoryInfo#getEntityManagerInterface()
-	 * @see jakarta.persistence.EntityManager
+	 * @see javax.persistence.EntityManager
 	 */
 	public void setEntityManagerInterface(Class<? extends EntityManager> entityManagerInterface) {
 		Assert.notNull(entityManagerInterface, "'entityManagerInterface' must not be null");
@@ -89,7 +86,8 @@ public class SharedEntityManagerBean extends EntityManagerFactoryAccessor
 		if (emf == null) {
 			throw new IllegalArgumentException("'entityManagerFactory' or 'persistenceUnitName' is required");
 		}
-		if (emf instanceof EntityManagerFactoryInfo emfInfo) {
+		if (emf instanceof EntityManagerFactoryInfo) {
+			EntityManagerFactoryInfo emfInfo = (EntityManagerFactoryInfo) emf;
 			if (this.entityManagerInterface == null) {
 				this.entityManagerInterface = emfInfo.getEntityManagerInterface();
 				if (this.entityManagerInterface == null) {
@@ -108,7 +106,6 @@ public class SharedEntityManagerBean extends EntityManagerFactoryAccessor
 
 
 	@Override
-	@Nullable
 	public EntityManager getObject() {
 		return this.shared;
 	}

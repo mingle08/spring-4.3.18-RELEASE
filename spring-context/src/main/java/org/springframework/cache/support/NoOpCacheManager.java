@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.lang.Nullable;
 
 /**
  * A basic, no operation {@link CacheManager} implementation suitable
@@ -37,13 +36,13 @@ import org.springframework.lang.Nullable;
  * @author Costin Leau
  * @author Stephane Nicoll
  * @since 3.1
- * @see NoOpCache
+ * @see CompositeCacheManager
  */
 public class NoOpCacheManager implements CacheManager {
 
-	private final ConcurrentMap<String, Cache> caches = new ConcurrentHashMap<>(16);
+	private final ConcurrentMap<String, Cache> caches = new ConcurrentHashMap<String, Cache>(16);
 
-	private final Set<String> cacheNames = new LinkedHashSet<>(16);
+	private final Set<String> cacheNames = new LinkedHashSet<String>(16);
 
 
 	/**
@@ -51,11 +50,10 @@ public class NoOpCacheManager implements CacheManager {
 	 * Additionally, the request cache will be remembered by the manager for consistency.
 	 */
 	@Override
-	@Nullable
 	public Cache getCache(String name) {
 		Cache cache = this.caches.get(name);
 		if (cache == null) {
-			this.caches.computeIfAbsent(name, key -> new NoOpCache(name));
+			this.caches.putIfAbsent(name, new NoOpCache(name));
 			synchronized (this.cacheNames) {
 				this.cacheNames.add(name);
 			}

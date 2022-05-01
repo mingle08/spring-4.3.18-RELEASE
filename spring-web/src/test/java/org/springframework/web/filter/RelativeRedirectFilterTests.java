@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,20 +16,20 @@
 
 package org.springframework.web.filter;
 
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpServletResponseWrapper;
-import org.junit.jupiter.api.Test;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
+
+import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.testfixture.servlet.MockFilterChain;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
-import org.springframework.web.testfixture.servlet.MockHttpServletResponse;
+import org.springframework.mock.web.test.MockFilterChain;
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.mock.web.test.MockHttpServletResponse;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@link RelativeRedirectFilter}.
@@ -44,16 +44,14 @@ public class RelativeRedirectFilterTests {
 	private HttpServletResponse response = Mockito.mock(HttpServletResponse.class);
 
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void sendRedirectHttpStatusWhenNullThenIllegalArgumentException() {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				this.filter.setRedirectStatus(null));
+		this.filter.setRedirectStatus(null);
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void sendRedirectHttpStatusWhenNot3xxThenIllegalArgumentException() {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				this.filter.setRedirectStatus(HttpStatus.OK));
+		this.filter.setRedirectStatus(HttpStatus.OK);
 	}
 
 	@Test
@@ -86,18 +84,18 @@ public class RelativeRedirectFilterTests {
 		this.filter.doFilterInternal(new MockHttpServletRequest(), original, chain);
 
 		HttpServletResponse wrapped1 = (HttpServletResponse) chain.getResponse();
-		assertThat(wrapped1).isNotSameAs(original);
+		assertNotSame(original, wrapped1);
 
 		chain.reset();
 		this.filter.doFilterInternal(new MockHttpServletRequest(), wrapped1, chain);
 		HttpServletResponse current = (HttpServletResponse) chain.getResponse();
-		assertThat(current).isSameAs(wrapped1);
+		assertSame(wrapped1, current);
 
 		chain.reset();
 		HttpServletResponse wrapped2 = new HttpServletResponseWrapper(wrapped1);
 		this.filter.doFilterInternal(new MockHttpServletRequest(), wrapped2, chain);
 		current = (HttpServletResponse) chain.getResponse();
-		assertThat(current).isSameAs(wrapped2);
+		assertSame(wrapped2, current);
 	}
 
 

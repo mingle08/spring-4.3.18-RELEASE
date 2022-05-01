@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2011 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,16 +16,16 @@
 
 package org.springframework.test.web.client.samples;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Controller;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.client.MockMvcClientHttpRequestFactory;
 import org.springframework.test.web.servlet.MockMvc;
@@ -36,10 +36,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.junit.Assert.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * Tests that use a {@link RestTemplate} configured with a
@@ -49,7 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * @author Rossen Stoyanchev
  */
-@ExtendWith(SpringExtension.class)
+@RunWith(SpringJUnit4ClassRunner.class)
 @WebAppConfiguration
 @ContextConfiguration
 public class MockMvcClientHttpRequestFactoryTests {
@@ -57,26 +57,26 @@ public class MockMvcClientHttpRequestFactoryTests {
 	@Autowired
 	private WebApplicationContext wac;
 
-	private MockMvc mockMvc;
+	private RestTemplate restTemplate;
 
 
-	@BeforeEach
+	@Before
 	public void setup() {
-		this.mockMvc = MockMvcBuilders.webAppContextSetup(this.wac).alwaysExpect(status().isOk()).build();
+		MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(this.wac).alwaysExpect(status().isOk()).build();
+		this.restTemplate = new RestTemplate(new MockMvcClientHttpRequestFactory(mockMvc));
 	}
 
 	@Test
-	public void test() {
-		RestTemplate template = new RestTemplate(new MockMvcClientHttpRequestFactory(this.mockMvc));
-		String result = template.getForObject("/foo", String.class);
-		assertThat(result).isEqualTo("bar");
+	public void test() throws Exception {
+		String result = this.restTemplate.getForObject("/foo", String.class);
+		assertEquals("bar", result);
 	}
 
 
 	@EnableWebMvc
 	@Configuration
 	@ComponentScan(basePackageClasses=MockMvcClientHttpRequestFactoryTests.class)
-	static class MyWebConfig implements WebMvcConfigurer {
+	static class MyWebConfig extends WebMvcConfigurerAdapter {
 	}
 
 	@Controller

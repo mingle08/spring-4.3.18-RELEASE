@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +16,14 @@
 
 package org.springframework.orm.jpa.persistenceunit;
 
-import jakarta.persistence.spi.PersistenceUnitInfo;
+import javax.persistence.spi.PersistenceUnitInfo;
 
 /**
  * Interface that defines an abstraction for finding and managing
  * JPA PersistenceUnitInfos. Used by
  * {@link org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean}
- * in order to obtain a {@link jakarta.persistence.spi.PersistenceUnitInfo}
- * for building a concrete {@link jakarta.persistence.EntityManagerFactory}.
+ * in order to obtain a {@link javax.persistence.spi.PersistenceUnitInfo}
+ * for building a concrete {@link javax.persistence.EntityManagerFactory}.
  *
  * <p>Obtaining a PersistenceUnitInfo instance is an exclusive process.
  * A PersistenceUnitInfo instance is not available for further calls

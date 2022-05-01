@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,8 +19,6 @@ package org.springframework.beans.factory;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.springframework.core.ResolvableType;
-import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 /**
@@ -34,10 +32,9 @@ import org.springframework.util.StringUtils;
 @SuppressWarnings("serial")
 public class NoUniqueBeanDefinitionException extends NoSuchBeanDefinitionException {
 
-	private final int numberOfBeansFound;
+	private int numberOfBeansFound;
 
-	@Nullable
-	private final Collection<String> beanNamesFound;
+	private Collection<String> beanNamesFound;
 
 
 	/**
@@ -49,7 +46,6 @@ public class NoUniqueBeanDefinitionException extends NoSuchBeanDefinitionExcepti
 	public NoUniqueBeanDefinitionException(Class<?> type, int numberOfBeansFound, String message) {
 		super(type, message);
 		this.numberOfBeansFound = numberOfBeansFound;
-		this.beanNamesFound = null;
 	}
 
 	/**
@@ -58,9 +54,8 @@ public class NoUniqueBeanDefinitionException extends NoSuchBeanDefinitionExcepti
 	 * @param beanNamesFound the names of all matching beans (as a Collection)
 	 */
 	public NoUniqueBeanDefinitionException(Class<?> type, Collection<String> beanNamesFound) {
-		super(type, "expected single matching bean but found " + beanNamesFound.size() + ": " +
+		this(type, beanNamesFound.size(), "expected single matching bean but found " + beanNamesFound.size() + ": " +
 				StringUtils.collectionToCommaDelimitedString(beanNamesFound));
-		this.numberOfBeansFound = beanNamesFound.size();
 		this.beanNamesFound = beanNamesFound;
 	}
 
@@ -70,29 +65,6 @@ public class NoUniqueBeanDefinitionException extends NoSuchBeanDefinitionExcepti
 	 * @param beanNamesFound the names of all matching beans (as an array)
 	 */
 	public NoUniqueBeanDefinitionException(Class<?> type, String... beanNamesFound) {
-		this(type, Arrays.asList(beanNamesFound));
-	}
-
-	/**
-	 * Create a new {@code NoUniqueBeanDefinitionException}.
-	 * @param type required type of the non-unique bean
-	 * @param beanNamesFound the names of all matching beans (as a Collection)
-	 * @since 5.1
-	 */
-	public NoUniqueBeanDefinitionException(ResolvableType type, Collection<String> beanNamesFound) {
-		super(type, "expected single matching bean but found " + beanNamesFound.size() + ": " +
-				StringUtils.collectionToCommaDelimitedString(beanNamesFound));
-		this.numberOfBeansFound = beanNamesFound.size();
-		this.beanNamesFound = beanNamesFound;
-	}
-
-	/**
-	 * Create a new {@code NoUniqueBeanDefinitionException}.
-	 * @param type required type of the non-unique bean
-	 * @param beanNamesFound the names of all matching beans (as an array)
-	 * @since 5.1
-	 */
-	public NoUniqueBeanDefinitionException(ResolvableType type, String... beanNamesFound) {
 		this(type, Arrays.asList(beanNamesFound));
 	}
 
@@ -113,7 +85,6 @@ public class NoUniqueBeanDefinitionException extends NoSuchBeanDefinitionExcepti
 	 * @since 4.3
 	 * @see #getBeanType()
 	 */
-	@Nullable
 	public Collection<String> getBeanNamesFound() {
 		return this.beanNamesFound;
 	}

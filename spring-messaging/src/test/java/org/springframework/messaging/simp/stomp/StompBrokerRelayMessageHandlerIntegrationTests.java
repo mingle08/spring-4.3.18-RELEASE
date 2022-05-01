@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,7 @@
 
 package org.springframework.messaging.simp.stomp;
 
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,13 +26,13 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.activemq.broker.BrokerService;
-import org.apache.activemq.broker.TransportConnector;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
 
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
@@ -48,17 +47,22 @@ import org.springframework.messaging.simp.broker.BrokerAvailabilityEvent;
 import org.springframework.messaging.support.ExecutorSubscribableChannel;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.Assert;
+import org.springframework.util.SocketUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * Integration tests for {@link StompBrokerRelayMessageHandler} running against ActiveMQ.
  *
  * @author Rossen Stoyanchev
- * @author Sam Brannen
  */
 public class StompBrokerRelayMessageHandlerIntegrationTests {
+
+	private static final Charset UTF_8 = Charset.forName("UTF-8");
+
+
+	@Rule
+	public final TestName testName = new TestName();
 
 	private static final Log logger = LogFactory.getLog(StompBrokerRelayMessageHandlerIntegrationTests.class);
 
@@ -72,61 +76,46 @@ public class StompBrokerRelayMessageHandlerIntegrationTests {
 
 	private TestEventPublisher eventPublisher;
 
-	// initial value of zero implies that a random ephemeral port should be used
-	private int port = 0;
+	private int port;
 
 
-	@BeforeEach
-	@SuppressWarnings("deprecation")
-	public void setup(TestInfo testInfo) throws Exception {
-		logger.debug("Setting up before '" + testInfo.getTestMethod().get().getName() + "'");
-
+	@Before
+	public void setUp() throws Exception {
+		logger.debug("Setting up before '" + this.testName.getMethodName() + "'");
+		this.port = SocketUtils.findAvailableTcpPort(61613);
 		this.responseChannel = new ExecutorSubscribableChannel();
 		this.responseHandler = new TestMessageHandler();
 		this.responseChannel.subscribe(this.responseHandler);
 		this.eventPublisher = new TestEventPublisher();
-		startActiveMQBroker();
+		startActiveMqBroker();
 		createAndStartRelay();
 	}
 
-	private void startActiveMQBroker() throws Exception {
-		TransportConnector stompConnector = createStompConnector(this.port);
+	private void startActiveMqBroker() throws Exception {
 		this.activeMQBroker = new BrokerService();
-		this.activeMQBroker.addConnector(stompConnector);
+		this.activeMQBroker.addConnector("stomp://localhost:" + this.port);
 		this.activeMQBroker.setStartAsync(false);
 		this.activeMQBroker.setPersistent(false);
 		this.activeMQBroker.setUseJmx(false);
 		this.activeMQBroker.getSystemUsage().getMemoryUsage().setLimit(1024 * 1024 * 5);
 		this.activeMQBroker.getSystemUsage().getTempUsage().setLimit(1024 * 1024 * 5);
 		this.activeMQBroker.start();
-
-		// Reuse existing ephemeral port on restart (i.e., the next time this method
-		// is invoked) since it will already be configured in the relay
-		this.port = (this.port != 0 ? this.port : stompConnector.getServer().getSocketAddress().getPort());
-	}
-
-	private TransportConnector createStompConnector(int port) throws Exception {
-		TransportConnector connector = new TransportConnector();
-		connector.setUri(new URI("stomp://localhost:" + port));
-		return connector;
 	}
 
 	private void createAndStartRelay() throws InterruptedException {
-		StubMessageChannel channel = new StubMessageChannel();
-		List<String> prefixes = Arrays.asList("/queue/", "/topic/");
-		this.relay = new StompBrokerRelayMessageHandler(channel, this.responseChannel, channel, prefixes);
+		this.relay = new StompBrokerRelayMessageHandler(new StubMessageChannel(),
+				this.responseChannel, new StubMessageChannel(), Arrays.asList("/queue/", "/topic/"));
 		this.relay.setRelayPort(this.port);
 		this.relay.setApplicationEventPublisher(this.eventPublisher);
 		this.relay.setSystemHeartbeatReceiveInterval(0);
 		this.relay.setSystemHeartbeatSendInterval(0);
-		this.relay.setPreservePublishOrder(true);
 
 		this.relay.start();
 		this.eventPublisher.expectBrokerAvailabilityEvent(true);
 	}
 
-	@AfterEach
-	public void stop() throws Exception {
+	@After
+	public void tearDown() throws Exception {
 		try {
 			logger.debug("STOMP broker relay stats: " + this.relay.getStatsInfo());
 			this.relay.stop();
@@ -143,9 +132,13 @@ public class StompBrokerRelayMessageHandlerIntegrationTests {
 			return;
 		}
 		final CountDownLatch latch = new CountDownLatch(1);
-		this.activeMQBroker.addShutdownHook(latch::countDown);
+		this.activeMQBroker.addShutdownHook(new Runnable() {
+			public void run() {
+				latch.countDown();
+			}
+		});
 		this.activeMQBroker.stop();
-		assertThat(latch.await(5, TimeUnit.SECONDS)).as("Broker did not stop").isTrue();
+		assertTrue("Broker did not stop", latch.await(5, TimeUnit.SECONDS));
 		logger.debug("Broker stopped");
 	}
 
@@ -174,21 +167,21 @@ public class StompBrokerRelayMessageHandlerIntegrationTests {
 		this.responseHandler.expectMessages(send);
 	}
 
-	@Test
+	@Test(expected = MessageDeliveryException.class)
 	public void messageDeliveryExceptionIfSystemSessionForwardFails() throws Exception {
+
 		logger.debug("Starting test messageDeliveryExceptionIfSystemSessionForwardFails()");
 
 		stopActiveMqBrokerAndAwait();
 		this.eventPublisher.expectBrokerAvailabilityEvent(false);
 
 		StompHeaderAccessor headers = StompHeaderAccessor.create(StompCommand.SEND);
-		assertThatExceptionOfType(MessageDeliveryException.class).isThrownBy(() ->
-				this.relay.handleMessage(MessageBuilder.createMessage("test".getBytes(), headers.getMessageHeaders())));
+		this.relay.handleMessage(MessageBuilder.createMessage("test".getBytes(), headers.getMessageHeaders()));
 	}
 
 	@Test
-	public void brokerBecomingUnavailableTriggersErrorFrame() throws Exception {
-		logger.debug("Starting test brokerBecomingUnavailableTriggersErrorFrame()");
+	public void brokerBecomingUnvailableTriggersErrorFrame() throws Exception {
+		logger.debug("Starting test brokerBecomingUnvailableTriggersErrorFrame()");
 
 		String sess1 = "sess1";
 		MessageExchange connect = MessageExchangeBuilder.connect(sess1).build();
@@ -230,7 +223,7 @@ public class StompBrokerRelayMessageHandlerIntegrationTests {
 
 		this.eventPublisher.expectBrokerAvailabilityEvent(false);
 
-		startActiveMQBroker();
+		startActiveMqBroker();
 		this.eventPublisher.expectBrokerAvailabilityEvent(true);
 	}
 
@@ -268,8 +261,8 @@ public class StompBrokerRelayMessageHandlerIntegrationTests {
 
 		public void expectBrokerAvailabilityEvent(boolean isBrokerAvailable) throws InterruptedException {
 			BrokerAvailabilityEvent event = this.eventQueue.poll(20000, TimeUnit.MILLISECONDS);
-			assertThat(event).as("Times out waiting for BrokerAvailabilityEvent[" + isBrokerAvailable + "]").isNotNull();
-			assertThat(event.isBrokerAvailable()).isEqualTo(isBrokerAvailable);
+			assertNotNull("Times out waiting for BrokerAvailabilityEvent[" + isBrokerAvailable + "]", event);
+			assertEquals(isBrokerAvailable, event.isBrokerAvailable());
 		}
 	}
 
@@ -287,12 +280,13 @@ public class StompBrokerRelayMessageHandlerIntegrationTests {
 		}
 
 		public void expectMessages(MessageExchange... messageExchanges) throws InterruptedException {
-			List<MessageExchange> expectedMessages = new ArrayList<>(Arrays.asList(messageExchanges));
+			List<MessageExchange> expectedMessages =
+					new ArrayList<MessageExchange>(Arrays.<MessageExchange>asList(messageExchanges));
 			while (expectedMessages.size() > 0) {
 				Message<?> message = this.queue.poll(10000, TimeUnit.MILLISECONDS);
-				assertThat(message).as("Timed out waiting for messages, expected [" + expectedMessages + "]").isNotNull();
+				assertNotNull("Timed out waiting for messages, expected [" + expectedMessages + "]", message);
 				MessageExchange match = findMatch(expectedMessages, message);
-				assertThat(match).as("Unexpected message=" + message + ", expected [" + expectedMessages + "]").isNotNull();
+				assertNotNull("Unexpected message=" + message + ", expected [" + expectedMessages + "]", match);
 				expectedMessages.remove(match);
 			}
 		}
@@ -402,8 +396,7 @@ public class StompBrokerRelayMessageHandlerIntegrationTests {
 		public static MessageExchangeBuilder send(String destination, String payload) {
 			SimpMessageHeaderAccessor headers = SimpMessageHeaderAccessor.create(SimpMessageType.MESSAGE);
 			headers.setDestination(destination);
-			Message<?> message = MessageBuilder.createMessage(payload.getBytes(StandardCharsets.UTF_8),
-					headers.getMessageHeaders());
+			Message<?> message = MessageBuilder.createMessage(payload.getBytes(UTF_8), headers.getMessageHeaders());
 			return new MessageExchangeBuilder(message);
 		}
 
@@ -463,7 +456,7 @@ public class StompBrokerRelayMessageHandlerIntegrationTests {
 		@Override
 		public final boolean match(Message<?> message) {
 			StompHeaderAccessor headers = StompHeaderAccessor.wrap(message);
-			if (!this.command.equals(headers.getCommand()) || !this.sessionId.equals(headers.getSessionId())) {
+			if (!this.command.equals(headers.getCommand()) || (this.sessionId != headers.getSessionId())) {
 				return false;
 			}
 			return matchInternal(headers, message.getPayload());
@@ -518,9 +511,7 @@ public class StompBrokerRelayMessageHandlerIntegrationTests {
 
 		@Override
 		protected boolean matchInternal(StompHeaderAccessor headers, Object payload) {
-			if (!this.subscriptionId.equals(headers.getSubscriptionId()) ||
-					!this.destination.equals(headers.getDestination())) {
-
+			if (!this.subscriptionId.equals(headers.getSubscriptionId()) ||  !this.destination.equals(headers.getDestination())) {
 				return false;
 			}
 			if (payload instanceof byte[] && this.payload instanceof byte[]) {
@@ -539,7 +530,7 @@ public class StompBrokerRelayMessageHandlerIntegrationTests {
 
 		protected String getPayloadAsText() {
 			return (this.payload instanceof byte[]) ?
-					new String((byte[]) this.payload, StandardCharsets.UTF_8) : this.payload.toString();
+					new String((byte[]) this.payload, UTF_8) : this.payload.toString();
 		}
 	}
 

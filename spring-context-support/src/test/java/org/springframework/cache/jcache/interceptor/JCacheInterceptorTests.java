@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,7 @@ package org.springframework.cache.jcache.interceptor;
 
 import java.lang.reflect.Method;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.cache.CacheManager;
@@ -29,8 +29,7 @@ import org.springframework.cache.interceptor.NamedCacheResolver;
 import org.springframework.cache.jcache.AbstractJCacheTests;
 import org.springframework.util.ReflectionUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.junit.Assert.*;
 
 /**
  * @author Stephane Nicoll
@@ -48,9 +47,15 @@ public class JCacheInterceptorTests extends AbstractJCacheTests {
 		AnnotatedJCacheableService service = new AnnotatedJCacheableService(cacheManager.getCache("default"));
 		Method m = ReflectionUtils.findMethod(AnnotatedJCacheableService.class, "cache", String.class);
 
-		assertThatIllegalStateException().isThrownBy(() ->
-				interceptor.execute(dummyInvoker, service, m, new Object[] {"myId"}))
-			.withMessageContaining("JSR-107 only supports a single cache");
+		try {
+			interceptor.execute(dummyInvoker, service, m, new Object[] {"myId"});
+		}
+		catch (IllegalStateException ex) {
+			assertTrue(ex.getMessage().contains("JSR-107 only supports a single cache"));
+		}
+		catch (Throwable ex) {
+			fail("Unexpected: " + ex);
+		}
 	}
 
 	@Test
@@ -61,15 +66,22 @@ public class JCacheInterceptorTests extends AbstractJCacheTests {
 
 		AnnotatedJCacheableService service = new AnnotatedJCacheableService(cacheManager.getCache("default"));
 		Method m = ReflectionUtils.findMethod(AnnotatedJCacheableService.class, "cache", String.class);
-		assertThatIllegalStateException().isThrownBy(() ->
-				interceptor.execute(dummyInvoker, service, m, new Object[] {"myId"}))
-			.withMessageContaining("Cache could not have been resolved for");
+
+		try {
+			interceptor.execute(dummyInvoker, service, m, new Object[] {"myId"});
+		}
+		catch (IllegalStateException ex) {
+			assertTrue(ex.getMessage().contains("Cache could not have been resolved for"));
+		}
+		catch (Throwable ex) {
+			fail("Unexpected: " + ex);
+		}
 	}
 
 	@Test
 	public void cacheManagerMandatoryIfCacheResolverNotSet() {
-		assertThatIllegalStateException().isThrownBy(() ->
-				createOperationSource(null, null, null, defaultKeyGenerator));
+		thrown.expect(IllegalStateException.class);
+		createOperationSource(null, null, null, defaultKeyGenerator);
 	}
 
 	@Test
@@ -87,9 +99,9 @@ public class JCacheInterceptorTests extends AbstractJCacheTests {
 
 		CacheOperationInvoker invoker = new DummyInvoker(0L);
 		Object execute = interceptor.execute(invoker, service, method, new Object[] {"myId"});
-		assertThat(execute).as("result cannot be null.").isNotNull();
-		assertThat(execute.getClass()).as("Wrong result type").isEqualTo(Long.class);
-		assertThat(execute).as("Wrong result").isEqualTo(0L);
+		assertNotNull("result cannot be null.", execute);
+		assertEquals("Wrong result type", Long.class, execute.getClass());
+		assertEquals("Wrong result", 0L, execute);
 	}
 
 	protected JCacheOperationSource createOperationSource(CacheManager cacheManager,
@@ -101,6 +113,7 @@ public class JCacheInterceptorTests extends AbstractJCacheTests {
 		source.setExceptionCacheResolver(exceptionCacheResolver);
 		source.setKeyGenerator(keyGenerator);
 		source.setBeanFactory(new StaticListableBeanFactory());
+		source.afterPropertiesSet();
 		source.afterSingletonsInstantiated();
 		return source;
 	}

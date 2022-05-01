@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,8 +17,7 @@
 package org.springframework.web.socket.sockjs.transport.handler;
 
 import java.util.Map;
-
-import jakarta.servlet.ServletContext;
+import javax.servlet.ServletContext;
 
 import org.springframework.context.Lifecycle;
 import org.springframework.http.server.ServerHttpRequest;
@@ -107,7 +106,7 @@ public class WebSocketTransportHandler extends AbstractTransportHandler
 
 	@Override
 	public boolean checkSessionType(SockJsSession session) {
-		return (session instanceof WebSocketServerSockJsSession);
+		return session instanceof WebSocketServerSockJsSession;
 	}
 
 	@Override
@@ -124,7 +123,7 @@ public class WebSocketTransportHandler extends AbstractTransportHandler
 			wsHandler = new SockJsWebSocketHandler(getServiceConfig(), wsHandler, sockJsSession);
 			this.handshakeHandler.doHandshake(request, response, wsHandler, sockJsSession.getAttributes());
 		}
-		catch (Exception ex) {
+		catch (Throwable ex) {
 			sockJsSession.tryCloseWithSockJsTransportError(ex, CloseStatus.SERVER_ERROR);
 			throw new SockJsTransportFailureException("WebSocket handshake failure", wsSession.getId(), ex);
 		}

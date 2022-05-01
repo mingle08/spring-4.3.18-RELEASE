@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,11 +16,9 @@
 
 package org.springframework.jms.support.converter;
 
-import jakarta.jms.JMSException;
-import jakarta.jms.Message;
-import jakarta.jms.Session;
-
-import org.springframework.lang.Nullable;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.Session;
 
 /**
  * An extended {@link MessageConverter} SPI with conversion hint support.
@@ -43,11 +41,11 @@ public interface SmartMessageConverter extends MessageConverter {
 	 * @param conversionHint an extra object passed to the {@link MessageConverter},
 	 * e.g. the associated {@code MethodParameter} (may be {@code null}}
 	 * @return the JMS Message
-	 * @throws jakarta.jms.JMSException if thrown by JMS API methods
+	 * @throws javax.jms.JMSException if thrown by JMS API methods
 	 * @throws MessageConversionException in case of conversion failure
 	 * @see #toMessage(Object, Session)
 	 */
-	Message toMessage(Object object, Session session, @Nullable Object conversionHint)
+	Message toMessage(Object object, Session session, Object conversionHint)
 			throws JMSException, MessageConversionException;
 
 }

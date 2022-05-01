@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,14 +19,14 @@ package org.springframework.jms.config;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageListener;
+import javax.jms.Session;
+import javax.jms.TextMessage;
 
-import jakarta.jms.JMSException;
-import jakarta.jms.Message;
-import jakarta.jms.MessageListener;
-import jakarta.jms.Session;
-import jakarta.jms.TextMessage;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
@@ -41,8 +41,8 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.util.ReflectionUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Stephane Nicoll
@@ -58,7 +58,7 @@ public class JmsListenerContainerFactoryIntegrationTests {
 	private JmsEndpointSampleInterface listener = sample;
 
 
-	@BeforeEach
+	@Before
 	public void setup() {
 		initializeFactory(factory);
 	}
@@ -135,7 +135,7 @@ public class JmsListenerContainerFactoryIntegrationTests {
 	}
 
 	private void assertListenerMethodInvocation(String methodName) {
-		assertThat((boolean) sample.invocations.get(methodName)).as("Method " + methodName + " should have been invoked").isTrue();
+		assertTrue("Method " + methodName + " should have been invoked", sample.invocations.get(methodName));
 	}
 
 	private MethodJmsListenerEndpoint createMethodJmsEndpoint(DefaultMessageHandlerMethodFactory factory, Method method) {
@@ -164,13 +164,12 @@ public class JmsListenerContainerFactoryIntegrationTests {
 
 	static class JmsEndpointSampleBean implements JmsEndpointSampleInterface {
 
-		private final Map<String, Boolean> invocations = new HashMap<>();
+		private final Map<String, Boolean> invocations = new HashMap<String, Boolean>();
 
-		@Override
 		public void handleIt(@Payload String msg, @Header("my-header") String myHeader) {
 			invocations.put("handleIt", true);
-			assertThat(msg).as("Unexpected payload message").isEqualTo("FOO-BAR");
-			assertThat(myHeader).as("Unexpected header value").isEqualTo("my-value");
+			assertEquals("Unexpected payload message", "FOO-BAR", msg);
+			assertEquals("Unexpected header value", "my-value", myHeader);
 		}
 	}
 

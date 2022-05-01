@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.context.Lifecycle;
 import org.springframework.http.HttpHeaders;
@@ -34,7 +34,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import org.springframework.web.socket.handler.WebSocketHandlerDecorator;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Test fixture for {@link WebSocketConnectionManager}.
@@ -58,13 +58,13 @@ public class WebSocketConnectionManagerTests {
 		WebSocketHttpHeaders expectedHeaders = new WebSocketHttpHeaders();
 		expectedHeaders.setSecWebSocketProtocol(subprotocols);
 
-		assertThat(client.headers).isEqualTo(expectedHeaders);
-		assertThat(client.uri).isEqualTo(new URI("/path/123"));
+		assertEquals(expectedHeaders, client.headers);
+		assertEquals(new URI("/path/123"), client.uri);
 
 		WebSocketHandlerDecorator loggingHandler = (WebSocketHandlerDecorator) client.webSocketHandler;
-		assertThat(loggingHandler.getClass()).isEqualTo(LoggingWebSocketHandlerDecorator.class);
+		assertEquals(LoggingWebSocketHandlerDecorator.class, loggingHandler.getClass());
 
-		assertThat(loggingHandler.getDelegate()).isSameAs(handler);
+		assertSame(handler, loggingHandler.getDelegate());
 	}
 
 	@Test
@@ -74,10 +74,10 @@ public class WebSocketConnectionManagerTests {
 		WebSocketConnectionManager manager = new WebSocketConnectionManager(client, handler , "/a");
 
 		manager.startInternal();
-		assertThat(client.isRunning()).isTrue();
+		assertTrue(client.isRunning());
 
 		manager.stopInternal();
-		assertThat(client.isRunning()).isFalse();
+		assertFalse(client.isRunning());
 	}
 
 
@@ -112,17 +112,13 @@ public class WebSocketConnectionManagerTests {
 		}
 
 		@Override
-		public ListenableFuture<WebSocketSession> doHandshake(WebSocketHandler handler,
-				String uriTemplate, Object... uriVars) {
-
+		public ListenableFuture<WebSocketSession> doHandshake(WebSocketHandler handler, String uriTemplate, Object... uriVars) {
 			URI uri = UriComponentsBuilder.fromUriString(uriTemplate).buildAndExpand(uriVars).encode().toUri();
 			return doHandshake(handler, null, uri);
 		}
 
 		@Override
-		public ListenableFuture<WebSocketSession> doHandshake(WebSocketHandler handler,
-				WebSocketHttpHeaders headers, URI uri) {
-
+		public ListenableFuture<WebSocketSession> doHandshake(WebSocketHandler handler, WebSocketHttpHeaders headers, URI uri) {
 			this.webSocketHandler = handler;
 			this.headers = headers;
 			this.uri = uri;

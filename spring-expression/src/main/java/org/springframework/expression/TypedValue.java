@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@
 package org.springframework.expression;
 
 import org.springframework.core.convert.TypeDescriptor;
-import org.springframework.lang.Nullable;
 import org.springframework.util.ObjectUtils;
 
 /**
@@ -31,16 +30,11 @@ import org.springframework.util.ObjectUtils;
  */
 public class TypedValue {
 
-	/**
-	 * {@link TypedValue} for {@code null}.
-	 */
 	public static final TypedValue NULL = new TypedValue(null);
 
 
-	@Nullable
 	private final Object value;
 
-	@Nullable
 	private TypeDescriptor typeDescriptor;
 
 
@@ -49,7 +43,7 @@ public class TypedValue {
 	 * is inferred from the object, so no generic declarations are preserved.
 	 * @param value the object value
 	 */
-	public TypedValue(@Nullable Object value) {
+	public TypedValue(Object value) {
 		this.value = value;
 		this.typeDescriptor = null;  // initialized when/if requested
 	}
@@ -60,18 +54,16 @@ public class TypedValue {
 	 * @param value the object value
 	 * @param typeDescriptor a type descriptor describing the type of the value
 	 */
-	public TypedValue(@Nullable Object value, @Nullable TypeDescriptor typeDescriptor) {
+	public TypedValue(Object value, TypeDescriptor typeDescriptor) {
 		this.value = value;
 		this.typeDescriptor = typeDescriptor;
 	}
 
 
-	@Nullable
 	public Object getValue() {
 		return this.value;
 	}
 
-	@Nullable
 	public TypeDescriptor getTypeDescriptor() {
 		if (this.typeDescriptor == null && this.value != null) {
 			this.typeDescriptor = TypeDescriptor.forObject(this.value);
@@ -81,13 +73,14 @@ public class TypedValue {
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}
-		if (!(other instanceof TypedValue otherTv)) {
+		if (!(other instanceof TypedValue)) {
 			return false;
 		}
+		TypedValue otherTv = (TypedValue) other;
 		// Avoid TypeDescriptor initialization if not necessary
 		return (ObjectUtils.nullSafeEquals(this.value, otherTv.value) &&
 				((this.typeDescriptor == null && otherTv.typeDescriptor == null) ||

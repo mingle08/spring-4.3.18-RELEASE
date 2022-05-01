@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,11 +18,10 @@ package org.springframework.jdbc.object;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
-
 import javax.sql.DataSource;
 
 import org.springframework.dao.DataAccessException;
@@ -47,7 +46,7 @@ import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 public class BatchSqlUpdate extends SqlUpdate {
 
 	/**
-	 * Default number of inserts to accumulate before committing a batch (5000).
+	 * Default number of inserts to accumulate before commiting a batch (5000).
 	 */
 	public static final int DEFAULT_BATCH_SIZE = 5000;
 
@@ -56,9 +55,9 @@ public class BatchSqlUpdate extends SqlUpdate {
 
 	private boolean trackRowsAffected = true;
 
-	private final Deque<Object[]> parameterQueue = new ArrayDeque<>();
+	private final LinkedList<Object[]> parameterQueue = new LinkedList<Object[]>();
 
-	private final List<Integer> rowsAffected = new ArrayList<>();
+	private final List<Integer> rowsAffected = new ArrayList<Integer>();
 
 
 	/**
@@ -73,8 +72,8 @@ public class BatchSqlUpdate extends SqlUpdate {
 
 	/**
 	 * Construct an update object with a given DataSource and SQL.
-	 * @param ds the DataSource to use to obtain connections
-	 * @param sql the SQL statement to execute
+	 * @param ds DataSource to use to obtain connections
+	 * @param sql SQL statement to execute
 	 */
 	public BatchSqlUpdate(DataSource ds, String sql) {
 		super(ds, sql);
@@ -83,9 +82,9 @@ public class BatchSqlUpdate extends SqlUpdate {
 	/**
 	 * Construct an update object with a given DataSource, SQL
 	 * and anonymous parameters.
-	 * @param ds the DataSource to use to obtain connections
-	 * @param sql the SQL statement to execute
-	 * @param types the SQL types of the parameters, as defined in the
+	 * @param ds DataSource to use to obtain connections
+	 * @param sql SQL statement to execute
+	 * @param types SQL types of the parameters, as defined in the
 	 * {@code java.sql.Types} class
 	 * @see java.sql.Types
 	 */
@@ -97,9 +96,9 @@ public class BatchSqlUpdate extends SqlUpdate {
 	 * Construct an update object with a given DataSource, SQL,
 	 * anonymous parameters and specifying the maximum number of rows
 	 * that may be affected.
-	 * @param ds the DataSource to use to obtain connections
-	 * @param sql the SQL statement to execute
-	 * @param types the SQL types of the parameters, as defined in the
+	 * @param ds DataSource to use to obtain connections
+	 * @param sql SQL statement to execute
+	 * @param types SQL types of the parameters, as defined in the
 	 * {@code java.sql.Types} class
 	 * @param batchSize the number of statements that will trigger
 	 * an automatic intermediate flush
@@ -183,7 +182,7 @@ public class BatchSqlUpdate extends SqlUpdate {
 		}
 
 		int[] rowsAffected = getJdbcTemplate().batchUpdate(
-				resolveSql(),
+				getSql(),
 				new BatchPreparedStatementSetter() {
 					@Override
 					public int getBatchSize() {
@@ -230,8 +229,9 @@ public class BatchSqlUpdate extends SqlUpdate {
 	 */
 	public int[] getRowsAffected() {
 		int[] result = new int[this.rowsAffected.size()];
-		for (int i = 0; i < this.rowsAffected.size(); i++) {
-			result[i] = this.rowsAffected.get(i);
+		int i = 0;
+		for (Iterator<Integer> it = this.rowsAffected.iterator(); it.hasNext(); i++) {
+			result[i] = it.next();
 		}
 		return result;
 	}

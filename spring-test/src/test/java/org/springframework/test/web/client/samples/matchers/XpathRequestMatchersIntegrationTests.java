@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,20 +17,19 @@
 package org.springframework.test.web.client.samples.matchers;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
+import javax.xml.bind.annotation.XmlRootElement;
 
-import jakarta.xml.bind.annotation.XmlAccessType;
-import jakarta.xml.bind.annotation.XmlAccessorType;
-import jakarta.xml.bind.annotation.XmlElement;
-import jakarta.xml.bind.annotation.XmlElementWrapper;
-import jakarta.xml.bind.annotation.XmlRootElement;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.xml.Jaxb2RootElementHttpMessageConverter;
@@ -38,14 +37,9 @@ import org.springframework.test.web.Person;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestTemplate;
 
-import static org.hamcrest.Matchers.closeTo;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.xpath;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+import static org.hamcrest.Matchers.*;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
 
 /**
  * Examples of defining expectations on XML request content with XPath expressions.
@@ -57,7 +51,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 public class XpathRequestMatchersIntegrationTests {
 
 	private static final Map<String, String> NS =
-			Collections.singletonMap("ns", "https://example.org/music/people");
+			Collections.singletonMap("ns", "http://example.org/music/people");
 
 
 	private MockRestServiceServer mockServer;
@@ -67,7 +61,7 @@ public class XpathRequestMatchersIntegrationTests {
 	private PeopleWrapper people;
 
 
-	@BeforeEach
+	@Before
 	public void setup() {
 		List<Person> composers = Arrays.asList(
 				new Person("Johann Sebastian Bach").setSomeDouble(21),
@@ -106,7 +100,8 @@ public class XpathRequestMatchersIntegrationTests {
 			.andExpect(xpath(performer, NS, 2).exists())
 			.andRespond(withSuccess());
 
-		executeAndVerify();
+		this.restTemplate.put(new URI("/composers"), this.people);
+		this.mockServer.verify();
 	}
 
 	@Test
@@ -122,7 +117,8 @@ public class XpathRequestMatchersIntegrationTests {
 			.andExpect(xpath(performer, NS, 3).doesNotExist())
 			.andRespond(withSuccess());
 
-		executeAndVerify();
+		this.restTemplate.put(new URI("/composers"), this.people);
+		this.mockServer.verify();
 	}
 
 	@Test
@@ -143,7 +139,8 @@ public class XpathRequestMatchersIntegrationTests {
 			.andExpect(xpath(composerName, NS, 1).string(notNullValue())) // Hamcrest..
 			.andRespond(withSuccess());
 
-		executeAndVerify();
+		this.restTemplate.put(new URI("/composers"), this.people);
+		this.mockServer.verify();
 	}
 
 	@Test
@@ -160,7 +157,8 @@ public class XpathRequestMatchersIntegrationTests {
 			.andExpect(xpath(composerDouble, NS, 3).number(closeTo(1.6, .01))) // Hamcrest..
 			.andRespond(withSuccess());
 
-		executeAndVerify();
+		this.restTemplate.put(new URI("/composers"), this.people);
+		this.mockServer.verify();
 	}
 
 	@Test
@@ -174,7 +172,8 @@ public class XpathRequestMatchersIntegrationTests {
 			.andExpect(xpath(performerBooleanValue, NS, 2).booleanValue(true))
 			.andRespond(withSuccess());
 
-		executeAndVerify();
+		this.restTemplate.put(new URI("/composers"), this.people);
+		this.mockServer.verify();
 	}
 
 	@Test
@@ -187,17 +186,13 @@ public class XpathRequestMatchersIntegrationTests {
 			.andExpect(xpath("/ns:people/performers/performer", NS).nodeCount(equalTo(2))) // Hamcrest..
 			.andRespond(withSuccess());
 
-		executeAndVerify();
-	}
-
-	private void executeAndVerify() throws URISyntaxException {
 		this.restTemplate.put(new URI("/composers"), this.people);
 		this.mockServer.verify();
 	}
 
 
 	@SuppressWarnings("unused")
-	@XmlRootElement(name="people", namespace="https://example.org/music/people")
+	@XmlRootElement(name="people", namespace="http://example.org/music/people")
 	@XmlAccessorType(XmlAccessType.FIELD)
 	private static class PeopleWrapper {
 

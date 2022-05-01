@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,12 +19,11 @@ package org.springframework.oxm.jaxb;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import jakarta.xml.bind.annotation.XmlEnum;
-import jakarta.xml.bind.annotation.XmlRegistry;
-import jakarta.xml.bind.annotation.XmlRootElement;
-import jakarta.xml.bind.annotation.XmlSeeAlso;
-import jakarta.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.XmlEnum;
+import javax.xml.bind.annotation.XmlRegistry;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlSeeAlso;
+import javax.xml.bind.annotation.XmlType;
 
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -34,7 +33,6 @@ import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.core.type.filter.TypeFilter;
-import org.springframework.lang.Nullable;
 import org.springframework.oxm.UncategorizedMappingException;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
@@ -66,7 +64,7 @@ class ClassPathJaxb2TypeScanner {
 	private final String[] packagesToScan;
 
 
-	public ClassPathJaxb2TypeScanner(@Nullable ClassLoader classLoader, String... packagesToScan) {
+	public ClassPathJaxb2TypeScanner(ClassLoader classLoader, String... packagesToScan) {
 		Assert.notEmpty(packagesToScan, "'packagesToScan' must not be empty");
 		this.resourcePatternResolver = new PathMatchingResourcePatternResolver(classLoader);
 		this.packagesToScan = packagesToScan;
@@ -79,7 +77,7 @@ class ClassPathJaxb2TypeScanner {
 	 */
 	public Class<?>[] scanPackages() throws UncategorizedMappingException {
 		try {
-			List<Class<?>> jaxb2Classes = new ArrayList<>();
+			List<Class<?>> jaxb2Classes = new ArrayList<Class<?>>();
 			for (String packageToScan : this.packagesToScan) {
 				String pattern = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +
 						ClassUtils.convertClassNameToResourcePath(packageToScan) + RESOURCE_PATTERN;
@@ -89,8 +87,7 @@ class ClassPathJaxb2TypeScanner {
 					MetadataReader metadataReader = metadataReaderFactory.getMetadataReader(resource);
 					if (isJaxb2Class(metadataReader, metadataReaderFactory)) {
 						String className = metadataReader.getClassMetadata().getClassName();
-						Class<?> jaxb2AnnotatedClass =
-								ClassUtils.forName(className, this.resourcePatternResolver.getClassLoader());
+						Class<?> jaxb2AnnotatedClass = this.resourcePatternResolver.getClassLoader().loadClass(className);
 						jaxb2Classes.add(jaxb2AnnotatedClass);
 					}
 				}

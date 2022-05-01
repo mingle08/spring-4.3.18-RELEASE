@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.core.env;
 
 import java.util.Map;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -88,7 +87,6 @@ public class SystemEnvironmentPropertySource extends MapPropertySource {
 	 * any underscore/uppercase variant thereof exists in this property source.
 	 */
 	@Override
-	@Nullable
 	public Object getProperty(String name) {
 		String actualName = resolvePropertyName(name);
 		if (logger.isDebugEnabled() && !name.equals(actualName)) {
@@ -103,7 +101,7 @@ public class SystemEnvironmentPropertySource extends MapPropertySource {
 	 * any underscore / uppercase variation thereof. Return the resolved name if one is
 	 * found or otherwise the original name. Never returns {@code null}.
 	 */
-	protected final String resolvePropertyName(String name) {
+	private String resolvePropertyName(String name) {
 		Assert.notNull(name, "Property name must not be null");
 		String resolvedName = checkPropertyName(name);
 		if (resolvedName != null) {
@@ -119,29 +117,36 @@ public class SystemEnvironmentPropertySource extends MapPropertySource {
 		return name;
 	}
 
-	@Nullable
 	private String checkPropertyName(String name) {
 		// Check name as-is
-		if (this.source.containsKey(name)) {
+		if (containsKey(name)) {
 			return name;
 		}
 		// Check name with just dots replaced
 		String noDotName = name.replace('.', '_');
-		if (!name.equals(noDotName) && this.source.containsKey(noDotName)) {
+		if (!name.equals(noDotName) && containsKey(noDotName)) {
 			return noDotName;
 		}
 		// Check name with just hyphens replaced
 		String noHyphenName = name.replace('-', '_');
-		if (!name.equals(noHyphenName) && this.source.containsKey(noHyphenName)) {
+		if (!name.equals(noHyphenName) && containsKey(noHyphenName)) {
 			return noHyphenName;
 		}
 		// Check name with dots and hyphens replaced
 		String noDotNoHyphenName = noDotName.replace('-', '_');
-		if (!noDotName.equals(noDotNoHyphenName) && this.source.containsKey(noDotNoHyphenName)) {
+		if (!noDotName.equals(noDotNoHyphenName) && containsKey(noDotNoHyphenName)) {
 			return noDotNoHyphenName;
 		}
 		// Give up
 		return null;
+	}
+
+	private boolean containsKey(String name) {
+		return (isSecurityManagerPresent() ? this.source.keySet().contains(name) : this.source.containsKey(name));
+	}
+
+	protected boolean isSecurityManagerPresent() {
+		return (System.getSecurityManager() != null);
 	}
 
 }

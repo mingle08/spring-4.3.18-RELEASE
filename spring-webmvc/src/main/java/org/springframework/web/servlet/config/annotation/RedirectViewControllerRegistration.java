@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,8 +17,7 @@
 package org.springframework.web.servlet.config.annotation;
 
 import org.springframework.context.ApplicationContext;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.lang.Nullable;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.web.servlet.mvc.ParameterizableViewController;
 import org.springframework.web.servlet.view.RedirectView;
@@ -53,7 +52,7 @@ public class RedirectViewControllerRegistration {
 	 * <p>If not set, {@link org.springframework.web.servlet.view.RedirectView}
 	 * will select {@code HttpStatus.MOVED_TEMPORARILY (302)} by default.
 	 */
-	public RedirectViewControllerRegistration setStatusCode(HttpStatusCode statusCode) {
+	public RedirectViewControllerRegistration setStatusCode(HttpStatus statusCode) {
 		Assert.isTrue(statusCode.is3xxRedirection(), "Not a redirect status code");
 		this.redirectView.setStatusCode(statusCode);
 		return this;
@@ -80,7 +79,7 @@ public class RedirectViewControllerRegistration {
 		return this;
 	}
 
-	protected void setApplicationContext(@Nullable ApplicationContext applicationContext) {
+	protected void setApplicationContext(ApplicationContext applicationContext) {
 		this.controller.setApplicationContext(applicationContext);
 		this.redirectView.setApplicationContext(applicationContext);
 	}

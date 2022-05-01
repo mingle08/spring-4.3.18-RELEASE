@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,7 +28,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
-import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.method.ControllerAdviceBean;
 
@@ -42,34 +41,45 @@ import org.springframework.web.method.ControllerAdviceBean;
  */
 class RequestResponseBodyAdviceChain implements RequestBodyAdvice, ResponseBodyAdvice<Object> {
 
-	private final List<Object> requestBodyAdvice = new ArrayList<>(4);
+	private final List<Object> requestBodyAdvice = new ArrayList<Object>(4);
 
-	private final List<Object> responseBodyAdvice = new ArrayList<>(4);
+	private final List<Object> responseBodyAdvice = new ArrayList<Object>(4);
 
 
 	/**
 	 * Create an instance from a list of objects that are either of type
 	 * {@code ControllerAdviceBean} or {@code RequestBodyAdvice}.
 	 */
-	public RequestResponseBodyAdviceChain(@Nullable List<Object> requestResponseBodyAdvice) {
-		this.requestBodyAdvice.addAll(getAdviceByType(requestResponseBodyAdvice, RequestBodyAdvice.class));
-		this.responseBodyAdvice.addAll(getAdviceByType(requestResponseBodyAdvice, ResponseBodyAdvice.class));
+	public RequestResponseBodyAdviceChain(List<Object> requestResponseBodyAdvice) {
+		initAdvice(requestResponseBodyAdvice);
 	}
 
-	@SuppressWarnings("unchecked")
-	static <T> List<T> getAdviceByType(@Nullable List<Object> requestResponseBodyAdvice, Class<T> adviceType) {
-		if (requestResponseBodyAdvice != null) {
-			List<T> result = new ArrayList<>();
-			for (Object advice : requestResponseBodyAdvice) {
-				Class<?> beanType = (advice instanceof ControllerAdviceBean adviceBean ?
-						adviceBean.getBeanType() : advice.getClass());
-				if (beanType != null && adviceType.isAssignableFrom(beanType)) {
-					result.add((T) advice);
-				}
-			}
-			return result;
+	private void initAdvice(List<Object> requestResponseBodyAdvice) {
+		if (requestResponseBodyAdvice == null) {
+			return;
 		}
-		return Collections.emptyList();
+		for (Object advice : requestResponseBodyAdvice) {
+			Class<?> beanType = (advice instanceof ControllerAdviceBean ?
+					((ControllerAdviceBean) advice).getBeanType() : advice.getClass());
+			if (RequestBodyAdvice.class.isAssignableFrom(beanType)) {
+				this.requestBodyAdvice.add(advice);
+			}
+			else if (ResponseBodyAdvice.class.isAssignableFrom(beanType)) {
+				this.responseBodyAdvice.add(advice);
+			}
+		}
+	}
+
+	private List<Object> getAdvice(Class<?> adviceType) {
+		if (RequestBodyAdvice.class == adviceType) {
+			return this.requestBodyAdvice;
+		}
+		else if (ResponseBodyAdvice.class == adviceType) {
+			return this.responseBodyAdvice;
+		}
+		else {
+			throw new IllegalArgumentException("Unexpected adviceType: " + adviceType);
+		}
 	}
 
 
@@ -81,6 +91,18 @@ class RequestResponseBodyAdviceChain implements RequestBodyAdvice, ResponseBodyA
 	@Override
 	public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
 		throw new UnsupportedOperationException("Not implemented");
+	}
+
+	@Override
+	public Object handleEmptyBody(Object body, HttpInputMessage inputMessage, MethodParameter parameter,
+			Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
+
+		for (RequestBodyAdvice advice : getMatchingAdvice(parameter, RequestBodyAdvice.class)) {
+			if (advice.supports(parameter, targetType, converterType)) {
+				body = advice.handleEmptyBody(body, inputMessage, parameter, targetType, converterType);
+			}
+		}
+		return body;
 	}
 
 	@Override
@@ -108,31 +130,15 @@ class RequestResponseBodyAdviceChain implements RequestBodyAdvice, ResponseBodyA
 	}
 
 	@Override
-	@Nullable
-	public Object beforeBodyWrite(@Nullable Object body, MethodParameter returnType, MediaType contentType,
+	public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType contentType,
 			Class<? extends HttpMessageConverter<?>> converterType,
 			ServerHttpRequest request, ServerHttpResponse response) {
 
 		return processBody(body, returnType, contentType, converterType, request, response);
 	}
 
-	@Override
-	@Nullable
-	public Object handleEmptyBody(@Nullable Object body, HttpInputMessage inputMessage, MethodParameter parameter,
-			Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
-
-		for (RequestBodyAdvice advice : getMatchingAdvice(parameter, RequestBodyAdvice.class)) {
-			if (advice.supports(parameter, targetType, converterType)) {
-				body = advice.handleEmptyBody(body, inputMessage, parameter, targetType, converterType);
-			}
-		}
-		return body;
-	}
-
-
 	@SuppressWarnings("unchecked")
-	@Nullable
-	private <T> Object processBody(@Nullable Object body, MethodParameter returnType, MediaType contentType,
+	private <T> Object processBody(Object body, MethodParameter returnType, MediaType contentType,
 			Class<? extends HttpMessageConverter<?>> converterType,
 			ServerHttpRequest request, ServerHttpResponse response) {
 
@@ -151,9 +157,10 @@ class RequestResponseBodyAdviceChain implements RequestBodyAdvice, ResponseBodyA
 		if (CollectionUtils.isEmpty(availableAdvice)) {
 			return Collections.emptyList();
 		}
-		List<A> result = new ArrayList<>(availableAdvice.size());
+		List<A> result = new ArrayList<A>(availableAdvice.size());
 		for (Object advice : availableAdvice) {
-			if (advice instanceof ControllerAdviceBean adviceBean) {
+			if (advice instanceof ControllerAdviceBean) {
+				ControllerAdviceBean adviceBean = (ControllerAdviceBean) advice;
 				if (!adviceBean.isApplicableToBeanType(parameter.getContainingClass())) {
 					continue;
 				}
@@ -164,18 +171,6 @@ class RequestResponseBodyAdviceChain implements RequestBodyAdvice, ResponseBodyA
 			}
 		}
 		return result;
-	}
-
-	private List<Object> getAdvice(Class<?> adviceType) {
-		if (RequestBodyAdvice.class == adviceType) {
-			return this.requestBodyAdvice;
-		}
-		else if (ResponseBodyAdvice.class == adviceType) {
-			return this.responseBodyAdvice;
-		}
-		else {
-			throw new IllegalArgumentException("Unexpected adviceType: " + adviceType);
-		}
 	}
 
 }

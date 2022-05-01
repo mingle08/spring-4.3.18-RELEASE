@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,10 +17,8 @@
 package org.springframework.aop.support;
 
 import java.io.Serializable;
-import java.util.Arrays;
 
 import org.springframework.aop.ClassFilter;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
@@ -30,7 +28,6 @@ import org.springframework.util.ObjectUtils;
  * @author Rod Johnson
  * @author Rob Harrop
  * @author Juergen Hoeller
- * @author Sam Brannen
  * @since 11.11.2003
  * @see MethodMatchers
  * @see Pointcuts
@@ -92,9 +89,9 @@ public abstract class ClassFilters {
 	@SuppressWarnings("serial")
 	private static class UnionClassFilter implements ClassFilter, Serializable {
 
-		private final ClassFilter[] filters;
+		private ClassFilter[] filters;
 
-		UnionClassFilter(ClassFilter[] filters) {
+		public UnionClassFilter(ClassFilter[] filters) {
 			this.filters = filters;
 		}
 
@@ -109,7 +106,7 @@ public abstract class ClassFilters {
 		}
 
 		@Override
-		public boolean equals(@Nullable Object other) {
+		public boolean equals(Object other) {
 			return (this == other || (other instanceof UnionClassFilter &&
 					ObjectUtils.nullSafeEquals(this.filters, ((UnionClassFilter) other).filters)));
 		}
@@ -118,12 +115,6 @@ public abstract class ClassFilters {
 		public int hashCode() {
 			return ObjectUtils.nullSafeHashCode(this.filters);
 		}
-
-		@Override
-		public String toString() {
-			return getClass().getName() + ": " + Arrays.toString(this.filters);
-		}
-
 	}
 
 
@@ -133,9 +124,9 @@ public abstract class ClassFilters {
 	@SuppressWarnings("serial")
 	private static class IntersectionClassFilter implements ClassFilter, Serializable {
 
-		private final ClassFilter[] filters;
+		private ClassFilter[] filters;
 
-		IntersectionClassFilter(ClassFilter[] filters) {
+		public IntersectionClassFilter(ClassFilter[] filters) {
 			this.filters = filters;
 		}
 
@@ -150,7 +141,7 @@ public abstract class ClassFilters {
 		}
 
 		@Override
-		public boolean equals(@Nullable Object other) {
+		public boolean equals(Object other) {
 			return (this == other || (other instanceof IntersectionClassFilter &&
 					ObjectUtils.nullSafeEquals(this.filters, ((IntersectionClassFilter) other).filters)));
 		}
@@ -159,12 +150,6 @@ public abstract class ClassFilters {
 		public int hashCode() {
 			return ObjectUtils.nullSafeHashCode(this.filters);
 		}
-
-		@Override
-		public String toString() {
-			return getClass().getName() + ": " + Arrays.toString(this.filters);
-		}
-
 	}
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,9 +21,9 @@ import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
-
-import org.springframework.lang.Nullable;
 
 /**
  * Miscellaneous utility methods for number conversion and parsing.
@@ -44,15 +44,21 @@ public abstract class NumberUtils {
 	 * Standard number types (all immutable):
 	 * Byte, Short, Integer, Long, BigInteger, Float, Double, BigDecimal.
 	 */
-	public static final Set<Class<?>> STANDARD_NUMBER_TYPES = Set.of(
-			Byte.class,
-			Short.class,
-			Integer.class,
-			Long.class,
-			BigInteger.class,
-			Float.class,
-			Double.class,
-			BigDecimal.class);
+	public static final Set<Class<?>> STANDARD_NUMBER_TYPES;
+
+	static {
+		Set<Class<?>> numberTypes = new HashSet<Class<?>>(8);
+		numberTypes.add(Byte.class);
+		numberTypes.add(Short.class);
+		numberTypes.add(Integer.class);
+		numberTypes.add(Long.class);
+		numberTypes.add(BigInteger.class);
+		numberTypes.add(Float.class);
+		numberTypes.add(Double.class);
+		numberTypes.add(BigDecimal.class);
+		STANDARD_NUMBER_TYPES = Collections.unmodifiableSet(numberTypes);
+	}
+
 
 	/**
 	 * Convert the given number into an instance of the given target class.
@@ -170,8 +176,7 @@ public abstract class NumberUtils {
 	/**
 	 * Parse the given {@code text} into a {@link Number} instance of the given
 	 * target class, using the corresponding {@code decode} / {@code valueOf} method.
-	 * <p>Trims all whitespace (leading, trailing, and in between characters) from
-	 * the input {@code String} before attempting to parse the number.
+	 * <p>Trims the input {@code String} before attempting to parse the number.
 	 * <p>Supports numbers in hex format (with leading "0x", "0X", or "#") as well.
 	 * @param text the text to convert
 	 * @param targetClass the target class to parse into
@@ -238,9 +243,7 @@ public abstract class NumberUtils {
 	 * @see #convertNumberToTargetClass
 	 * @see #parseNumber(String, Class)
 	 */
-	public static <T extends Number> T parseNumber(
-			String text, Class<T> targetClass, @Nullable NumberFormat numberFormat) {
-
+	public static <T extends Number> T parseNumber(String text, Class<T> targetClass, NumberFormat numberFormat) {
 		if (numberFormat != null) {
 			Assert.notNull(text, "Text must not be null");
 			Assert.notNull(targetClass, "Target class must not be null");

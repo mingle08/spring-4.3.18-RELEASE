@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,10 @@
 
 package org.springframework.jms.listener.endpoint;
 
-import jakarta.jms.Session;
+import javax.jms.Session;
 
 import org.springframework.core.Constants;
-import org.springframework.jms.support.QosSettings;
 import org.springframework.jms.support.converter.MessageConverter;
-import org.springframework.lang.Nullable;
 
 /**
  * Common configuration object for activating a JMS message endpoint.
@@ -36,36 +34,28 @@ import org.springframework.lang.Nullable;
  * @since 2.5
  * @see JmsActivationSpecFactory
  * @see JmsMessageEndpointManager#setActivationSpecConfig
- * @see jakarta.resource.spi.ResourceAdapter#endpointActivation
+ * @see javax.resource.spi.ResourceAdapter#endpointActivation
  */
 public class JmsActivationSpecConfig {
 
-	/** Constants instance for {@code jakarta.jms.Session}. */
+	/** Constants instance for javax.jms.Session */
 	private static final Constants sessionConstants = new Constants(Session.class);
 
 
-	@Nullable
 	private String destinationName;
 
 	private boolean pubSubDomain = false;
 
-	@Nullable
 	private Boolean replyPubSubDomain;
-
-	@Nullable
-	private QosSettings replyQosSettings;
 
 	private boolean subscriptionDurable = false;
 
 	private boolean subscriptionShared = false;
 
-	@Nullable
 	private String subscriptionName;
 
-	@Nullable
 	private String clientId;
 
-	@Nullable
 	private String messageSelector;
 
 	private int acknowledgeMode = Session.AUTO_ACKNOWLEDGE;
@@ -74,15 +64,13 @@ public class JmsActivationSpecConfig {
 
 	private int prefetchSize = -1;
 
-	@Nullable
 	private MessageConverter messageConverter;
 
 
-	public void setDestinationName(@Nullable String destinationName) {
+	public void setDestinationName(String destinationName) {
 		this.destinationName = destinationName;
 	}
 
-	@Nullable
 	public String getDestinationName() {
 		return this.destinationName;
 	}
@@ -108,15 +96,6 @@ public class JmsActivationSpecConfig {
 		}
 	}
 
-	public void setReplyQosSettings(@Nullable QosSettings replyQosSettings) {
-		this.replyQosSettings = replyQosSettings;
-	}
-
-	@Nullable
-	public QosSettings getReplyQosSettings() {
-		return this.replyQosSettings;
-	}
-
 	public void setSubscriptionDurable(boolean subscriptionDurable) {
 		this.subscriptionDurable = subscriptionDurable;
 		if (subscriptionDurable) {
@@ -139,39 +118,35 @@ public class JmsActivationSpecConfig {
 		return this.subscriptionShared;
 	}
 
-	public void setSubscriptionName(@Nullable String subscriptionName) {
+	public void setSubscriptionName(String subscriptionName) {
 		this.subscriptionName = subscriptionName;
 	}
 
-	@Nullable
 	public String getSubscriptionName() {
 		return this.subscriptionName;
 	}
 
-	public void setDurableSubscriptionName(@Nullable String durableSubscriptionName) {
+	public void setDurableSubscriptionName(String durableSubscriptionName) {
 		this.subscriptionName = durableSubscriptionName;
-		this.subscriptionDurable = (durableSubscriptionName != null);
+		this.subscriptionDurable = true;
 	}
 
-	@Nullable
 	public String getDurableSubscriptionName() {
 		return (this.subscriptionDurable ? this.subscriptionName : null);
 	}
 
-	public void setClientId(@Nullable String clientId) {
+	public void setClientId(String clientId) {
 		this.clientId = clientId;
 	}
 
-	@Nullable
 	public String getClientId() {
 		return this.clientId;
 	}
 
-	public void setMessageSelector(@Nullable String messageSelector) {
+	public void setMessageSelector(String messageSelector) {
 		this.messageSelector = messageSelector;
 	}
 
-	@Nullable
 	public String getMessageSelector() {
 		return this.messageSelector;
 	}
@@ -184,10 +159,10 @@ public class JmsActivationSpecConfig {
 	 * supports "SESSION_TRANSACTED" in the form of RA-managed transactions
 	 * (automatically translated by Spring's {@link DefaultJmsActivationSpecFactory}.
 	 * @param constantName the name of the {@link Session} acknowledge mode constant
-	 * @see jakarta.jms.Session#AUTO_ACKNOWLEDGE
-	 * @see jakarta.jms.Session#CLIENT_ACKNOWLEDGE
-	 * @see jakarta.jms.Session#DUPS_OK_ACKNOWLEDGE
-	 * @see jakarta.jms.Session#SESSION_TRANSACTED
+	 * @see javax.jms.Session#AUTO_ACKNOWLEDGE
+	 * @see javax.jms.Session#CLIENT_ACKNOWLEDGE
+	 * @see javax.jms.Session#DUPS_OK_ACKNOWLEDGE
+	 * @see javax.jms.Session#SESSION_TRANSACTED
 	 * @see StandardJmsActivationSpecFactory
 	 * @see DefaultJmsActivationSpecFactory
 	 */
@@ -197,10 +172,10 @@ public class JmsActivationSpecConfig {
 
 	/**
 	 * Set the JMS acknowledgement mode to use.
-	 * @see jakarta.jms.Session#AUTO_ACKNOWLEDGE
-	 * @see jakarta.jms.Session#CLIENT_ACKNOWLEDGE
-	 * @see jakarta.jms.Session#DUPS_OK_ACKNOWLEDGE
-	 * @see jakarta.jms.Session#SESSION_TRANSACTED
+	 * @see javax.jms.Session#AUTO_ACKNOWLEDGE
+	 * @see javax.jms.Session#CLIENT_ACKNOWLEDGE
+	 * @see javax.jms.Session#DUPS_OK_ACKNOWLEDGE
+	 * @see javax.jms.Session#SESSION_TRANSACTED
 	 */
 	public void setAcknowledgeMode(int acknowledgeMode) {
 		this.acknowledgeMode = acknowledgeMode;
@@ -226,7 +201,7 @@ public class JmsActivationSpecConfig {
 		try {
 			int separatorIndex = concurrency.indexOf('-');
 			if (separatorIndex != -1) {
-				setMaxConcurrency(Integer.parseInt(concurrency, separatorIndex + 1, concurrency.length(), 10));
+				setMaxConcurrency(Integer.parseInt(concurrency.substring(separatorIndex + 1, concurrency.length())));
 			}
 			else {
 				setMaxConcurrency(Integer.parseInt(concurrency));
@@ -274,14 +249,13 @@ public class JmsActivationSpecConfig {
 	 * Set the {@link MessageConverter} strategy for converting JMS Messages.
 	 * @param messageConverter the message converter to use
 	 */
-	public void setMessageConverter(@Nullable MessageConverter messageConverter) {
+	public void setMessageConverter(MessageConverter messageConverter) {
 		this.messageConverter = messageConverter;
 	}
 
 	/**
 	 * Return the {@link MessageConverter} to use, if any.
 	 */
-	@Nullable
 	public MessageConverter getMessageConverter() {
 		return this.messageConverter;
 	}

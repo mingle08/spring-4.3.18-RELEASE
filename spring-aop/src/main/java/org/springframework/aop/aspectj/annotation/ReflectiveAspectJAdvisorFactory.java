@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,8 +20,9 @@ import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.aopalliance.aop.Advice;
@@ -49,53 +50,52 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.converter.ConvertingComparator;
-import org.springframework.lang.Nullable;
 import org.springframework.util.ReflectionUtils;
-import org.springframework.util.ReflectionUtils.MethodFilter;
 import org.springframework.util.StringUtils;
+import org.springframework.util.comparator.CompoundComparator;
 import org.springframework.util.comparator.InstanceComparator;
 
 /**
  * Factory that can create Spring AOP Advisors given AspectJ classes from
- * classes honoring AspectJ's annotation syntax, using reflection to invoke the
- * corresponding advice methods.
+ * classes honoring the AspectJ 5 annotation syntax, using reflection to
+ * invoke the corresponding advice methods.
  *
  * @author Rod Johnson
  * @author Adrian Colyer
  * @author Juergen Hoeller
  * @author Ramnivas Laddad
  * @author Phillip Webb
- * @author Sam Brannen
  * @since 2.0
  */
 @SuppressWarnings("serial")
 public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFactory implements Serializable {
 
-	// Exclude @Pointcut methods
-	private static final MethodFilter adviceMethodFilter = ReflectionUtils.USER_DECLARED_METHODS
-			.and(method -> (AnnotationUtils.getAnnotation(method, Pointcut.class) == null));
-
-	private static final Comparator<Method> adviceMethodComparator;
+	private static final Comparator<Method> METHOD_COMPARATOR;
 
 	static {
-		// Note: although @After is ordered before @AfterReturning and @AfterThrowing,
-		// an @After advice method will actually be invoked after @AfterReturning and
-		// @AfterThrowing methods due to the fact that AspectJAfterAdvice.invoke(MethodInvocation)
-		// invokes proceed() in a `try` block and only invokes the @After advice method
-		// in a corresponding `finally` block.
-		Comparator<Method> adviceKindComparator = new ConvertingComparator<>(
-				new InstanceComparator<>(
+		CompoundComparator<Method> comparator = new CompoundComparator<Method>();
+		comparator.addComparator(new ConvertingComparator<Method, Annotation>(
+				new InstanceComparator<Annotation>(
 						Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class),
-				(Converter<Method, Annotation>) method -> {
-					AspectJAnnotation<?> ann = AbstractAspectJAdvisorFactory.findAspectJAnnotationOnMethod(method);
-					return (ann != null ? ann.getAnnotation() : null);
-				});
-		Comparator<Method> methodNameComparator = new ConvertingComparator<>(Method::getName);
-		adviceMethodComparator = adviceKindComparator.thenComparing(methodNameComparator);
+				new Converter<Method, Annotation>() {
+					@Override
+					public Annotation convert(Method method) {
+						AspectJAnnotation<?> annotation =
+								AbstractAspectJAdvisorFactory.findAspectJAnnotationOnMethod(method);
+						return (annotation != null ? annotation.getAnnotation() : null);
+					}
+				}));
+		comparator.addComparator(new ConvertingComparator<Method, String>(
+				new Converter<Method, String>() {
+					@Override
+					public String convert(Method method) {
+						return method.getName();
+					}
+				}));
+		METHOD_COMPARATOR = comparator;
 	}
 
 
-	@Nullable
 	private final BeanFactory beanFactory;
 
 
@@ -115,7 +115,7 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 	 * @see AspectJExpressionPointcut#setBeanFactory
 	 * @see org.springframework.beans.factory.config.ConfigurableBeanFactory#getBeanClassLoader()
 	 */
-	public ReflectiveAspectJAdvisorFactory(@Nullable BeanFactory beanFactory) {
+	public ReflectiveAspectJAdvisorFactory(BeanFactory beanFactory) {
 		this.beanFactory = beanFactory;
 	}
 
@@ -131,17 +131,9 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 		MetadataAwareAspectInstanceFactory lazySingletonAspectInstanceFactory =
 				new LazySingletonAspectInstanceFactoryDecorator(aspectInstanceFactory);
 
-		List<Advisor> advisors = new ArrayList<>();
+		List<Advisor> advisors = new LinkedList<Advisor>();
 		for (Method method : getAdvisorMethods(aspectClass)) {
-			// Prior to Spring Framework 5.2.7, advisors.size() was supplied as the declarationOrderInAspect
-			// to getAdvisor(...) to represent the "current position" in the declared methods list.
-			// However, since Java 7 the "current position" is not valid since the JDK no longer
-			// returns declared methods in the order in which they are declared in the source code.
-			// Thus, we now hard code the declarationOrderInAspect to 0 for all advice methods
-			// discovered via reflection in order to support reliable advice ordering across JVM launches.
-			// Specifically, a value of 0 aligns with the default value used in
-			// AspectJPrecedenceComparator.getAspectDeclarationOrder(Advisor).
-			Advisor advisor = getAdvisor(method, lazySingletonAspectInstanceFactory, 0, aspectName);
+			Advisor advisor = getAdvisor(method, lazySingletonAspectInstanceFactory, advisors.size(), aspectName);
 			if (advisor != null) {
 				advisors.add(advisor);
 			}
@@ -165,11 +157,17 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 	}
 
 	private List<Method> getAdvisorMethods(Class<?> aspectClass) {
-		List<Method> methods = new ArrayList<>();
-		ReflectionUtils.doWithMethods(aspectClass, methods::add, adviceMethodFilter);
-		if (methods.size() > 1) {
-			methods.sort(adviceMethodComparator);
-		}
+		final List<Method> methods = new LinkedList<Method>();
+		ReflectionUtils.doWithMethods(aspectClass, new ReflectionUtils.MethodCallback() {
+			@Override
+			public void doWith(Method method) throws IllegalArgumentException {
+				// Exclude pointcuts
+				if (AnnotationUtils.getAnnotation(method, Pointcut.class) == null) {
+					methods.add(method);
+				}
+			}
+		});
+		Collections.sort(methods, METHOD_COMPARATOR);
 		return methods;
 	}
 
@@ -178,9 +176,8 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 	 * for the given introduction field.
 	 * <p>Resulting Advisors will need to be evaluated for targets.
 	 * @param introductionField the field to introspect
-	 * @return the Advisor instance, or {@code null} if not an Advisor
+	 * @return {@code null} if not an Advisor
 	 */
-	@Nullable
 	private Advisor getDeclareParentsAdvisor(Field introductionField) {
 		DeclareParents declareParents = introductionField.getAnnotation(DeclareParents.class);
 		if (declareParents == null) {
@@ -198,7 +195,6 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 
 
 	@Override
-	@Nullable
 	public Advisor getAdvisor(Method candidateAdviceMethod, MetadataAwareAspectInstanceFactory aspectInstanceFactory,
 			int declarationOrderInAspect, String aspectName) {
 
@@ -214,7 +210,6 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 				this, aspectInstanceFactory, declarationOrderInAspect, aspectName);
 	}
 
-	@Nullable
 	private AspectJExpressionPointcut getPointcut(Method candidateAdviceMethod, Class<?> candidateAspectClass) {
 		AspectJAnnotation<?> aspectJAnnotation =
 				AbstractAspectJAdvisorFactory.findAspectJAnnotationOnMethod(candidateAdviceMethod);
@@ -225,15 +220,12 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 		AspectJExpressionPointcut ajexp =
 				new AspectJExpressionPointcut(candidateAspectClass, new String[0], new Class<?>[0]);
 		ajexp.setExpression(aspectJAnnotation.getPointcutExpression());
-		if (this.beanFactory != null) {
-			ajexp.setBeanFactory(this.beanFactory);
-		}
+		ajexp.setBeanFactory(this.beanFactory);
 		return ajexp;
 	}
 
 
 	@Override
-	@Nullable
 	public Advice getAdvice(Method candidateAdviceMethod, AspectJExpressionPointcut expressionPointcut,
 			MetadataAwareAspectInstanceFactory aspectInstanceFactory, int declarationOrder, String aspectName) {
 
@@ -261,36 +253,42 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 		AbstractAspectJAdvice springAdvice;
 
 		switch (aspectJAnnotation.getAnnotationType()) {
-			case AtPointcut -> {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Processing pointcut '" + candidateAdviceMethod.getName() + "'");
-				}
-				return null;
-			}
-			case AtAround -> springAdvice = new AspectJAroundAdvice(
-					candidateAdviceMethod, expressionPointcut, aspectInstanceFactory);
-			case AtBefore -> springAdvice = new AspectJMethodBeforeAdvice(
-					candidateAdviceMethod, expressionPointcut, aspectInstanceFactory);
-			case AtAfter -> springAdvice = new AspectJAfterAdvice(
-					candidateAdviceMethod, expressionPointcut, aspectInstanceFactory);
-			case AtAfterReturning -> {
+			case AtBefore:
+				springAdvice = new AspectJMethodBeforeAdvice(
+						candidateAdviceMethod, expressionPointcut, aspectInstanceFactory);
+				break;
+			case AtAfter:
+				springAdvice = new AspectJAfterAdvice(
+						candidateAdviceMethod, expressionPointcut, aspectInstanceFactory);
+				break;
+			case AtAfterReturning:
 				springAdvice = new AspectJAfterReturningAdvice(
 						candidateAdviceMethod, expressionPointcut, aspectInstanceFactory);
 				AfterReturning afterReturningAnnotation = (AfterReturning) aspectJAnnotation.getAnnotation();
 				if (StringUtils.hasText(afterReturningAnnotation.returning())) {
 					springAdvice.setReturningName(afterReturningAnnotation.returning());
 				}
-			}
-			case AtAfterThrowing -> {
+				break;
+			case AtAfterThrowing:
 				springAdvice = new AspectJAfterThrowingAdvice(
 						candidateAdviceMethod, expressionPointcut, aspectInstanceFactory);
 				AfterThrowing afterThrowingAnnotation = (AfterThrowing) aspectJAnnotation.getAnnotation();
 				if (StringUtils.hasText(afterThrowingAnnotation.throwing())) {
 					springAdvice.setThrowingName(afterThrowingAnnotation.throwing());
 				}
-			}
-			default -> throw new UnsupportedOperationException(
-					"Unsupported advice type on method: " + candidateAdviceMethod);
+				break;
+			case AtAround:
+				springAdvice = new AspectJAroundAdvice(
+						candidateAdviceMethod, expressionPointcut, aspectInstanceFactory);
+				break;
+			case AtPointcut:
+				if (logger.isDebugEnabled()) {
+					logger.debug("Processing pointcut '" + candidateAdviceMethod.getName() + "'");
+				}
+				return null;
+			default:
+				throw new UnsupportedOperationException(
+						"Unsupported advice type on method: " + candidateAdviceMethod);
 		}
 
 		// Now to configure the advice...
@@ -301,7 +299,6 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 			springAdvice.setArgumentNamesFromStringArray(argNames);
 		}
 		springAdvice.calculateArgumentBindings();
-
 		return springAdvice;
 	}
 
@@ -315,8 +312,13 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 	protected static class SyntheticInstantiationAdvisor extends DefaultPointcutAdvisor {
 
 		public SyntheticInstantiationAdvisor(final MetadataAwareAspectInstanceFactory aif) {
-			super(aif.getAspectMetadata().getPerClausePointcut(), (MethodBeforeAdvice)
-					(method, args, target) -> aif.getAspectInstance());
+			super(aif.getAspectMetadata().getPerClausePointcut(), new MethodBeforeAdvice() {
+				@Override
+				public void before(Method method, Object[] args, Object target) {
+					// Simply instantiate the aspect
+					aif.getAspectInstance();
+				}
+			});
 		}
 	}
 

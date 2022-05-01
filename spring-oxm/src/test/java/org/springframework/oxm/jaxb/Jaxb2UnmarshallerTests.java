@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,18 +20,17 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 
+import javax.activation.DataHandler;
+import javax.activation.FileDataSource;
+import javax.xml.bind.JAXBElement;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 
-import jakarta.activation.DataHandler;
-import jakarta.activation.FileDataSource;
-import jakarta.xml.bind.JAXBElement;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.oxm.AbstractUnmarshallerTests;
 import org.springframework.oxm.jaxb.test.FlightType;
@@ -39,9 +38,8 @@ import org.springframework.oxm.jaxb.test.Flights;
 import org.springframework.oxm.mime.MimeContainer;
 import org.springframework.util.xml.StaxUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Arjen Poutsma
@@ -57,7 +55,7 @@ public class Jaxb2UnmarshallerTests extends AbstractUnmarshallerTests<Jaxb2Marsh
 	protected Jaxb2Marshaller createUnmarshaller() throws Exception {
 		Jaxb2Marshaller unmarshaller = new Jaxb2Marshaller();
 		unmarshaller.setContextPath("org.springframework.oxm.jaxb.test");
-		unmarshaller.setSchema(new FileSystemResource("src/test/schema/flight.xsd"));
+		unmarshaller.setSchema(new ClassPathResource("org/springframework/oxm/flight.xsd"));
 		unmarshaller.afterPropertiesSet();
 		return unmarshaller;
 	}
@@ -65,16 +63,16 @@ public class Jaxb2UnmarshallerTests extends AbstractUnmarshallerTests<Jaxb2Marsh
 	@Override
 	protected void testFlights(Object o) {
 		Flights flights = (Flights) o;
-		assertThat(flights).as("Flights is null").isNotNull();
-		assertThat(flights.getFlight().size()).as("Invalid amount of flight elements").isEqualTo(1);
+		assertNotNull("Flights is null", flights);
+		assertEquals("Invalid amount of flight elements", 1, flights.getFlight().size());
 		testFlight(flights.getFlight().get(0));
 	}
 
 	@Override
 	protected void testFlight(Object o) {
 		FlightType flight = (FlightType) o;
-		assertThat(flight).as("Flight is null").isNotNull();
-		assertThat(flight.getNumber()).as("Number is invalid").isEqualTo(42L);
+		assertNotNull("Flight is null", flight);
+		assertEquals("Number is invalid", 42L, flight.getNumber());
 	}
 
 	@Test
@@ -102,12 +100,11 @@ public class Jaxb2UnmarshallerTests extends AbstractUnmarshallerTests<Jaxb2Marsh
 
 		StringReader reader = new StringReader(content);
 		Object result = unmarshaller.unmarshal(new StreamSource(reader), mimeContainer);
-		boolean condition = result instanceof BinaryObject;
-		assertThat(condition).as("Result is not a BinaryObject").isTrue();
+		assertTrue("Result is not a BinaryObject", result instanceof BinaryObject);
 		BinaryObject object = (BinaryObject) result;
-		assertThat(object.getBytes()).as("bytes property not set").isNotNull();
-		assertThat(object.getBytes().length > 0).as("bytes property not set").isTrue();
-		assertThat(object.getSwaDataHandler()).as("datahandler property not set").isNotNull();
+		assertNotNull("bytes property not set", object.getBytes());
+		assertTrue("bytes property not set", object.getBytes().length > 0);
+		assertNotNull("datahandler property not set", object.getSwaDataHandler());
 	}
 
 	@Test
@@ -134,7 +131,8 @@ public class Jaxb2UnmarshallerTests extends AbstractUnmarshallerTests<Jaxb2Marsh
 		Source source = new StreamSource(new StringReader(
 				"<brand-airplane><name>test</name></brand-airplane>"));
 		JAXBElement<Airplane> airplane = (JAXBElement<Airplane>) unmarshaller.unmarshal(source);
-		assertThat(airplane.getValue().getName()).as("Unmarshalling via explicit @XmlRegistry tag should return correct type").isEqualTo("test");
+		assertEquals("Unmarshalling via explicit @XmlRegistry tag should return correct type",
+				"test", airplane.getValue().getName());
 	}
 
 	@Test

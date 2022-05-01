@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,11 +16,10 @@
 
 package org.springframework.web.servlet.view;
 
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.context.MessageSource;
-import org.springframework.lang.Nullable;
 import org.springframework.web.servlet.support.JstlUtils;
 import org.springframework.web.servlet.support.RequestContext;
 
@@ -47,7 +46,7 @@ import org.springframework.web.servlet.support.RequestContext;
  * &lt;/bean&gt;</pre>
  *
  * Every view name returned from a handler will be translated to a JSP
- * resource (for example: "myView" &rarr; "/WEB-INF/jsp/myView.jsp"), using
+ * resource (for example: "myView" -> "/WEB-INF/jsp/myView.jsp"), using
  * this view class to enable explicit JSTL support.
  *
  * <p>The specified MessageSource loads messages from "messages.properties" etc
@@ -77,7 +76,6 @@ import org.springframework.web.servlet.support.RequestContext;
  */
 public class JstlView extends InternalResourceView {
 
-	@Nullable
 	private MessageSource messageSource;
 
 
@@ -101,7 +99,7 @@ public class JstlView extends InternalResourceView {
 	 * @param url the URL to forward to
 	 * @param messageSource the MessageSource to expose to JSTL tags
 	 * (will be wrapped with a JSTL-aware MessageSource that is aware of JSTL's
-	 * {@code jakarta.servlet.jsp.jstl.fmt.localizationContext} context-param)
+	 * {@code javax.servlet.jsp.jstl.fmt.localizationContext} context-param)
 	 * @see JstlUtils#getJstlAwareMessageSource
 	 */
 	public JstlView(String url, MessageSource messageSource) {
@@ -112,7 +110,7 @@ public class JstlView extends InternalResourceView {
 
 	/**
 	 * Wraps the MessageSource with a JSTL-aware MessageSource that is aware
-	 * of JSTL's {@code jakarta.servlet.jsp.jstl.fmt.localizationContext}
+	 * of JSTL's {@code javax.servlet.jsp.jstl.fmt.localizationContext}
 	 * context-param.
 	 * @see JstlUtils#getJstlAwareMessageSource
 	 */

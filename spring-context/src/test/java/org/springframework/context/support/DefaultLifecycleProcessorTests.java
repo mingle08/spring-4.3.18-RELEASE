@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,7 @@ package org.springframework.context.support;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.FactoryBean;
@@ -27,28 +27,28 @@ import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.context.Lifecycle;
 import org.springframework.context.LifecycleProcessor;
 import org.springframework.context.SmartLifecycle;
-import org.springframework.core.testfixture.EnabledForTestGroups;
+import org.springframework.tests.Assume;
+import org.springframework.tests.TestGroup;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.core.testfixture.TestGroup.LONG_RUNNING;
+import static org.junit.Assert.*;
 
 /**
  * @author Mark Fisher
  * @since 3.0
  */
-class DefaultLifecycleProcessorTests {
+public class DefaultLifecycleProcessorTests {
 
 	@Test
-	void defaultLifecycleProcessorInstance() {
+	public void defaultLifecycleProcessorInstance() {
 		StaticApplicationContext context = new StaticApplicationContext();
 		context.refresh();
 		Object lifecycleProcessor = new DirectFieldAccessor(context).getPropertyValue("lifecycleProcessor");
-		assertThat(lifecycleProcessor).isNotNull();
-		assertThat(lifecycleProcessor.getClass()).isEqualTo(DefaultLifecycleProcessor.class);
+		assertNotNull(lifecycleProcessor);
+		assertEquals(DefaultLifecycleProcessor.class, lifecycleProcessor.getClass());
 	}
 
 	@Test
-	void customLifecycleProcessorInstance() {
+	public void customLifecycleProcessorInstance() {
 		BeanDefinition beanDefinition = new RootBeanDefinition(DefaultLifecycleProcessor.class);
 		beanDefinition.getPropertyValues().addPropertyValue("timeoutPerShutdownPhase", 1000);
 		StaticApplicationContext context = new StaticApplicationContext();
@@ -56,77 +56,73 @@ class DefaultLifecycleProcessorTests {
 		context.refresh();
 		LifecycleProcessor bean = context.getBean("lifecycleProcessor", LifecycleProcessor.class);
 		Object contextLifecycleProcessor = new DirectFieldAccessor(context).getPropertyValue("lifecycleProcessor");
-		assertThat(contextLifecycleProcessor).isNotNull();
-		assertThat(contextLifecycleProcessor).isSameAs(bean);
-		assertThat(new DirectFieldAccessor(contextLifecycleProcessor).getPropertyValue(
-				"timeoutPerShutdownPhase")).isEqualTo(1000L);
+		assertNotNull(contextLifecycleProcessor);
+		assertSame(bean, contextLifecycleProcessor);
+		assertEquals(1000L, new DirectFieldAccessor(contextLifecycleProcessor).getPropertyValue(
+				"timeoutPerShutdownPhase"));
 	}
 
 	@Test
-	void singleSmartLifecycleAutoStartup() throws Exception {
-		CopyOnWriteArrayList<Lifecycle> startedBeans = new CopyOnWriteArrayList<>();
+	public void singleSmartLifecycleAutoStartup() throws Exception {
+		CopyOnWriteArrayList<Lifecycle> startedBeans = new CopyOnWriteArrayList<Lifecycle>();
 		TestSmartLifecycleBean bean = TestSmartLifecycleBean.forStartupTests(1, startedBeans);
 		bean.setAutoStartup(true);
 		StaticApplicationContext context = new StaticApplicationContext();
 		context.getBeanFactory().registerSingleton("bean", bean);
-		assertThat(bean.isRunning()).isFalse();
+		assertFalse(bean.isRunning());
 		context.refresh();
-		assertThat(bean.isRunning()).isTrue();
+		assertTrue(bean.isRunning());
 		context.stop();
-		assertThat(bean.isRunning()).isFalse();
-		assertThat(startedBeans.size()).isEqualTo(1);
-		context.close();
+		assertFalse(bean.isRunning());
+		assertEquals(1, startedBeans.size());
 	}
 
 	@Test
-	void singleSmartLifecycleAutoStartupWithLazyInit() throws Exception {
+	public void singleSmartLifecycleAutoStartupWithLazyInit() throws Exception {
 		StaticApplicationContext context = new StaticApplicationContext();
 		RootBeanDefinition bd = new RootBeanDefinition(DummySmartLifecycleBean.class);
 		bd.setLazyInit(true);
 		context.registerBeanDefinition("bean", bd);
 		context.refresh();
 		DummySmartLifecycleBean bean = context.getBean("bean", DummySmartLifecycleBean.class);
-		assertThat(bean.isRunning()).isTrue();
+		assertTrue(bean.isRunning());
 		context.stop();
-		assertThat(bean.isRunning()).isFalse();
-		context.close();
+		assertFalse(bean.isRunning());
 	}
 
 	@Test
-	void singleSmartLifecycleAutoStartupWithLazyInitFactoryBean() throws Exception {
+	public void singleSmartLifecycleAutoStartupWithLazyInitFactoryBean() throws Exception {
 		StaticApplicationContext context = new StaticApplicationContext();
 		RootBeanDefinition bd = new RootBeanDefinition(DummySmartLifecycleFactoryBean.class);
 		bd.setLazyInit(true);
 		context.registerBeanDefinition("bean", bd);
 		context.refresh();
 		DummySmartLifecycleFactoryBean bean = context.getBean("&bean", DummySmartLifecycleFactoryBean.class);
-		assertThat(bean.isRunning()).isTrue();
+		assertTrue(bean.isRunning());
 		context.stop();
-		assertThat(bean.isRunning()).isFalse();
-		context.close();
+		assertFalse(bean.isRunning());
 	}
 
 	@Test
-	void singleSmartLifecycleWithoutAutoStartup() throws Exception {
-		CopyOnWriteArrayList<Lifecycle> startedBeans = new CopyOnWriteArrayList<>();
+	public void singleSmartLifecycleWithoutAutoStartup() throws Exception {
+		CopyOnWriteArrayList<Lifecycle> startedBeans = new CopyOnWriteArrayList<Lifecycle>();
 		TestSmartLifecycleBean bean = TestSmartLifecycleBean.forStartupTests(1, startedBeans);
 		bean.setAutoStartup(false);
 		StaticApplicationContext context = new StaticApplicationContext();
 		context.getBeanFactory().registerSingleton("bean", bean);
-		assertThat(bean.isRunning()).isFalse();
+		assertFalse(bean.isRunning());
 		context.refresh();
-		assertThat(bean.isRunning()).isFalse();
-		assertThat(startedBeans.size()).isEqualTo(0);
+		assertFalse(bean.isRunning());
+		assertEquals(0, startedBeans.size());
 		context.start();
-		assertThat(bean.isRunning()).isTrue();
-		assertThat(startedBeans.size()).isEqualTo(1);
+		assertTrue(bean.isRunning());
+		assertEquals(1, startedBeans.size());
 		context.stop();
-		context.close();
 	}
 
 	@Test
-	void singleSmartLifecycleAutoStartupWithNonAutoStartupDependency() throws Exception {
-		CopyOnWriteArrayList<Lifecycle> startedBeans = new CopyOnWriteArrayList<>();
+	public void singleSmartLifecycleAutoStartupWithNonAutoStartupDependency() throws Exception {
+		CopyOnWriteArrayList<Lifecycle> startedBeans = new CopyOnWriteArrayList<Lifecycle>();
 		TestSmartLifecycleBean bean = TestSmartLifecycleBean.forStartupTests(1, startedBeans);
 		bean.setAutoStartup(true);
 		TestSmartLifecycleBean dependency = TestSmartLifecycleBean.forStartupTests(1, startedBeans);
@@ -135,21 +131,20 @@ class DefaultLifecycleProcessorTests {
 		context.getBeanFactory().registerSingleton("bean", bean);
 		context.getBeanFactory().registerSingleton("dependency", dependency);
 		context.getBeanFactory().registerDependentBean("dependency", "bean");
-		assertThat(bean.isRunning()).isFalse();
-		assertThat(dependency.isRunning()).isFalse();
+		assertFalse(bean.isRunning());
+		assertFalse(dependency.isRunning());
 		context.refresh();
-		assertThat(bean.isRunning()).isTrue();
-		assertThat(dependency.isRunning()).isFalse();
+		assertTrue(bean.isRunning());
+		assertFalse(dependency.isRunning());
 		context.stop();
-		assertThat(bean.isRunning()).isFalse();
-		assertThat(dependency.isRunning()).isFalse();
-		assertThat(startedBeans.size()).isEqualTo(1);
-		context.close();
+		assertFalse(bean.isRunning());
+		assertFalse(dependency.isRunning());
+		assertEquals(1, startedBeans.size());
 	}
 
 	@Test
-	void smartLifecycleGroupStartup() throws Exception {
-		CopyOnWriteArrayList<Lifecycle> startedBeans = new CopyOnWriteArrayList<>();
+	public void smartLifecycleGroupStartup() throws Exception {
+		CopyOnWriteArrayList<Lifecycle> startedBeans = new CopyOnWriteArrayList<Lifecycle>();
 		TestSmartLifecycleBean beanMin = TestSmartLifecycleBean.forStartupTests(Integer.MIN_VALUE, startedBeans);
 		TestSmartLifecycleBean bean1 = TestSmartLifecycleBean.forStartupTests(1, startedBeans);
 		TestSmartLifecycleBean bean2 = TestSmartLifecycleBean.forStartupTests(2, startedBeans);
@@ -161,30 +156,29 @@ class DefaultLifecycleProcessorTests {
 		context.getBeanFactory().registerSingleton("bean2", bean2);
 		context.getBeanFactory().registerSingleton("beanMax", beanMax);
 		context.getBeanFactory().registerSingleton("bean1", bean1);
-		assertThat(beanMin.isRunning()).isFalse();
-		assertThat(bean1.isRunning()).isFalse();
-		assertThat(bean2.isRunning()).isFalse();
-		assertThat(bean3.isRunning()).isFalse();
-		assertThat(beanMax.isRunning()).isFalse();
+		assertFalse(beanMin.isRunning());
+		assertFalse(bean1.isRunning());
+		assertFalse(bean2.isRunning());
+		assertFalse(bean3.isRunning());
+		assertFalse(beanMax.isRunning());
 		context.refresh();
-		assertThat(beanMin.isRunning()).isTrue();
-		assertThat(bean1.isRunning()).isTrue();
-		assertThat(bean2.isRunning()).isTrue();
-		assertThat(bean3.isRunning()).isTrue();
-		assertThat(beanMax.isRunning()).isTrue();
+		assertTrue(beanMin.isRunning());
+		assertTrue(bean1.isRunning());
+		assertTrue(bean2.isRunning());
+		assertTrue(bean3.isRunning());
+		assertTrue(beanMax.isRunning());
 		context.stop();
-		assertThat(startedBeans.size()).isEqualTo(5);
-		assertThat(getPhase(startedBeans.get(0))).isEqualTo(Integer.MIN_VALUE);
-		assertThat(getPhase(startedBeans.get(1))).isEqualTo(1);
-		assertThat(getPhase(startedBeans.get(2))).isEqualTo(2);
-		assertThat(getPhase(startedBeans.get(3))).isEqualTo(3);
-		assertThat(getPhase(startedBeans.get(4))).isEqualTo(Integer.MAX_VALUE);
-		context.close();
+		assertEquals(5, startedBeans.size());
+		assertEquals(Integer.MIN_VALUE, getPhase(startedBeans.get(0)));
+		assertEquals(1, getPhase(startedBeans.get(1)));
+		assertEquals(2, getPhase(startedBeans.get(2)));
+		assertEquals(3, getPhase(startedBeans.get(3)));
+		assertEquals(Integer.MAX_VALUE, getPhase(startedBeans.get(4)));
 	}
 
 	@Test
-	void contextRefreshThenStartWithMixedBeans() throws Exception {
-		CopyOnWriteArrayList<Lifecycle> startedBeans = new CopyOnWriteArrayList<>();
+	public void contextRefreshThenStartWithMixedBeans() throws Exception {
+		CopyOnWriteArrayList<Lifecycle> startedBeans = new CopyOnWriteArrayList<Lifecycle>();
 		TestLifecycleBean simpleBean1 = TestLifecycleBean.forStartupTests(startedBeans);
 		TestLifecycleBean simpleBean2 = TestLifecycleBean.forStartupTests(startedBeans);
 		TestSmartLifecycleBean smartBean1 = TestSmartLifecycleBean.forStartupTests(5, startedBeans);
@@ -194,32 +188,31 @@ class DefaultLifecycleProcessorTests {
 		context.getBeanFactory().registerSingleton("smartBean1", smartBean1);
 		context.getBeanFactory().registerSingleton("simpleBean2", simpleBean2);
 		context.getBeanFactory().registerSingleton("smartBean2", smartBean2);
-		assertThat(simpleBean1.isRunning()).isFalse();
-		assertThat(simpleBean2.isRunning()).isFalse();
-		assertThat(smartBean1.isRunning()).isFalse();
-		assertThat(smartBean2.isRunning()).isFalse();
+		assertFalse(simpleBean1.isRunning());
+		assertFalse(simpleBean2.isRunning());
+		assertFalse(smartBean1.isRunning());
+		assertFalse(smartBean2.isRunning());
 		context.refresh();
-		assertThat(smartBean1.isRunning()).isTrue();
-		assertThat(smartBean2.isRunning()).isTrue();
-		assertThat(simpleBean1.isRunning()).isFalse();
-		assertThat(simpleBean2.isRunning()).isFalse();
-		assertThat(startedBeans.size()).isEqualTo(2);
-		assertThat(getPhase(startedBeans.get(0))).isEqualTo(-3);
-		assertThat(getPhase(startedBeans.get(1))).isEqualTo(5);
+		assertTrue(smartBean1.isRunning());
+		assertTrue(smartBean2.isRunning());
+		assertFalse(simpleBean1.isRunning());
+		assertFalse(simpleBean2.isRunning());
+		assertEquals(2, startedBeans.size());
+		assertEquals(-3, getPhase(startedBeans.get(0)));
+		assertEquals(5, getPhase(startedBeans.get(1)));
 		context.start();
-		assertThat(smartBean1.isRunning()).isTrue();
-		assertThat(smartBean2.isRunning()).isTrue();
-		assertThat(simpleBean1.isRunning()).isTrue();
-		assertThat(simpleBean2.isRunning()).isTrue();
-		assertThat(startedBeans.size()).isEqualTo(4);
-		assertThat(getPhase(startedBeans.get(2))).isEqualTo(0);
-		assertThat(getPhase(startedBeans.get(3))).isEqualTo(0);
-		context.close();
+		assertTrue(smartBean1.isRunning());
+		assertTrue(smartBean2.isRunning());
+		assertTrue(simpleBean1.isRunning());
+		assertTrue(simpleBean2.isRunning());
+		assertEquals(4, startedBeans.size());
+		assertEquals(0, getPhase(startedBeans.get(2)));
+		assertEquals(0, getPhase(startedBeans.get(3)));
 	}
 
 	@Test
-	void contextRefreshThenStopAndRestartWithMixedBeans() throws Exception {
-		CopyOnWriteArrayList<Lifecycle> startedBeans = new CopyOnWriteArrayList<>();
+	public void contextRefreshThenStopAndRestartWithMixedBeans() throws Exception {
+		CopyOnWriteArrayList<Lifecycle> startedBeans = new CopyOnWriteArrayList<Lifecycle>();
 		TestLifecycleBean simpleBean1 = TestLifecycleBean.forStartupTests(startedBeans);
 		TestLifecycleBean simpleBean2 = TestLifecycleBean.forStartupTests(startedBeans);
 		TestSmartLifecycleBean smartBean1 = TestSmartLifecycleBean.forStartupTests(5, startedBeans);
@@ -229,40 +222,40 @@ class DefaultLifecycleProcessorTests {
 		context.getBeanFactory().registerSingleton("smartBean1", smartBean1);
 		context.getBeanFactory().registerSingleton("simpleBean2", simpleBean2);
 		context.getBeanFactory().registerSingleton("smartBean2", smartBean2);
-		assertThat(simpleBean1.isRunning()).isFalse();
-		assertThat(simpleBean2.isRunning()).isFalse();
-		assertThat(smartBean1.isRunning()).isFalse();
-		assertThat(smartBean2.isRunning()).isFalse();
+		assertFalse(simpleBean1.isRunning());
+		assertFalse(simpleBean2.isRunning());
+		assertFalse(smartBean1.isRunning());
+		assertFalse(smartBean2.isRunning());
 		context.refresh();
-		assertThat(smartBean1.isRunning()).isTrue();
-		assertThat(smartBean2.isRunning()).isTrue();
-		assertThat(simpleBean1.isRunning()).isFalse();
-		assertThat(simpleBean2.isRunning()).isFalse();
-		assertThat(startedBeans.size()).isEqualTo(2);
-		assertThat(getPhase(startedBeans.get(0))).isEqualTo(-3);
-		assertThat(getPhase(startedBeans.get(1))).isEqualTo(5);
+		assertTrue(smartBean1.isRunning());
+		assertTrue(smartBean2.isRunning());
+		assertFalse(simpleBean1.isRunning());
+		assertFalse(simpleBean2.isRunning());
+		assertEquals(2, startedBeans.size());
+		assertEquals(-3, getPhase(startedBeans.get(0)));
+		assertEquals(5, getPhase(startedBeans.get(1)));
 		context.stop();
-		assertThat(simpleBean1.isRunning()).isFalse();
-		assertThat(simpleBean2.isRunning()).isFalse();
-		assertThat(smartBean1.isRunning()).isFalse();
-		assertThat(smartBean2.isRunning()).isFalse();
+		assertFalse(simpleBean1.isRunning());
+		assertFalse(simpleBean2.isRunning());
+		assertFalse(smartBean1.isRunning());
+		assertFalse(smartBean2.isRunning());
 		context.start();
-		assertThat(smartBean1.isRunning()).isTrue();
-		assertThat(smartBean2.isRunning()).isTrue();
-		assertThat(simpleBean1.isRunning()).isTrue();
-		assertThat(simpleBean2.isRunning()).isTrue();
-		assertThat(startedBeans.size()).isEqualTo(6);
-		assertThat(getPhase(startedBeans.get(2))).isEqualTo(-3);
-		assertThat(getPhase(startedBeans.get(3))).isEqualTo(0);
-		assertThat(getPhase(startedBeans.get(4))).isEqualTo(0);
-		assertThat(getPhase(startedBeans.get(5))).isEqualTo(5);
-		context.close();
+		assertTrue(smartBean1.isRunning());
+		assertTrue(smartBean2.isRunning());
+		assertTrue(simpleBean1.isRunning());
+		assertTrue(simpleBean2.isRunning());
+		assertEquals(6, startedBeans.size());
+		assertEquals(-3, getPhase(startedBeans.get(2)));
+		assertEquals(0, getPhase(startedBeans.get(3)));
+		assertEquals(0, getPhase(startedBeans.get(4)));
+		assertEquals(5, getPhase(startedBeans.get(5)));
 	}
 
 	@Test
-	@EnabledForTestGroups(LONG_RUNNING)
-	void smartLifecycleGroupShutdown() throws Exception {
-		CopyOnWriteArrayList<Lifecycle> stoppedBeans = new CopyOnWriteArrayList<>();
+	public void smartLifecycleGroupShutdown() throws Exception {
+		Assume.group(TestGroup.PERFORMANCE);
+
+		CopyOnWriteArrayList<Lifecycle> stoppedBeans = new CopyOnWriteArrayList<Lifecycle>();
 		TestSmartLifecycleBean bean1 = TestSmartLifecycleBean.forShutdownTests(1, 300, stoppedBeans);
 		TestSmartLifecycleBean bean2 = TestSmartLifecycleBean.forShutdownTests(3, 100, stoppedBeans);
 		TestSmartLifecycleBean bean3 = TestSmartLifecycleBean.forShutdownTests(1, 600, stoppedBeans);
@@ -280,52 +273,50 @@ class DefaultLifecycleProcessorTests {
 		context.getBeanFactory().registerSingleton("bean7", bean7);
 		context.refresh();
 		context.stop();
-		assertThat(getPhase(stoppedBeans.get(0))).isEqualTo(Integer.MAX_VALUE);
-		assertThat(getPhase(stoppedBeans.get(1))).isEqualTo(3);
-		assertThat(getPhase(stoppedBeans.get(2))).isEqualTo(3);
-		assertThat(getPhase(stoppedBeans.get(3))).isEqualTo(2);
-		assertThat(getPhase(stoppedBeans.get(4))).isEqualTo(2);
-		assertThat(getPhase(stoppedBeans.get(5))).isEqualTo(1);
-		assertThat(getPhase(stoppedBeans.get(6))).isEqualTo(1);
-		context.close();
+		assertEquals(Integer.MAX_VALUE, getPhase(stoppedBeans.get(0)));
+		assertEquals(3, getPhase(stoppedBeans.get(1)));
+		assertEquals(3, getPhase(stoppedBeans.get(2)));
+		assertEquals(2, getPhase(stoppedBeans.get(3)));
+		assertEquals(2, getPhase(stoppedBeans.get(4)));
+		assertEquals(1, getPhase(stoppedBeans.get(5)));
+		assertEquals(1, getPhase(stoppedBeans.get(6)));
 	}
 
 	@Test
-	@EnabledForTestGroups(LONG_RUNNING)
-	void singleSmartLifecycleShutdown() throws Exception {
-		CopyOnWriteArrayList<Lifecycle> stoppedBeans = new CopyOnWriteArrayList<>();
+	public void singleSmartLifecycleShutdown() throws Exception {
+		Assume.group(TestGroup.PERFORMANCE);
+
+		CopyOnWriteArrayList<Lifecycle> stoppedBeans = new CopyOnWriteArrayList<Lifecycle>();
 		TestSmartLifecycleBean bean = TestSmartLifecycleBean.forShutdownTests(99, 300, stoppedBeans);
 		StaticApplicationContext context = new StaticApplicationContext();
 		context.getBeanFactory().registerSingleton("bean", bean);
 		context.refresh();
-		assertThat(bean.isRunning()).isTrue();
+		assertTrue(bean.isRunning());
 		context.stop();
-		assertThat(stoppedBeans.size()).isEqualTo(1);
-		assertThat(bean.isRunning()).isFalse();
-		assertThat(stoppedBeans.get(0)).isEqualTo(bean);
-		context.close();
+		assertEquals(1, stoppedBeans.size());
+		assertFalse(bean.isRunning());
+		assertEquals(bean, stoppedBeans.get(0));
 	}
 
 	@Test
-	void singleLifecycleShutdown() throws Exception {
-		CopyOnWriteArrayList<Lifecycle> stoppedBeans = new CopyOnWriteArrayList<>();
+	public void singleLifecycleShutdown() throws Exception {
+		CopyOnWriteArrayList<Lifecycle> stoppedBeans = new CopyOnWriteArrayList<Lifecycle>();
 		Lifecycle bean = new TestLifecycleBean(null, stoppedBeans);
 		StaticApplicationContext context = new StaticApplicationContext();
 		context.getBeanFactory().registerSingleton("bean", bean);
 		context.refresh();
-		assertThat(bean.isRunning()).isFalse();
+		assertFalse(bean.isRunning());
 		bean.start();
-		assertThat(bean.isRunning()).isTrue();
+		assertTrue(bean.isRunning());
 		context.stop();
-		assertThat(stoppedBeans.size()).isEqualTo(1);
-		assertThat(bean.isRunning()).isFalse();
-		assertThat(stoppedBeans.get(0)).isEqualTo(bean);
-		context.close();
+		assertEquals(1, stoppedBeans.size());
+		assertFalse(bean.isRunning());
+		assertEquals(bean, stoppedBeans.get(0));
 	}
 
 	@Test
-	void mixedShutdown() throws Exception {
-		CopyOnWriteArrayList<Lifecycle> stoppedBeans = new CopyOnWriteArrayList<>();
+	public void mixedShutdown() throws Exception {
+		CopyOnWriteArrayList<Lifecycle> stoppedBeans = new CopyOnWriteArrayList<Lifecycle>();
 		Lifecycle bean1 = TestLifecycleBean.forShutdownTests(stoppedBeans);
 		Lifecycle bean2 = TestSmartLifecycleBean.forShutdownTests(500, 200, stoppedBeans);
 		Lifecycle bean3 = TestSmartLifecycleBean.forShutdownTests(Integer.MAX_VALUE, 100, stoppedBeans);
@@ -342,39 +333,38 @@ class DefaultLifecycleProcessorTests {
 		context.getBeanFactory().registerSingleton("bean6", bean6);
 		context.getBeanFactory().registerSingleton("bean7", bean7);
 		context.refresh();
-		assertThat(bean2.isRunning()).isTrue();
-		assertThat(bean3.isRunning()).isTrue();
-		assertThat(bean5.isRunning()).isTrue();
-		assertThat(bean6.isRunning()).isTrue();
-		assertThat(bean7.isRunning()).isTrue();
-		assertThat(bean1.isRunning()).isFalse();
-		assertThat(bean4.isRunning()).isFalse();
+		assertTrue(bean2.isRunning());
+		assertTrue(bean3.isRunning());
+		assertTrue(bean5.isRunning());
+		assertTrue(bean6.isRunning());
+		assertTrue(bean7.isRunning());
+		assertFalse(bean1.isRunning());
+		assertFalse(bean4.isRunning());
 		bean1.start();
 		bean4.start();
-		assertThat(bean1.isRunning()).isTrue();
-		assertThat(bean4.isRunning()).isTrue();
+		assertTrue(bean1.isRunning());
+		assertTrue(bean4.isRunning());
 		context.stop();
-		assertThat(bean1.isRunning()).isFalse();
-		assertThat(bean2.isRunning()).isFalse();
-		assertThat(bean3.isRunning()).isFalse();
-		assertThat(bean4.isRunning()).isFalse();
-		assertThat(bean5.isRunning()).isFalse();
-		assertThat(bean6.isRunning()).isFalse();
-		assertThat(bean7.isRunning()).isFalse();
-		assertThat(stoppedBeans.size()).isEqualTo(7);
-		assertThat(getPhase(stoppedBeans.get(0))).isEqualTo(Integer.MAX_VALUE);
-		assertThat(getPhase(stoppedBeans.get(1))).isEqualTo(500);
-		assertThat(getPhase(stoppedBeans.get(2))).isEqualTo(1);
-		assertThat(getPhase(stoppedBeans.get(3))).isEqualTo(0);
-		assertThat(getPhase(stoppedBeans.get(4))).isEqualTo(0);
-		assertThat(getPhase(stoppedBeans.get(5))).isEqualTo(-1);
-		assertThat(getPhase(stoppedBeans.get(6))).isEqualTo(Integer.MIN_VALUE);
-		context.close();
+		assertFalse(bean1.isRunning());
+		assertFalse(bean2.isRunning());
+		assertFalse(bean3.isRunning());
+		assertFalse(bean4.isRunning());
+		assertFalse(bean5.isRunning());
+		assertFalse(bean6.isRunning());
+		assertFalse(bean7.isRunning());
+		assertEquals(7, stoppedBeans.size());
+		assertEquals(Integer.MAX_VALUE, getPhase(stoppedBeans.get(0)));
+		assertEquals(500, getPhase(stoppedBeans.get(1)));
+		assertEquals(1, getPhase(stoppedBeans.get(2)));
+		assertEquals(0, getPhase(stoppedBeans.get(3)));
+		assertEquals(0, getPhase(stoppedBeans.get(4)));
+		assertEquals(-1, getPhase(stoppedBeans.get(5)));
+		assertEquals(Integer.MIN_VALUE, getPhase(stoppedBeans.get(6)));
 	}
 
 	@Test
-	void dependencyStartedFirstEvenIfItsPhaseIsHigher() throws Exception {
-		CopyOnWriteArrayList<Lifecycle> startedBeans = new CopyOnWriteArrayList<>();
+	public void dependencyStartedFirstEvenIfItsPhaseIsHigher() throws Exception {
+		CopyOnWriteArrayList<Lifecycle> startedBeans = new CopyOnWriteArrayList<Lifecycle>();
 		TestSmartLifecycleBean beanMin = TestSmartLifecycleBean.forStartupTests(Integer.MIN_VALUE, startedBeans);
 		TestSmartLifecycleBean bean2 = TestSmartLifecycleBean.forStartupTests(2, startedBeans);
 		TestSmartLifecycleBean bean99 = TestSmartLifecycleBean.forStartupTests(99, startedBeans);
@@ -386,25 +376,25 @@ class DefaultLifecycleProcessorTests {
 		context.getBeanFactory().registerSingleton("beanMax", beanMax);
 		context.getBeanFactory().registerDependentBean("bean99", "bean2");
 		context.refresh();
-		assertThat(beanMin.isRunning()).isTrue();
-		assertThat(bean2.isRunning()).isTrue();
-		assertThat(bean99.isRunning()).isTrue();
-		assertThat(beanMax.isRunning()).isTrue();
-		assertThat(startedBeans.size()).isEqualTo(4);
-		assertThat(getPhase(startedBeans.get(0))).isEqualTo(Integer.MIN_VALUE);
-		assertThat(getPhase(startedBeans.get(1))).isEqualTo(99);
-		assertThat(startedBeans.get(1)).isEqualTo(bean99);
-		assertThat(getPhase(startedBeans.get(2))).isEqualTo(2);
-		assertThat(startedBeans.get(2)).isEqualTo(bean2);
-		assertThat(getPhase(startedBeans.get(3))).isEqualTo(Integer.MAX_VALUE);
+		assertTrue(beanMin.isRunning());
+		assertTrue(bean2.isRunning());
+		assertTrue(bean99.isRunning());
+		assertTrue(beanMax.isRunning());
+		assertEquals(4, startedBeans.size());
+		assertEquals(Integer.MIN_VALUE, getPhase(startedBeans.get(0)));
+		assertEquals(99, getPhase(startedBeans.get(1)));
+		assertEquals(bean99, startedBeans.get(1));
+		assertEquals(2, getPhase(startedBeans.get(2)));
+		assertEquals(bean2, startedBeans.get(2));
+		assertEquals(Integer.MAX_VALUE, getPhase(startedBeans.get(3)));
 		context.stop();
-		context.close();
 	}
 
 	@Test
-	@EnabledForTestGroups(LONG_RUNNING)
-	void dependentShutdownFirstEvenIfItsPhaseIsLower() throws Exception {
-		CopyOnWriteArrayList<Lifecycle> stoppedBeans = new CopyOnWriteArrayList<>();
+	public void dependentShutdownFirstEvenIfItsPhaseIsLower() throws Exception {
+		Assume.group(TestGroup.PERFORMANCE);
+
+		CopyOnWriteArrayList<Lifecycle> stoppedBeans = new CopyOnWriteArrayList<Lifecycle>();
 		TestSmartLifecycleBean beanMin = TestSmartLifecycleBean.forShutdownTests(Integer.MIN_VALUE, 100, stoppedBeans);
 		TestSmartLifecycleBean bean1 = TestSmartLifecycleBean.forShutdownTests(1, 200, stoppedBeans);
 		TestSmartLifecycleBean bean99 = TestSmartLifecycleBean.forShutdownTests(99, 100, stoppedBeans);
@@ -420,34 +410,33 @@ class DefaultLifecycleProcessorTests {
 		context.getBeanFactory().registerSingleton("beanMax", beanMax);
 		context.getBeanFactory().registerDependentBean("bean99", "bean2");
 		context.refresh();
-		assertThat(beanMin.isRunning()).isTrue();
-		assertThat(bean1.isRunning()).isTrue();
-		assertThat(bean2.isRunning()).isTrue();
-		assertThat(bean7.isRunning()).isTrue();
-		assertThat(bean99.isRunning()).isTrue();
-		assertThat(beanMax.isRunning()).isTrue();
+		assertTrue(beanMin.isRunning());
+		assertTrue(bean1.isRunning());
+		assertTrue(bean2.isRunning());
+		assertTrue(bean7.isRunning());
+		assertTrue(bean99.isRunning());
+		assertTrue(beanMax.isRunning());
 		context.stop();
-		assertThat(beanMin.isRunning()).isFalse();
-		assertThat(bean1.isRunning()).isFalse();
-		assertThat(bean2.isRunning()).isFalse();
-		assertThat(bean7.isRunning()).isFalse();
-		assertThat(bean99.isRunning()).isFalse();
-		assertThat(beanMax.isRunning()).isFalse();
-		assertThat(stoppedBeans.size()).isEqualTo(6);
-		assertThat(getPhase(stoppedBeans.get(0))).isEqualTo(Integer.MAX_VALUE);
-		assertThat(getPhase(stoppedBeans.get(1))).isEqualTo(2);
-		assertThat(stoppedBeans.get(1)).isEqualTo(bean2);
-		assertThat(getPhase(stoppedBeans.get(2))).isEqualTo(99);
-		assertThat(stoppedBeans.get(2)).isEqualTo(bean99);
-		assertThat(getPhase(stoppedBeans.get(3))).isEqualTo(7);
-		assertThat(getPhase(stoppedBeans.get(4))).isEqualTo(1);
-		assertThat(getPhase(stoppedBeans.get(5))).isEqualTo(Integer.MIN_VALUE);
-		context.close();
+		assertFalse(beanMin.isRunning());
+		assertFalse(bean1.isRunning());
+		assertFalse(bean2.isRunning());
+		assertFalse(bean7.isRunning());
+		assertFalse(bean99.isRunning());
+		assertFalse(beanMax.isRunning());
+		assertEquals(6, stoppedBeans.size());
+		assertEquals(Integer.MAX_VALUE, getPhase(stoppedBeans.get(0)));
+		assertEquals(2, getPhase(stoppedBeans.get(1)));
+		assertEquals(bean2, stoppedBeans.get(1));
+		assertEquals(99, getPhase(stoppedBeans.get(2)));
+		assertEquals(bean99, stoppedBeans.get(2));
+		assertEquals(7, getPhase(stoppedBeans.get(3)));
+		assertEquals(1, getPhase(stoppedBeans.get(4)));
+		assertEquals(Integer.MIN_VALUE, getPhase(stoppedBeans.get(5)));
 	}
 
 	@Test
-	void dependencyStartedFirstAndIsSmartLifecycle() throws Exception {
-		CopyOnWriteArrayList<Lifecycle> startedBeans = new CopyOnWriteArrayList<>();
+	public void dependencyStartedFirstAndIsSmartLifecycle() throws Exception {
+		CopyOnWriteArrayList<Lifecycle> startedBeans = new CopyOnWriteArrayList<Lifecycle>();
 		TestSmartLifecycleBean beanNegative = TestSmartLifecycleBean.forStartupTests(-99, startedBeans);
 		TestSmartLifecycleBean bean99 = TestSmartLifecycleBean.forStartupTests(99, startedBeans);
 		TestSmartLifecycleBean bean7 = TestSmartLifecycleBean.forStartupTests(7, startedBeans);
@@ -463,23 +452,23 @@ class DefaultLifecycleProcessorTests {
 		startedBeans.clear();
 		// clean start so that simpleBean is included
 		context.start();
-		assertThat(beanNegative.isRunning()).isTrue();
-		assertThat(bean99.isRunning()).isTrue();
-		assertThat(bean7.isRunning()).isTrue();
-		assertThat(simpleBean.isRunning()).isTrue();
-		assertThat(startedBeans.size()).isEqualTo(4);
-		assertThat(getPhase(startedBeans.get(0))).isEqualTo(-99);
-		assertThat(getPhase(startedBeans.get(1))).isEqualTo(7);
-		assertThat(getPhase(startedBeans.get(2))).isEqualTo(0);
-		assertThat(getPhase(startedBeans.get(3))).isEqualTo(99);
+		assertTrue(beanNegative.isRunning());
+		assertTrue(bean99.isRunning());
+		assertTrue(bean7.isRunning());
+		assertTrue(simpleBean.isRunning());
+		assertEquals(4, startedBeans.size());
+		assertEquals(-99, getPhase(startedBeans.get(0)));
+		assertEquals(7, getPhase(startedBeans.get(1)));
+		assertEquals(0, getPhase(startedBeans.get(2)));
+		assertEquals(99, getPhase(startedBeans.get(3)));
 		context.stop();
-		context.close();
 	}
 
 	@Test
-	@EnabledForTestGroups(LONG_RUNNING)
-	void dependentShutdownFirstAndIsSmartLifecycle() throws Exception {
-		CopyOnWriteArrayList<Lifecycle> stoppedBeans = new CopyOnWriteArrayList<>();
+	public void dependentShutdownFirstAndIsSmartLifecycle() throws Exception {
+		Assume.group(TestGroup.PERFORMANCE);
+
+		CopyOnWriteArrayList<Lifecycle> stoppedBeans = new CopyOnWriteArrayList<Lifecycle>();
 		TestSmartLifecycleBean beanMin = TestSmartLifecycleBean.forShutdownTests(Integer.MIN_VALUE, 400, stoppedBeans);
 		TestSmartLifecycleBean beanNegative = TestSmartLifecycleBean.forShutdownTests(-99, 100, stoppedBeans);
 		TestSmartLifecycleBean bean1 = TestSmartLifecycleBean.forShutdownTests(1, 200, stoppedBeans);
@@ -495,33 +484,32 @@ class DefaultLifecycleProcessorTests {
 		context.getBeanFactory().registerSingleton("simpleBean", simpleBean);
 		context.getBeanFactory().registerDependentBean("simpleBean", "beanNegative");
 		context.refresh();
-		assertThat(beanMin.isRunning()).isTrue();
-		assertThat(beanNegative.isRunning()).isTrue();
-		assertThat(bean1.isRunning()).isTrue();
-		assertThat(bean2.isRunning()).isTrue();
-		assertThat(bean7.isRunning()).isTrue();
+		assertTrue(beanMin.isRunning());
+		assertTrue(beanNegative.isRunning());
+		assertTrue(bean1.isRunning());
+		assertTrue(bean2.isRunning());
+		assertTrue(bean7.isRunning());
 		// should start since it's a dependency of an auto-started bean
-		assertThat(simpleBean.isRunning()).isTrue();
+		assertTrue(simpleBean.isRunning());
 		context.stop();
-		assertThat(beanMin.isRunning()).isFalse();
-		assertThat(beanNegative.isRunning()).isFalse();
-		assertThat(bean1.isRunning()).isFalse();
-		assertThat(bean2.isRunning()).isFalse();
-		assertThat(bean7.isRunning()).isFalse();
-		assertThat(simpleBean.isRunning()).isFalse();
-		assertThat(stoppedBeans.size()).isEqualTo(6);
-		assertThat(getPhase(stoppedBeans.get(0))).isEqualTo(7);
-		assertThat(getPhase(stoppedBeans.get(1))).isEqualTo(2);
-		assertThat(getPhase(stoppedBeans.get(2))).isEqualTo(1);
-		assertThat(getPhase(stoppedBeans.get(3))).isEqualTo(-99);
-		assertThat(getPhase(stoppedBeans.get(4))).isEqualTo(0);
-		assertThat(getPhase(stoppedBeans.get(5))).isEqualTo(Integer.MIN_VALUE);
-		context.close();
+		assertFalse(beanMin.isRunning());
+		assertFalse(beanNegative.isRunning());
+		assertFalse(bean1.isRunning());
+		assertFalse(bean2.isRunning());
+		assertFalse(bean7.isRunning());
+		assertFalse(simpleBean.isRunning());
+		assertEquals(6, stoppedBeans.size());
+		assertEquals(7, getPhase(stoppedBeans.get(0)));
+		assertEquals(2, getPhase(stoppedBeans.get(1)));
+		assertEquals(1, getPhase(stoppedBeans.get(2)));
+		assertEquals(-99, getPhase(stoppedBeans.get(3)));
+		assertEquals(0, getPhase(stoppedBeans.get(4)));
+		assertEquals(Integer.MIN_VALUE, getPhase(stoppedBeans.get(5)));
 	}
 
 	@Test
-	void dependencyStartedFirstButNotSmartLifecycle() throws Exception {
-		CopyOnWriteArrayList<Lifecycle> startedBeans = new CopyOnWriteArrayList<>();
+	public void dependencyStartedFirstButNotSmartLifecycle() throws Exception {
+		CopyOnWriteArrayList<Lifecycle> startedBeans = new CopyOnWriteArrayList<Lifecycle>();
 		TestSmartLifecycleBean beanMin = TestSmartLifecycleBean.forStartupTests(Integer.MIN_VALUE, startedBeans);
 		TestSmartLifecycleBean bean7 = TestSmartLifecycleBean.forStartupTests(7, startedBeans);
 		TestLifecycleBean simpleBean = TestLifecycleBean.forStartupTests(startedBeans);
@@ -531,21 +519,21 @@ class DefaultLifecycleProcessorTests {
 		context.getBeanFactory().registerSingleton("simpleBean", simpleBean);
 		context.getBeanFactory().registerDependentBean("simpleBean", "beanMin");
 		context.refresh();
-		assertThat(beanMin.isRunning()).isTrue();
-		assertThat(bean7.isRunning()).isTrue();
-		assertThat(simpleBean.isRunning()).isTrue();
-		assertThat(startedBeans.size()).isEqualTo(3);
-		assertThat(getPhase(startedBeans.get(0))).isEqualTo(0);
-		assertThat(getPhase(startedBeans.get(1))).isEqualTo(Integer.MIN_VALUE);
-		assertThat(getPhase(startedBeans.get(2))).isEqualTo(7);
+		assertTrue(beanMin.isRunning());
+		assertTrue(bean7.isRunning());
+		assertTrue(simpleBean.isRunning());
+		assertEquals(3, startedBeans.size());
+		assertEquals(0, getPhase(startedBeans.get(0)));
+		assertEquals(Integer.MIN_VALUE, getPhase(startedBeans.get(1)));
+		assertEquals(7, getPhase(startedBeans.get(2)));
 		context.stop();
-		context.close();
 	}
 
 	@Test
-	@EnabledForTestGroups(LONG_RUNNING)
-	void dependentShutdownFirstButNotSmartLifecycle() throws Exception {
-		CopyOnWriteArrayList<Lifecycle> stoppedBeans = new CopyOnWriteArrayList<>();
+	public void dependentShutdownFirstButNotSmartLifecycle() throws Exception {
+		Assume.group(TestGroup.PERFORMANCE);
+
+		CopyOnWriteArrayList<Lifecycle> stoppedBeans = new CopyOnWriteArrayList<Lifecycle>();
 		TestSmartLifecycleBean bean1 = TestSmartLifecycleBean.forShutdownTests(1, 200, stoppedBeans);
 		TestLifecycleBean simpleBean = TestLifecycleBean.forShutdownTests(stoppedBeans);
 		TestSmartLifecycleBean bean2 = TestSmartLifecycleBean.forShutdownTests(2, 300, stoppedBeans);
@@ -559,26 +547,25 @@ class DefaultLifecycleProcessorTests {
 		context.getBeanFactory().registerSingleton("simpleBean", simpleBean);
 		context.getBeanFactory().registerDependentBean("bean2", "simpleBean");
 		context.refresh();
-		assertThat(beanMin.isRunning()).isTrue();
-		assertThat(bean1.isRunning()).isTrue();
-		assertThat(bean2.isRunning()).isTrue();
-		assertThat(bean7.isRunning()).isTrue();
-		assertThat(simpleBean.isRunning()).isFalse();
+		assertTrue(beanMin.isRunning());
+		assertTrue(bean1.isRunning());
+		assertTrue(bean2.isRunning());
+		assertTrue(bean7.isRunning());
+		assertFalse(simpleBean.isRunning());
 		simpleBean.start();
-		assertThat(simpleBean.isRunning()).isTrue();
+		assertTrue(simpleBean.isRunning());
 		context.stop();
-		assertThat(beanMin.isRunning()).isFalse();
-		assertThat(bean1.isRunning()).isFalse();
-		assertThat(bean2.isRunning()).isFalse();
-		assertThat(bean7.isRunning()).isFalse();
-		assertThat(simpleBean.isRunning()).isFalse();
-		assertThat(stoppedBeans.size()).isEqualTo(5);
-		assertThat(getPhase(stoppedBeans.get(0))).isEqualTo(7);
-		assertThat(getPhase(stoppedBeans.get(1))).isEqualTo(0);
-		assertThat(getPhase(stoppedBeans.get(2))).isEqualTo(2);
-		assertThat(getPhase(stoppedBeans.get(3))).isEqualTo(1);
-		assertThat(getPhase(stoppedBeans.get(4))).isEqualTo(Integer.MIN_VALUE);
-		context.close();
+		assertFalse(beanMin.isRunning());
+		assertFalse(bean1.isRunning());
+		assertFalse(bean2.isRunning());
+		assertFalse(bean7.isRunning());
+		assertFalse(simpleBean.isRunning());
+		assertEquals(5, stoppedBeans.size());
+		assertEquals(7, getPhase(stoppedBeans.get(0)));
+		assertEquals(0, getPhase(stoppedBeans.get(1)));
+		assertEquals(2, getPhase(stoppedBeans.get(2)));
+		assertEquals(1, getPhase(stoppedBeans.get(3)));
+		assertEquals(Integer.MIN_VALUE, getPhase(stoppedBeans.get(4)));
 	}
 
 
@@ -675,15 +662,18 @@ class DefaultLifecycleProcessorTests {
 			// invocation order in the 'stoppedBeans' list
 			stop();
 			final int delay = this.shutdownDelay;
-			new Thread(() -> {
-				try {
-					Thread.sleep(delay);
-				}
-				catch (InterruptedException e) {
-					// ignore
-				}
-				finally {
-					callback.run();
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						Thread.sleep(delay);
+					}
+					catch (InterruptedException e) {
+						// ignore
+					}
+					finally {
+						callback.run();
+					}
 				}
 			}).start();
 		}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,19 +21,15 @@ import java.io.Serializable;
 import org.springframework.aop.ClassFilter;
 import org.springframework.aop.MethodMatcher;
 import org.springframework.aop.Pointcut;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Convenient class for building up pointcuts.
+ * Convenient class for building up pointcuts. All methods return
+ * ComposablePointcut, so we can use a concise idiom like:
  *
- * <p>All methods return {@code ComposablePointcut}, so we can use concise idioms
- * like in the following example.
- *
- * <pre class="code">Pointcut pc = new ComposablePointcut()
- *                      .union(classFilter)
- *                      .intersection(methodMatcher)
- *                      .intersection(pointcut);</pre>
+ * {@code
+ * Pointcut pc = new ComposablePointcut().union(classFilter).intersection(methodMatcher).intersection(pointcut);
+ * }
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -43,7 +39,7 @@ import org.springframework.util.Assert;
  */
 public class ComposablePointcut implements Pointcut, Serializable {
 
-	/** use serialVersionUID from Spring 1.2 for interoperability. */
+	/** use serialVersionUID from Spring 1.2 for interoperability */
 	private static final long serialVersionUID = -2743223737633663832L;
 
 	private ClassFilter classFilter;
@@ -184,13 +180,14 @@ public class ComposablePointcut implements Pointcut, Serializable {
 	}
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}
-		if (!(other instanceof ComposablePointcut otherPointcut)) {
+		if (!(other instanceof ComposablePointcut)) {
 			return false;
 		}
+		ComposablePointcut otherPointcut = (ComposablePointcut) other;
 		return (this.classFilter.equals(otherPointcut.classFilter) &&
 				this.methodMatcher.equals(otherPointcut.methodMatcher));
 	}
@@ -202,7 +199,7 @@ public class ComposablePointcut implements Pointcut, Serializable {
 
 	@Override
 	public String toString() {
-		return getClass().getName() + ": " + this.classFilter + ", " + this.methodMatcher;
+		return "ComposablePointcut: " + this.classFilter + ", " +this.methodMatcher;
 	}
 
 }

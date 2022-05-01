@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +16,7 @@
 
 package org.springframework.web.method.annotation;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,7 +25,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.core.annotation.AnnotatedElementUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.SessionAttributes;
 import org.springframework.web.bind.support.SessionAttributeStore;
@@ -48,11 +48,12 @@ import org.springframework.web.context.request.WebRequest;
  */
 public class SessionAttributesHandler {
 
-	private final Set<String> attributeNames = new HashSet<>();
+	private final Set<String> attributeNames = new HashSet<String>();
 
-	private final Set<Class<?>> attributeTypes = new HashSet<>();
+	private final Set<Class<?>> attributeTypes = new HashSet<Class<?>>();
 
-	private final Set<String> knownAttributeNames = Collections.newSetFromMap(new ConcurrentHashMap<>(4));
+	private final Set<String> knownAttributeNames =
+			Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>(4));
 
 	private final SessionAttributeStore sessionAttributeStore;
 
@@ -70,8 +71,8 @@ public class SessionAttributesHandler {
 
 		SessionAttributes ann = AnnotatedElementUtils.findMergedAnnotation(handlerType, SessionAttributes.class);
 		if (ann != null) {
-			Collections.addAll(this.attributeNames, ann.names());
-			Collections.addAll(this.attributeTypes, ann.types());
+			this.attributeNames.addAll(Arrays.asList(ann.names()));
+			this.attributeTypes.addAll(Arrays.asList(ann.types()));
 		}
 		this.knownAttributeNames.addAll(this.attributeNames);
 	}
@@ -112,11 +113,13 @@ public class SessionAttributesHandler {
 	 * @param attributes candidate attributes for session storage
 	 */
 	public void storeAttributes(WebRequest request, Map<String, ?> attributes) {
-		attributes.forEach((name, value) -> {
-			if (value != null && isHandlerSessionAttribute(name, value.getClass())) {
+		for (String name : attributes.keySet()) {
+			Object value = attributes.get(name);
+			Class<?> attrType = (value != null ? value.getClass() : null);
+			if (isHandlerSessionAttribute(name, attrType)) {
 				this.sessionAttributeStore.storeAttribute(request, name, value);
 			}
-		});
+		}
 	}
 
 	/**
@@ -127,7 +130,7 @@ public class SessionAttributesHandler {
 	 * @return a map with handler session attributes, possibly empty
 	 */
 	public Map<String, Object> retrieveAttributes(WebRequest request) {
-		Map<String, Object> attributes = new HashMap<>();
+		Map<String, Object> attributes = new HashMap<String, Object>();
 		for (String name : this.knownAttributeNames) {
 			Object value = this.sessionAttributeStore.retrieveAttribute(request, name);
 			if (value != null) {
@@ -155,7 +158,6 @@ public class SessionAttributesHandler {
 	 * @param attributeName the name of the attribute of interest
 	 * @return the attribute value, or {@code null} if none
 	 */
-	@Nullable
 	Object retrieveAttribute(WebRequest request, String attributeName) {
 		return this.sessionAttributeStore.retrieveAttribute(request, attributeName);
 	}

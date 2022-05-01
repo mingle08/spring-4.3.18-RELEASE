@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,10 +20,10 @@ import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Abstract base regular expression pointcut bean. JavaBean properties are:
@@ -80,7 +80,7 @@ public abstract class AbstractRegexpMethodPointcut extends StaticMethodMatcherPo
 		Assert.notEmpty(patterns, "'patterns' must not be empty");
 		this.patterns = new String[patterns.length];
 		for (int i = 0; i < patterns.length; i++) {
-			this.patterns[i] = patterns[i].strip();
+			this.patterns[i] = StringUtils.trimWhitespace(patterns[i]);
 		}
 		initPatternRepresentation(this.patterns);
 	}
@@ -110,7 +110,7 @@ public abstract class AbstractRegexpMethodPointcut extends StaticMethodMatcherPo
 		Assert.notEmpty(excludedPatterns, "'excludedPatterns' must not be empty");
 		this.excludedPatterns = new String[excludedPatterns.length];
 		for (int i = 0; i < excludedPatterns.length; i++) {
-			this.excludedPatterns[i] = excludedPatterns[i].strip();
+			this.excludedPatterns[i] = StringUtils.trimWhitespace(excludedPatterns[i]);
 		}
 		initExcludedPatternRepresentation(this.excludedPatterns);
 	}
@@ -130,9 +130,8 @@ public abstract class AbstractRegexpMethodPointcut extends StaticMethodMatcherPo
 	 */
 	@Override
 	public boolean matches(Method method, Class<?> targetClass) {
-		return (matchesPattern(ClassUtils.getQualifiedMethodName(method, targetClass)) ||
-				(targetClass != method.getDeclaringClass() &&
-						matchesPattern(ClassUtils.getQualifiedMethodName(method, method.getDeclaringClass()))));
+		return ((targetClass != null && matchesPattern(ClassUtils.getQualifiedMethodName(method, targetClass))) ||
+				matchesPattern(ClassUtils.getQualifiedMethodName(method)));
 	}
 
 	/**
@@ -195,13 +194,14 @@ public abstract class AbstractRegexpMethodPointcut extends StaticMethodMatcherPo
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}
-		if (!(other instanceof AbstractRegexpMethodPointcut otherPointcut)) {
+		if (!(other instanceof AbstractRegexpMethodPointcut)) {
 			return false;
 		}
+		AbstractRegexpMethodPointcut otherPointcut = (AbstractRegexpMethodPointcut) other;
 		return (Arrays.equals(this.patterns, otherPointcut.patterns) &&
 				Arrays.equals(this.excludedPatterns, otherPointcut.excludedPatterns));
 	}

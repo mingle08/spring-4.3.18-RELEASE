@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,13 +17,13 @@
 package org.springframework.test.web.servlet.samples.standalone;
 
 import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
+import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.junit.jupiter.api.Test;
-import reactor.core.publisher.Mono;
+import org.junit.Test;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -40,15 +40,11 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
+import static org.junit.Assert.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.setup.MockMvcBuilders.*;
 
 /**
  * Tests with asynchronous request handling.
@@ -69,13 +65,12 @@ public class AsyncTests {
 	public void callable() throws Exception {
 		MvcResult mvcResult = this.mockMvc.perform(get("/1").param("callable", "true"))
 				.andExpect(request().asyncStarted())
-				.andExpect(request().asyncResult(equalTo(new Person("Joe"))))
 				.andExpect(request().asyncResult(new Person("Joe")))
 				.andReturn();
 
 		this.mockMvc.perform(asyncDispatch(mvcResult))
 				.andExpect(status().isOk())
-				.andExpect(content().contentType(MediaType.APPLICATION_JSON))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
 				.andExpect(content().string("{\"name\":\"Joe\",\"someDouble\":0.0,\"someBoolean\":false}"));
 	}
 
@@ -103,7 +98,7 @@ public class AsyncTests {
 				.andExpect(request().asyncStarted())
 				.andDo(MvcResult::getAsyncResult)
 				.andExpect(status().isOk())
-				.andExpect(content().contentType(MediaType.APPLICATION_JSON))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
 				.andExpect(content().string("{\"name\":\"Joe\",\"someDouble\":0.5}"));
 	}
 
@@ -113,9 +108,11 @@ public class AsyncTests {
 				.andExpect(request().asyncStarted())
 				.andReturn();
 
+		this.asyncController.onMessage("Joe");
+
 		this.mockMvc.perform(asyncDispatch(mvcResult))
 				.andExpect(status().isOk())
-				.andExpect(content().contentType(MediaType.APPLICATION_JSON))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
 				.andExpect(content().string("{\"name\":\"Joe\",\"someDouble\":0.0,\"someBoolean\":false}"));
 	}
 
@@ -128,7 +125,7 @@ public class AsyncTests {
 
 		this.mockMvc.perform(asyncDispatch(mvcResult))
 				.andExpect(status().isOk())
-				.andExpect(content().contentType(MediaType.APPLICATION_JSON))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
 				.andExpect(content().string("{\"name\":\"Joe\",\"someDouble\":0.0,\"someBoolean\":false}"));
 	}
 
@@ -149,9 +146,11 @@ public class AsyncTests {
 				.andExpect(request().asyncStarted())
 				.andReturn();
 
+		this.asyncController.onMessage("Joe");
+
 		this.mockMvc.perform(asyncDispatch(mvcResult))
 				.andExpect(status().isOk())
-				.andExpect(content().contentType(MediaType.APPLICATION_JSON))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
 				.andExpect(content().string("{\"name\":\"Joe\",\"someDouble\":0.0,\"someBoolean\":false}"));
 	}
 
@@ -163,7 +162,7 @@ public class AsyncTests {
 
 		this.mockMvc.perform(asyncDispatch(mvcResult))
 				.andExpect(status().isOk())
-				.andExpect(content().contentType(MediaType.APPLICATION_JSON))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
 				.andExpect(content().string("{\"name\":\"Joe\",\"someDouble\":0.0,\"someBoolean\":false}"));
 	}
 
@@ -176,22 +175,28 @@ public class AsyncTests {
 				.andExpect(request().asyncStarted())
 				.andReturn();
 
-		assertThat(writer.toString().contains("Async started = true")).isTrue();
+		assertTrue(writer.toString().contains("Async started = true"));
 		writer = new StringWriter();
+
+		this.asyncController.onMessage("Joe");
 
 		this.mockMvc.perform(asyncDispatch(mvcResult))
 				.andDo(print(writer))
 				.andExpect(status().isOk())
-				.andExpect(content().contentType(MediaType.APPLICATION_JSON))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
 				.andExpect(content().string("{\"name\":\"Joe\",\"someDouble\":0.0,\"someBoolean\":false}"));
 
-		assertThat(writer.toString().contains("Async started = false")).isTrue();
+		assertTrue(writer.toString().contains("Async started = false"));
 	}
 
 
 	@RestController
 	@RequestMapping(path = "/{id}", produces = "application/json")
 	private static class AsyncController {
+
+		private final Collection<DeferredResult<Person>> deferredResults = new CopyOnWriteArrayList<>();
+
+		private final Collection<ListenableFutureTask<Person>> futureTasks = new CopyOnWriteArrayList<>();
 
 		@RequestMapping(params = "callable")
 		public Callable<Person> getCallable() {
@@ -200,7 +205,7 @@ public class AsyncTests {
 
 		@RequestMapping(params = "streaming")
 		public StreamingResponseBody getStreaming() {
-			return os -> os.write("name=Joe".getBytes(StandardCharsets.UTF_8));
+			return os -> os.write("name=Joe".getBytes(Charset.forName("UTF-8")));
 		}
 
 		@RequestMapping(params = "streamingSlow")
@@ -209,7 +214,7 @@ public class AsyncTests {
 				os.write("name=Joe".getBytes());
 				try {
 					Thread.sleep(200);
-					os.write("&someBoolean=true".getBytes(StandardCharsets.UTF_8));
+					os.write("&someBoolean=true".getBytes(Charset.forName("UTF-8")));
 				}
 				catch (InterruptedException e) {
 					/* no-op */
@@ -219,15 +224,15 @@ public class AsyncTests {
 
 		@RequestMapping(params = "streamingJson")
 		public ResponseEntity<StreamingResponseBody> getStreamingJson() {
-			return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON)
-					.body(os -> os.write("{\"name\":\"Joe\",\"someDouble\":0.5}".getBytes(StandardCharsets.UTF_8)));
+			return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON_UTF8)
+					.body(os -> os.write("{\"name\":\"Joe\",\"someDouble\":0.5}".getBytes(Charset.forName("UTF-8"))));
 		}
 
 		@RequestMapping(params = "deferredResult")
 		public DeferredResult<Person> getDeferredResult() {
-			DeferredResult<Person> result = new DeferredResult<>();
-			delay(100, () -> result.setResult(new Person("Joe")));
-			return result;
+			DeferredResult<Person> deferredResult = new DeferredResult<>();
+			this.deferredResults.add(deferredResult);
+			return deferredResult;
 		}
 
 		@RequestMapping(params = "deferredResultWithImmediateValue")
@@ -239,15 +244,25 @@ public class AsyncTests {
 
 		@RequestMapping(params = "deferredResultWithDelayedError")
 		public DeferredResult<Person> getDeferredResultWithDelayedError() {
-			DeferredResult<Person> result = new DeferredResult<>();
-			delay(100, () -> result.setErrorResult(new RuntimeException("Delayed Error")));
-			return result;
+			final DeferredResult<Person> deferredResult = new DeferredResult<>();
+			new Thread() {
+				public void run() {
+					try {
+						Thread.sleep(100);
+						deferredResult.setErrorResult(new RuntimeException("Delayed Error"));
+					}
+					catch (InterruptedException e) {
+						/* no-op */
+					}
+				}
+			}.start();
+			return deferredResult;
 		}
 
 		@RequestMapping(params = "listenableFuture")
 		public ListenableFuture<Person> getListenableFuture() {
 			ListenableFutureTask<Person> futureTask = new ListenableFutureTask<>(() -> new Person("Joe"));
-			delay(100, futureTask);
+			this.futureTasks.add(futureTask);
 			return futureTask;
 		}
 
@@ -260,12 +275,19 @@ public class AsyncTests {
 
 		@ExceptionHandler(Exception.class)
 		@ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-		public String errorHandler(Exception ex) {
-			return ex.getMessage();
+		public String errorHandler(Exception e) {
+			return e.getMessage();
 		}
 
-		private void delay(long millis, Runnable task) {
-			Mono.delay(Duration.ofMillis(millis)).doOnTerminate(task).subscribe();
+		void onMessage(String name) {
+			for (DeferredResult<Person> deferredResult : this.deferredResults) {
+				deferredResult.setResult(new Person(name));
+				this.deferredResults.remove(deferredResult);
+			}
+			for (ListenableFutureTask<Person> futureTask : this.futureTasks) {
+				futureTask.run();
+				this.futureTasks.remove(futureTask);
+			}
 		}
 	}
 

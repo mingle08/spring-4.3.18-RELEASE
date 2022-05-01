@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,11 +16,13 @@
 
 package org.springframework.web.bind;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
@@ -47,7 +49,9 @@ public class UnsatisfiedServletRequestParameterException extends ServletRequestB
 	 * @param actualParams the actual parameter Map associated with the ServletRequest
 	 */
 	public UnsatisfiedServletRequestParameterException(String[] paramConditions, Map<String, String[]> actualParams) {
-		this(List.<String[]>of(paramConditions), actualParams);
+		super("");
+		this.paramConditions = Arrays.<String[]>asList(paramConditions);
+		this.actualParams = actualParams;
 	}
 
 	/**
@@ -63,7 +67,6 @@ public class UnsatisfiedServletRequestParameterException extends ServletRequestB
 		Assert.notEmpty(paramConditions, "Parameter conditions must not be empty");
 		this.paramConditions = paramConditions;
 		this.actualParams = actualParams;
-		getBody().setDetail("Invalid request parameters.");
 	}
 
 
@@ -75,9 +78,9 @@ public class UnsatisfiedServletRequestParameterException extends ServletRequestB
 			if (i > 0) {
 				sb.append(" OR ");
 			}
-			sb.append('"');
+			sb.append("\"");
 			sb.append(StringUtils.arrayToDelimitedString(conditions, ", "));
-			sb.append('"');
+			sb.append("\"");
 			i++;
 		}
 		sb.append(" not met for actual request parameters: ");
@@ -96,8 +99,8 @@ public class UnsatisfiedServletRequestParameterException extends ServletRequestB
 
 	/**
 	 * Return all parameter condition groups that have been violated.
-	 * @since 4.2
 	 * @see org.springframework.web.bind.annotation.RequestMapping#params()
+	 * @since 4.2
 	 */
 	public final List<String[]> getParamConditionGroups() {
 		return this.paramConditions;
@@ -105,7 +108,7 @@ public class UnsatisfiedServletRequestParameterException extends ServletRequestB
 
 	/**
 	 * Return the actual parameter Map associated with the ServletRequest.
-	 * @see jakarta.servlet.ServletRequest#getParameterMap()
+	 * @see javax.servlet.ServletRequest#getParameterMap()
 	 */
 	public final Map<String, String[]> getActualParams() {
 		return this.actualParams;

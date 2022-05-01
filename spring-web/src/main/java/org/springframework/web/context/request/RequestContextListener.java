@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,9 +16,9 @@
 
 package org.springframework.web.context.request;
 
-import jakarta.servlet.ServletRequestEvent;
-import jakarta.servlet.ServletRequestListener;
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.ServletRequestEvent;
+import javax.servlet.ServletRequestListener;
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.context.i18n.LocaleContextHolder;
 
@@ -37,7 +37,7 @@ import org.springframework.context.i18n.LocaleContextHolder;
  *
  * @author Juergen Hoeller
  * @since 2.0
- * @see jakarta.servlet.ServletRequestListener
+ * @see javax.servlet.ServletRequestListener
  * @see org.springframework.context.i18n.LocaleContextHolder
  * @see RequestContextHolder
  * @see org.springframework.web.filter.RequestContextFilter

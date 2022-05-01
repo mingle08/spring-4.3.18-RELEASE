@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2010 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,23 +18,22 @@ package org.springframework.util;
 
 import java.util.Map;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.*;
 
 /**
  * @author Rob Harrop
  * @author Juergen Hoeller
  */
-class SystemPropertyUtilsTests {
+public class SystemPropertyUtilsTests {
 
 	@Test
-	void replaceFromSystemProperty() {
+	public void testReplaceFromSystemProperty() {
 		System.setProperty("test.prop", "bar");
 		try {
 			String resolved = SystemPropertyUtils.resolvePlaceholders("${test.prop}");
-			assertThat(resolved).isEqualTo("bar");
+			assertEquals("bar", resolved);
 		}
 		finally {
 			System.getProperties().remove("test.prop");
@@ -42,11 +41,11 @@ class SystemPropertyUtilsTests {
 	}
 
 	@Test
-	void replaceFromSystemPropertyWithDefault() {
+	public void testReplaceFromSystemPropertyWithDefault() {
 		System.setProperty("test.prop", "bar");
 		try {
 			String resolved = SystemPropertyUtils.resolvePlaceholders("${test.prop:foo}");
-			assertThat(resolved).isEqualTo("bar");
+			assertEquals("bar", resolved);
 		}
 		finally {
 			System.getProperties().remove("test.prop");
@@ -54,11 +53,11 @@ class SystemPropertyUtilsTests {
 	}
 
 	@Test
-	void replaceFromSystemPropertyWithExpressionDefault() {
+	public void testReplaceFromSystemPropertyWithExpressionDefault() {
 		System.setProperty("test.prop", "bar");
 		try {
 			String resolved = SystemPropertyUtils.resolvePlaceholders("${test.prop:#{foo.bar}}");
-			assertThat(resolved).isEqualTo("bar");
+			assertEquals("bar", resolved);
 		}
 		finally {
 			System.getProperties().remove("test.prop");
@@ -66,11 +65,11 @@ class SystemPropertyUtilsTests {
 	}
 
 	@Test
-	void replaceFromSystemPropertyWithExpressionContainingDefault() {
+	public void testReplaceFromSystemPropertyWithExpressionContainingDefault() {
 		System.setProperty("test.prop", "bar");
 		try {
 			String resolved = SystemPropertyUtils.resolvePlaceholders("${test.prop:Y#{foo.bar}X}");
-			assertThat(resolved).isEqualTo("bar");
+			assertEquals("bar", resolved);
 		}
 		finally {
 			System.getProperties().remove("test.prop");
@@ -78,48 +77,48 @@ class SystemPropertyUtilsTests {
 	}
 
 	@Test
-	void replaceWithDefault() {
+	public void testReplaceWithDefault() {
 		String resolved = SystemPropertyUtils.resolvePlaceholders("${test.prop:foo}");
-		assertThat(resolved).isEqualTo("foo");
+		assertEquals("foo", resolved);
 	}
 
 	@Test
-	void replaceWithExpressionDefault() {
+	public void testReplaceWithExpressionDefault() {
 		String resolved = SystemPropertyUtils.resolvePlaceholders("${test.prop:#{foo.bar}}");
-		assertThat(resolved).isEqualTo("#{foo.bar}");
+		assertEquals("#{foo.bar}", resolved);
 	}
 
 	@Test
-	void replaceWithExpressionContainingDefault() {
+	public void testReplaceWithExpressionContainingDefault() {
 		String resolved = SystemPropertyUtils.resolvePlaceholders("${test.prop:Y#{foo.bar}X}");
-		assertThat(resolved).isEqualTo("Y#{foo.bar}X");
+		assertEquals("Y#{foo.bar}X", resolved);
+	}
+
+	@Test(expected=IllegalArgumentException.class)
+	public void testReplaceWithNoDefault() {
+		String resolved = SystemPropertyUtils.resolvePlaceholders("${test.prop}");
+		assertEquals("", resolved);
 	}
 
 	@Test
-	void replaceWithNoDefault() {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				SystemPropertyUtils.resolvePlaceholders("${test.prop}"));
-	}
-
-	@Test
-	void replaceWithNoDefaultIgnored() {
+	public void testReplaceWithNoDefaultIgnored() {
 		String resolved = SystemPropertyUtils.resolvePlaceholders("${test.prop}", true);
-		assertThat(resolved).isEqualTo("${test.prop}");
+		assertEquals("${test.prop}", resolved);
 	}
 
 	@Test
-	void replaceWithEmptyDefault() {
+	public void testReplaceWithEmptyDefault() {
 		String resolved = SystemPropertyUtils.resolvePlaceholders("${test.prop:}");
-		assertThat(resolved).isEqualTo("");
+		assertEquals("", resolved);
 	}
 
 	@Test
-	void recursiveFromSystemProperty() {
+	public void testRecursiveFromSystemProperty() {
 		System.setProperty("test.prop", "foo=${bar}");
 		System.setProperty("bar", "baz");
 		try {
 			String resolved = SystemPropertyUtils.resolvePlaceholders("${test.prop}");
-			assertThat(resolved).isEqualTo("foo=baz");
+			assertEquals("foo=baz", resolved);
 		}
 		finally {
 			System.getProperties().remove("test.prop");
@@ -128,11 +127,11 @@ class SystemPropertyUtilsTests {
 	}
 
 	@Test
-	void replaceFromEnv() {
+	public void testReplaceFromEnv() {
 		Map<String,String> env = System.getenv();
 		if (env.containsKey("PATH")) {
 			String text = "${PATH}";
-			assertThat(SystemPropertyUtils.resolvePlaceholders(text)).isEqualTo(env.get("PATH"));
+			assertEquals(env.get("PATH"), SystemPropertyUtils.resolvePlaceholders(text));
 		}
 	}
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,16 +16,14 @@
 
 package org.springframework.jms.listener.endpoint;
 
-import jakarta.jms.MessageListener;
-import jakarta.resource.ResourceException;
+import javax.jms.MessageListener;
+import javax.resource.ResourceException;
 
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.jca.endpoint.GenericMessageEndpointManager;
 import org.springframework.jms.listener.MessageListenerContainer;
-import org.springframework.jms.support.QosSettings;
 import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.jms.support.destination.DestinationResolver;
-import org.springframework.lang.Nullable;
 
 /**
  * Extension of the generic JCA 1.5
@@ -37,15 +35,15 @@ import org.springframework.lang.Nullable;
  * object for activating the endpoint.
  *
  * <p><b>NOTE:</b> This JCA-based endpoint manager supports standard JMS
- * {@link jakarta.jms.MessageListener} endpoints only. It does <i>not</i> support
+ * {@link javax.jms.MessageListener} endpoints only. It does <i>not</i> support
  * Spring's {@link org.springframework.jms.listener.SessionAwareMessageListener}
  * variant, simply because the JCA endpoint management contract does not allow
- * for obtaining the current JMS {@link jakarta.jms.Session}.
+ * for obtaining the current JMS {@link javax.jms.Session}.
  *
  * @author Juergen Hoeller
  * @author Stephane Nicoll
  * @since 2.5
- * @see jakarta.jms.MessageListener
+ * @see javax.jms.MessageListener
  * @see #setActivationSpecConfig
  * @see JmsActivationSpecConfig
  * @see JmsActivationSpecFactory
@@ -60,7 +58,6 @@ public class JmsMessageEndpointManager extends GenericMessageEndpointManager
 
 	private JmsActivationSpecFactory activationSpecFactory = new DefaultJmsActivationSpecFactory();
 
-	@Nullable
 	private JmsActivationSpecConfig activationSpecConfig;
 
 
@@ -86,7 +83,7 @@ public class JmsMessageEndpointManager extends GenericMessageEndpointManager
 	 * invocations, enlisting the endpoint resource in each such transaction.
 	 * <p>The passed-in object may be a transaction manager which implements
 	 * Spring's {@link org.springframework.transaction.jta.TransactionFactory}
-	 * interface, or a plain {@link jakarta.transaction.TransactionManager}.
+	 * interface, or a plain {@link javax.transaction.TransactionManager}.
 	 * <p>If no transaction manager is specified, the endpoint invocation
 	 * will simply not be wrapped in an XA transaction. Consult your
 	 * resource provider's ActivationSpec documentation for the local
@@ -104,13 +101,13 @@ public class JmsMessageEndpointManager extends GenericMessageEndpointManager
 	 * {@link #setActivationSpecConfig JmsActivationSpecConfig} objects.
 	 * <p>This factory is dependent on the concrete JMS provider, e.g. on ActiveMQ.
 	 * The default implementation simply guesses the ActivationSpec class name
-	 * from the provider's class name (e.g. "ActiveMQResourceAdapter" &rarr;
+	 * from the provider's class name (e.g. "ActiveMQResourceAdapter" ->
 	 * "ActiveMQActivationSpec" in the same package), and populates the
 	 * ActivationSpec properties as suggested by the JCA 1.5 specification
 	 * (plus a couple of autodetected vendor-specific properties).
 	 * @see DefaultJmsActivationSpecFactory
 	 */
-	public void setActivationSpecFactory(@Nullable JmsActivationSpecFactory activationSpecFactory) {
+	public void setActivationSpecFactory(JmsActivationSpecFactory activationSpecFactory) {
 		this.activationSpecFactory =
 				(activationSpecFactory != null ? activationSpecFactory : new DefaultJmsActivationSpecFactory());
 	}
@@ -138,7 +135,7 @@ public class JmsMessageEndpointManager extends GenericMessageEndpointManager
 	 * <p>This config object will be turned into a concrete JCA 1.5 ActivationSpec
 	 * object through a {@link #setActivationSpecFactory JmsActivationSpecFactory}.
 	 */
-	public void setActivationSpecConfig(@Nullable JmsActivationSpecConfig activationSpecConfig) {
+	public void setActivationSpecConfig(JmsActivationSpecConfig activationSpecConfig) {
 		this.activationSpecConfig = activationSpecConfig;
 	}
 
@@ -146,7 +143,6 @@ public class JmsMessageEndpointManager extends GenericMessageEndpointManager
 	 * Return the {@link JmsActivationSpecConfig} object that this endpoint manager
 	 * should use for activating its listener. Return {@code null} if none is set.
 	 */
-	@Nullable
 	public JmsActivationSpecConfig getActivationSpecConfig() {
 		return this.activationSpecConfig;
 	}
@@ -163,9 +159,6 @@ public class JmsMessageEndpointManager extends GenericMessageEndpointManager
 
 	@Override
 	public void afterPropertiesSet() throws ResourceException {
-		if (getResourceAdapter() == null) {
-			throw new IllegalArgumentException("Property 'resourceAdapter' is required");
-		}
 		if (this.messageListenerSet) {
 			setMessageEndpointFactory(this.endpointFactory);
 		}
@@ -173,7 +166,6 @@ public class JmsMessageEndpointManager extends GenericMessageEndpointManager
 			setActivationSpec(
 					this.activationSpecFactory.createActivationSpec(getResourceAdapter(), this.activationSpecConfig));
 		}
-
 		super.afterPropertiesSet();
 	}
 
@@ -191,7 +183,6 @@ public class JmsMessageEndpointManager extends GenericMessageEndpointManager
 	}
 
 	@Override
-	@Nullable
 	public MessageConverter getMessageConverter() {
 		JmsActivationSpecConfig config = getActivationSpecConfig();
 		if (config != null) {
@@ -201,7 +192,6 @@ public class JmsMessageEndpointManager extends GenericMessageEndpointManager
 	}
 
 	@Override
-	@Nullable
 	public DestinationResolver getDestinationResolver() {
 		if (this.activationSpecFactory instanceof StandardJmsActivationSpecFactory) {
 			return ((StandardJmsActivationSpecFactory) this.activationSpecFactory).getDestinationResolver();
@@ -227,13 +217,4 @@ public class JmsMessageEndpointManager extends GenericMessageEndpointManager
 		throw new IllegalStateException("Could not determine reply pubSubDomain - no activation spec config is set");
 	}
 
-	@Override
-	@Nullable
-	public QosSettings getReplyQosSettings() {
-		JmsActivationSpecConfig config = getActivationSpecConfig();
-		if (config != null) {
-			return config.getReplyQosSettings();
-		}
-		throw new IllegalStateException("Could not determine reply qosSettings - no activation spec config is set");
-	}
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,12 +19,12 @@ package org.springframework.aop.support.annotation;
 import java.lang.annotation.Annotation;
 
 import org.springframework.aop.ClassFilter;
-import org.springframework.core.annotation.AnnotatedElementUtils;
-import org.springframework.lang.Nullable;
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.Assert;
 
 /**
- * Simple ClassFilter that looks for a specific annotation being present on a class.
+ * Simple ClassFilter that looks for a specific Java 5 annotation
+ * being present on a class.
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -48,10 +48,9 @@ public class AnnotationClassFilter implements ClassFilter {
 	/**
 	 * Create a new AnnotationClassFilter for the given annotation type.
 	 * @param annotationType the annotation type to look for
-	 * @param checkInherited whether to also check the superclasses and
-	 * interfaces as well as meta-annotations for the annotation type
-	 * (i.e. whether to use {@link AnnotatedElementUtils#hasAnnotation}
-	 * semantics instead of standard Java {@link Class#isAnnotationPresent})
+	 * @param checkInherited whether to explicitly check the superclasses and
+	 * interfaces for the annotation type as well (even if the annotation type
+	 * is not marked as inherited itself)
 	 */
 	public AnnotationClassFilter(Class<? extends Annotation> annotationType, boolean checkInherited) {
 		Assert.notNull(annotationType, "Annotation type must not be null");
@@ -62,18 +61,20 @@ public class AnnotationClassFilter implements ClassFilter {
 
 	@Override
 	public boolean matches(Class<?> clazz) {
-		return (this.checkInherited ? AnnotatedElementUtils.hasAnnotation(clazz, this.annotationType) :
+		return (this.checkInherited ?
+				(AnnotationUtils.findAnnotation(clazz, this.annotationType) != null) :
 				clazz.isAnnotationPresent(this.annotationType));
 	}
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}
-		if (!(other instanceof AnnotationClassFilter otherCf)) {
+		if (!(other instanceof AnnotationClassFilter)) {
 			return false;
 		}
+		AnnotationClassFilter otherCf = (AnnotationClassFilter) other;
 		return (this.annotationType.equals(otherCf.annotationType) && this.checkInherited == otherCf.checkInherited);
 	}
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,18 +19,16 @@ package org.springframework.cache.jcache.interceptor;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.Set;
-
 import javax.cache.annotation.CacheInvocationParameter;
 import javax.cache.annotation.CacheKey;
 import javax.cache.annotation.CacheMethodDetails;
 import javax.cache.annotation.CacheResult;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.annotation.Value;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.junit.Assert.*;
 
 /**
  * @author Stephane Nicoll
@@ -50,18 +48,18 @@ public class CacheResultOperationTests extends AbstractCacheOperationTests<Cache
 	public void simpleGet() {
 		CacheResultOperation operation = createSimpleOperation();
 
-		assertThat(operation.getKeyGenerator()).isNotNull();
-		assertThat(operation.getExceptionCacheResolver()).isNotNull();
+		assertNotNull(operation.getKeyGenerator());
+		assertNotNull(operation.getExceptionCacheResolver());
 
-		assertThat(operation.getExceptionCacheName()).isNull();
-		assertThat(operation.getExceptionCacheResolver()).isEqualTo(defaultExceptionCacheResolver);
+		assertNull(operation.getExceptionCacheName());
+		assertEquals(defaultExceptionCacheResolver, operation.getExceptionCacheResolver());
 
 		CacheInvocationParameter[] allParameters = operation.getAllParameters(2L);
-		assertThat(allParameters.length).isEqualTo(1);
+		assertEquals(1, allParameters.length);
 		assertCacheInvocationParameter(allParameters[0], Long.class, 2L, 0);
 
 		CacheInvocationParameter[] keyParameters = operation.getKeyParameters(2L);
-		assertThat(keyParameters.length).isEqualTo(1);
+		assertEquals(1, keyParameters.length);
 		assertCacheInvocationParameter(keyParameters[0], Long.class, 2L, 0);
 	}
 
@@ -72,7 +70,7 @@ public class CacheResultOperationTests extends AbstractCacheOperationTests<Cache
 		CacheResultOperation operation = createDefaultOperation(methodDetails);
 
 		CacheInvocationParameter[] keyParameters = operation.getKeyParameters(3L, Boolean.TRUE, "Foo");
-		assertThat(keyParameters.length).isEqualTo(2);
+		assertEquals(2, keyParameters.length);
 		assertCacheInvocationParameter(keyParameters[0], Long.class, 3L, 0);
 		assertCacheInvocationParameter(keyParameters[1], String.class, "Foo", 2);
 	}
@@ -83,9 +81,8 @@ public class CacheResultOperationTests extends AbstractCacheOperationTests<Cache
 				SampleObject.class, "anotherSimpleGet", String.class, Long.class);
 		CacheResultOperation operation = createDefaultOperation(methodDetails);
 
-		// missing one argument
-		assertThatIllegalStateException().isThrownBy(() ->
-				operation.getAllParameters("bar"));
+		thrown.expect(IllegalStateException.class);
+		operation.getAllParameters("bar"); // missing one argument
 	}
 
 	@Test
@@ -94,9 +91,8 @@ public class CacheResultOperationTests extends AbstractCacheOperationTests<Cache
 				SampleObject.class, "anotherSimpleGet", String.class, Long.class);
 		CacheResultOperation operation = createDefaultOperation(methodDetails);
 
-		// missing one argument
-		assertThatIllegalStateException().isThrownBy(() ->
-				operation.getKeyParameters("bar"));
+		thrown.expect(IllegalStateException.class);
+		operation.getKeyParameters("bar"); // missing one argument
 	}
 
 	@Test
@@ -107,12 +103,12 @@ public class CacheResultOperationTests extends AbstractCacheOperationTests<Cache
 		CacheInvocationParameter[] parameters = operation.getAllParameters(2L, "foo");
 
 		Set<Annotation> firstParameterAnnotations = parameters[0].getAnnotations();
-		assertThat(firstParameterAnnotations.size()).isEqualTo(1);
-		assertThat(firstParameterAnnotations.iterator().next().annotationType()).isEqualTo(CacheKey.class);
+		assertEquals(1, firstParameterAnnotations.size());
+		assertEquals(CacheKey.class, firstParameterAnnotations.iterator().next().annotationType());
 
 		Set<Annotation> secondParameterAnnotations = parameters[1].getAnnotations();
-		assertThat(secondParameterAnnotations.size()).isEqualTo(1);
-		assertThat(secondParameterAnnotations.iterator().next().annotationType()).isEqualTo(Value.class);
+		assertEquals(1, secondParameterAnnotations.size());
+		assertEquals(Value.class, secondParameterAnnotations.iterator().next().annotationType());
 	}
 
 	@Test
@@ -120,10 +116,10 @@ public class CacheResultOperationTests extends AbstractCacheOperationTests<Cache
 		CacheMethodDetails<CacheResult> methodDetails = create(CacheResult.class,
 				SampleObject.class, "fullGetConfig", Long.class);
 		CacheResultOperation operation = createDefaultOperation(methodDetails);
-		assertThat(operation.isAlwaysInvoked()).isTrue();
-		assertThat(operation.getExceptionTypeFilter()).isNotNull();
-		assertThat(operation.getExceptionTypeFilter().match(IOException.class)).isTrue();
-		assertThat(operation.getExceptionTypeFilter().match(NullPointerException.class)).isFalse();
+		assertTrue(operation.isAlwaysInvoked());
+		assertNotNull(operation.getExceptionTypeFilter());
+		assertTrue(operation.getExceptionTypeFilter().match(IOException.class));
+		assertFalse(operation.getExceptionTypeFilter().match(NullPointerException.class));
 	}
 
 	private CacheResultOperation createDefaultOperation(CacheMethodDetails<CacheResult> methodDetails) {

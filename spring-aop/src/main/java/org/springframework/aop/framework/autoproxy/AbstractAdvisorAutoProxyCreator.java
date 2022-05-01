@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,25 +24,21 @@ import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
 
 /**
  * Generic auto proxy creator that builds AOP proxies for specific beans
  * based on detected Advisors for each bean.
  *
- * <p>Subclasses may override the {@link #findCandidateAdvisors()} method to
- * return a custom list of Advisors applying to any object. Subclasses can
+ * <p>Subclasses must implement the abstract {@link #findCandidateAdvisors()}
+ * method to return a list of Advisors applying to any object. Subclasses can
  * also override the inherited {@link #shouldSkip} method to exclude certain
  * objects from auto-proxying.
  *
- * <p>Advisors or advices requiring ordering should be annotated with
- * {@link org.springframework.core.annotation.Order @Order} or implement the
+ * <p>Advisors or advices requiring ordering should implement the
  * {@link org.springframework.core.Ordered} interface. This class sorts
- * advisors using the {@link AnnotationAwareOrderComparator}. Advisors that are
- * not annotated with {@code @Order} or don't implement the {@code Ordered}
- * interface will be considered as unordered; they will appear at the end of the
- * advisor chain in an undefined order.
+ * Advisors by Ordered order value. Advisors that don't implement the
+ * Ordered interface will be considered as unordered; they will appear
+ * at the end of the advisor chain in undefined order.
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -51,7 +47,6 @@ import org.springframework.util.Assert;
 @SuppressWarnings("serial")
 public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyCreator {
 
-	@Nullable
 	private BeanFactoryAdvisorRetrievalHelper advisorRetrievalHelper;
 
 
@@ -71,10 +66,7 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 
 
 	@Override
-	@Nullable
-	protected Object[] getAdvicesAndAdvisorsForBean(
-			Class<?> beanClass, String beanName, @Nullable TargetSource targetSource) {
-
+	protected Object[] getAdvicesAndAdvisorsForBean(Class<?> beanClass, String beanName, TargetSource targetSource) {
 		List<Advisor> advisors = findEligibleAdvisors(beanClass, beanName);
 		if (advisors.isEmpty()) {
 			return DO_NOT_PROXY;
@@ -107,7 +99,6 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	 * @return the List of candidate Advisors
 	 */
 	protected List<Advisor> findCandidateAdvisors() {
-		Assert.state(this.advisorRetrievalHelper != null, "No BeanFactoryAdvisorRetrievalHelper available");
 		return this.advisorRetrievalHelper.findAdvisorBeans();
 	}
 
@@ -162,7 +153,7 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	 * <p>The default implementation is empty.
 	 * <p>Typically used to add Advisors that expose contextual information
 	 * required by some of the later advisors.
-	 * @param candidateAdvisors the Advisors that have already been identified as
+	 * @param candidateAdvisors Advisors that have already been identified as
 	 * applying to a given bean
 	 */
 	protected void extendAdvisors(List<Advisor> candidateAdvisors) {

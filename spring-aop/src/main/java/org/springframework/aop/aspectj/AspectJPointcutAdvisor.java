@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,6 @@ import org.aopalliance.aop.Advice;
 import org.springframework.aop.Pointcut;
 import org.springframework.aop.PointcutAdvisor;
 import org.springframework.core.Ordered;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -38,12 +37,11 @@ public class AspectJPointcutAdvisor implements PointcutAdvisor, Ordered {
 
 	private final Pointcut pointcut;
 
-	@Nullable
 	private Integer order;
 
 
 	/**
-	 * Create a new AspectJPointcutAdvisor for the given advice.
+	 * Create a new AspectJPointcutAdvisor for the given advice
 	 * @param advice the AbstractAspectJAdvice to wrap
 	 */
 	public AspectJPointcutAdvisor(AbstractAspectJAdvice advice) {
@@ -55,16 +53,6 @@ public class AspectJPointcutAdvisor implements PointcutAdvisor, Ordered {
 
 	public void setOrder(int order) {
 		this.order = order;
-	}
-
-	@Override
-	public int getOrder() {
-		if (this.order != null) {
-			return this.order;
-		}
-		else {
-			return this.advice.getOrder();
-		}
 	}
 
 	@Override
@@ -82,24 +70,26 @@ public class AspectJPointcutAdvisor implements PointcutAdvisor, Ordered {
 		return this.pointcut;
 	}
 
-	/**
-	 * Return the name of the aspect (bean) in which the advice was declared.
-	 * @since 4.3.15
-	 * @see AbstractAspectJAdvice#getAspectName()
-	 */
-	public String getAspectName() {
-		return this.advice.getAspectName();
+	@Override
+	public int getOrder() {
+		if (this.order != null) {
+			return this.order;
+		}
+		else {
+			return this.advice.getOrder();
+		}
 	}
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}
-		if (!(other instanceof AspectJPointcutAdvisor otherAdvisor)) {
+		if (!(other instanceof AspectJPointcutAdvisor)) {
 			return false;
 		}
+		AspectJPointcutAdvisor otherAdvisor = (AspectJPointcutAdvisor) other;
 		return this.advice.equals(otherAdvisor.advice);
 	}
 

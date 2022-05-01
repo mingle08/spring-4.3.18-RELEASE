@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2011 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,15 +19,15 @@ package org.springframework.http.client;
 import java.net.URI;
 import java.util.Arrays;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.FileCopyUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
-class BufferingClientHttpRequestFactoryTests extends AbstractHttpRequestFactoryTests {
+public class BufferingClientHttpRequestFactoryTests extends AbstractHttpRequestFactoryTestCase {
 
 	@Override
 	protected ClientHttpRequestFactory createRequestFactory() {
@@ -35,9 +35,9 @@ class BufferingClientHttpRequestFactoryTests extends AbstractHttpRequestFactoryT
 	}
 
 	@Test
-	void repeatableRead() throws Exception {
+	public void repeatableRead() throws Exception {
 		ClientHttpRequest request = factory.createRequest(new URI(baseUrl + "/echo"), HttpMethod.PUT);
-		assertThat(request.getMethod()).as("Invalid HTTP method").isEqualTo(HttpMethod.PUT);
+		assertEquals("Invalid HTTP method", HttpMethod.PUT, request.getMethod());
 		String headerName = "MyHeader";
 		String headerValue1 = "value1";
 		request.getHeaders().add(headerName, headerValue1);
@@ -46,20 +46,26 @@ class BufferingClientHttpRequestFactoryTests extends AbstractHttpRequestFactoryT
 		byte[] body = "Hello World".getBytes("UTF-8");
 		request.getHeaders().setContentLength(body.length);
 		FileCopyUtils.copy(body, request.getBody());
-		try (ClientHttpResponse response = request.execute()) {
-			assertThat(response.getStatusCode()).as("Invalid status code").isEqualTo(HttpStatus.OK);
-			assertThat(response.getStatusCode()).as("Invalid status code").isEqualTo(HttpStatus.OK);
+		ClientHttpResponse response = request.execute();
+		try {
+			assertEquals("Invalid status code", HttpStatus.OK, response.getStatusCode());
+			assertEquals("Invalid status code", HttpStatus.OK, response.getStatusCode());
 
-			assertThat(response.getHeaders().containsKey(headerName)).as("Header not found").isTrue();
-			assertThat(response.getHeaders().containsKey(headerName)).as("Header not found").isTrue();
+			assertTrue("Header not found", response.getHeaders().containsKey(headerName));
+			assertTrue("Header not found", response.getHeaders().containsKey(headerName));
 
-			assertThat(response.getHeaders().get(headerName)).as("Header value not found").isEqualTo(Arrays.asList(headerValue1, headerValue2));
-			assertThat(response.getHeaders().get(headerName)).as("Header value not found").isEqualTo(Arrays.asList(headerValue1, headerValue2));
+			assertEquals("Header value not found", Arrays.asList(headerValue1, headerValue2),
+					response.getHeaders().get(headerName));
+			assertEquals("Header value not found", Arrays.asList(headerValue1, headerValue2),
+					response.getHeaders().get(headerName));
 
 			byte[] result = FileCopyUtils.copyToByteArray(response.getBody());
-			assertThat(Arrays.equals(body, result)).as("Invalid body").isTrue();
+			assertTrue("Invalid body", Arrays.equals(body, result));
 			FileCopyUtils.copyToByteArray(response.getBody());
-			assertThat(Arrays.equals(body, result)).as("Invalid body").isTrue();
+			assertTrue("Invalid body", Arrays.equals(body, result));
+		}
+		finally {
+			response.close();
 		}
 	}
 

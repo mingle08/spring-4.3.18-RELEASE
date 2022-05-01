@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,14 @@
 
 package org.springframework.messaging.converter;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -30,8 +32,7 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for
@@ -48,8 +49,8 @@ public class MessageConverterTests {
 	public void supportsTargetClass() {
 		Message<String> message = MessageBuilder.withPayload("ABC").build();
 
-		assertThat(this.converter.fromMessage(message, String.class)).isEqualTo("success-from");
-		assertThat(this.converter.fromMessage(message, Integer.class)).isNull();
+		assertEquals("success-from", this.converter.fromMessage(message, String.class));
+		assertNull(this.converter.fromMessage(message, Integer.class));
 	}
 
 	@Test
@@ -57,7 +58,7 @@ public class MessageConverterTests {
 		Message<String> message = MessageBuilder.withPayload(
 				"ABC").setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.TEXT_PLAIN).build();
 
-		assertThat(this.converter.fromMessage(message, String.class)).isEqualTo("success-from");
+		assertEquals("success-from", this.converter.fromMessage(message, String.class));
 	}
 
 	@Test
@@ -65,42 +66,42 @@ public class MessageConverterTests {
 		Message<String> message = MessageBuilder.withPayload(
 				"ABC").setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON).build();
 
-		assertThat(this.converter.fromMessage(message, String.class)).isNull();
+		assertNull(this.converter.fromMessage(message, String.class));
 	}
 
 	@Test
 	public void supportsMimeTypeNotSpecified() {
 		Message<String> message = MessageBuilder.withPayload("ABC").build();
-		assertThat(this.converter.fromMessage(message, String.class)).isEqualTo("success-from");
+		assertEquals("success-from", this.converter.fromMessage(message, String.class));
 	}
 
 	@Test
 	public void supportsMimeTypeNoneConfigured() {
 		Message<String> message = MessageBuilder.withPayload(
 				"ABC").setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON).build();
-		this.converter = new TestMessageConverter(new MimeType[0]);
+		this.converter = new TestMessageConverter(Collections.<MimeType>emptyList());
 
-		assertThat(this.converter.fromMessage(message, String.class)).isEqualTo("success-from");
+		assertEquals("success-from", this.converter.fromMessage(message, String.class));
 	}
 
 	@Test
 	public void canConvertFromStrictContentTypeMatch() {
-		this.converter = new TestMessageConverter(MimeTypeUtils.TEXT_PLAIN);
+		this.converter = new TestMessageConverter(Arrays.asList(MimeTypeUtils.TEXT_PLAIN));
 		this.converter.setStrictContentTypeMatch(true);
 
 		Message<String> message = MessageBuilder.withPayload("ABC").build();
-		assertThat(this.converter.canConvertFrom(message, String.class)).isFalse();
+		assertFalse(this.converter.canConvertFrom(message, String.class));
 
 		message = MessageBuilder.withPayload("ABC")
 				.setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.TEXT_PLAIN).build();
-		assertThat(this.converter.canConvertFrom(message, String.class)).isTrue();
+		assertTrue(this.converter.canConvertFrom(message, String.class));
 
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void setStrictContentTypeMatchWithNoSupportedMimeTypes() {
-		this.converter = new TestMessageConverter(new MimeType[0]);
-		assertThatIllegalArgumentException().isThrownBy(() -> this.converter.setStrictContentTypeMatch(true));
+		this.converter = new TestMessageConverter(Collections.<MimeType>emptyList());
+		this.converter.setStrictContentTypeMatch(true);
 	}
 
 	@Test
@@ -110,10 +111,10 @@ public class MessageConverterTests {
 		MessageHeaders headers = new MessageHeaders(map);
 		Message<?> message = this.converter.toMessage("ABC", headers);
 
-		assertThat(message.getHeaders().getId()).isNotNull();
-		assertThat(message.getHeaders().getTimestamp()).isNotNull();
-		assertThat(message.getHeaders().get(MessageHeaders.CONTENT_TYPE)).isEqualTo(MimeTypeUtils.TEXT_PLAIN);
-		assertThat(message.getHeaders().get("foo")).isEqualTo("bar");
+		assertNotNull(message.getHeaders().getId());
+		assertNotNull(message.getHeaders().getTimestamp());
+		assertEquals(MimeTypeUtils.TEXT_PLAIN, message.getHeaders().get(MessageHeaders.CONTENT_TYPE));
+		assertEquals("bar", message.getHeaders().get("foo"));
 	}
 
 	@Test
@@ -126,16 +127,16 @@ public class MessageConverterTests {
 		MessageHeaders headers = accessor.getMessageHeaders();
 		Message<?> message = this.converter.toMessage("ABC", headers);
 
-		assertThat(message.getHeaders()).isSameAs(headers);
-		assertThat(message.getHeaders().getId()).isNull();
-		assertThat(message.getHeaders().getTimestamp()).isNull();
-		assertThat(message.getHeaders().get(MessageHeaders.CONTENT_TYPE)).isEqualTo(MimeTypeUtils.TEXT_PLAIN);
+		assertSame(headers, message.getHeaders());
+		assertNull(message.getHeaders().getId());
+		assertNull(message.getHeaders().getTimestamp());
+		assertEquals(MimeTypeUtils.TEXT_PLAIN, message.getHeaders().get(MessageHeaders.CONTENT_TYPE));
 	}
 
 	@Test
 	public void toMessageContentTypeHeader() {
 		Message<?> message = this.converter.toMessage("ABC", null);
-		assertThat(message.getHeaders().get(MessageHeaders.CONTENT_TYPE)).isEqualTo(MimeTypeUtils.TEXT_PLAIN);
+		assertEquals(MimeTypeUtils.TEXT_PLAIN, message.getHeaders().get(MessageHeaders.CONTENT_TYPE));
 	}
 
 
@@ -145,7 +146,7 @@ public class MessageConverterTests {
 			super(MimeTypeUtils.TEXT_PLAIN);
 		}
 
-		public TestMessageConverter(MimeType... supportedMimeTypes) {
+		public TestMessageConverter(Collection<MimeType> supportedMimeTypes) {
 			super(supportedMimeTypes);
 		}
 
@@ -155,16 +156,12 @@ public class MessageConverterTests {
 		}
 
 		@Override
-		protected Object convertFromInternal(
-				Message<?> message, Class<?> targetClass, @Nullable Object conversionHint) {
-
+		public Object convertFromInternal(Message<?> message, Class<?> targetClass) {
 			return "success-from";
 		}
 
 		@Override
-		protected Object convertToInternal(
-				Object payload, @Nullable MessageHeaders headers, @Nullable Object conversionHint) {
-
+		public Object convertToInternal(Object payload, MessageHeaders headers) {
 			return "success-to";
 		}
 	}

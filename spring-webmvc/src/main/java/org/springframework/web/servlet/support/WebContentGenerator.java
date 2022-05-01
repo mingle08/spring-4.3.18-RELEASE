@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,15 +23,14 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.lang.Nullable;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -66,13 +65,13 @@ import org.springframework.web.context.support.WebApplicationObjectSupport;
  */
 public abstract class WebContentGenerator extends WebApplicationObjectSupport {
 
-	/** HTTP method "GET". */
+	/** HTTP method "GET" */
 	public static final String METHOD_GET = "GET";
 
-	/** HTTP method "HEAD". */
+	/** HTTP method "HEAD" */
 	public static final String METHOD_HEAD = "HEAD";
 
-	/** HTTP method "POST". */
+	/** HTTP method "POST" */
 	public static final String METHOD_POST = "POST";
 
 	private static final String HEADER_PRAGMA = "Pragma";
@@ -81,22 +80,22 @@ public abstract class WebContentGenerator extends WebApplicationObjectSupport {
 
 	protected static final String HEADER_CACHE_CONTROL = "Cache-Control";
 
+	/** Checking for Servlet 3.0+ HttpServletResponse.getHeaders(String) */
+	private static final boolean servlet3Present =
+			ClassUtils.hasMethod(HttpServletResponse.class, "getHeaders", String.class);
 
-	/** Set of supported HTTP methods. */
-	@Nullable
+
+	/** Set of supported HTTP methods */
 	private Set<String> supportedMethods;
 
-	@Nullable
 	private String allowHeader;
 
 	private boolean requireSession = false;
 
-	@Nullable
 	private CacheControl cacheControl;
 
 	private int cacheSeconds = -1;
 
-	@Nullable
 	private String[] varyByRequestHeaders;
 
 
@@ -130,7 +129,7 @@ public abstract class WebContentGenerator extends WebApplicationObjectSupport {
 	 */
 	public WebContentGenerator(boolean restrictDefaultSupportedMethods) {
 		if (restrictDefaultSupportedMethods) {
-			this.supportedMethods = new LinkedHashSet<>(4);
+			this.supportedMethods = new LinkedHashSet<String>(4);
 			this.supportedMethods.add(METHOD_GET);
 			this.supportedMethods.add(METHOD_HEAD);
 			this.supportedMethods.add(METHOD_POST);
@@ -152,9 +151,9 @@ public abstract class WebContentGenerator extends WebApplicationObjectSupport {
 	 * <p>Default is GET, HEAD and POST for simple form controller types;
 	 * unrestricted for general controllers and interceptors.
 	 */
-	public final void setSupportedMethods(@Nullable String... methods) {
+	public final void setSupportedMethods(String... methods) {
 		if (!ObjectUtils.isEmpty(methods)) {
-			this.supportedMethods = new LinkedHashSet<>(Arrays.asList(methods));
+			this.supportedMethods = new LinkedHashSet<String>(Arrays.asList(methods));
 		}
 		else {
 			this.supportedMethods = null;
@@ -165,15 +164,14 @@ public abstract class WebContentGenerator extends WebApplicationObjectSupport {
 	/**
 	 * Return the HTTP methods that this content generator supports.
 	 */
-	@Nullable
 	public final String[] getSupportedMethods() {
-		return (this.supportedMethods != null ? StringUtils.toStringArray(this.supportedMethods) : null);
+		return StringUtils.toStringArray(this.supportedMethods);
 	}
 
 	private void initAllowHeader() {
 		Collection<String> allowedMethods;
 		if (this.supportedMethods == null) {
-			allowedMethods = new ArrayList<>(HttpMethod.values().length - 1);
+			allowedMethods = new ArrayList<String>(HttpMethod.values().length - 1);
 			for (HttpMethod method : HttpMethod.values()) {
 				if (method != HttpMethod.TRACE) {
 					allowedMethods.add(method.name());
@@ -184,7 +182,7 @@ public abstract class WebContentGenerator extends WebApplicationObjectSupport {
 			allowedMethods = this.supportedMethods;
 		}
 		else {
-			allowedMethods = new ArrayList<>(this.supportedMethods);
+			allowedMethods = new ArrayList<String>(this.supportedMethods);
 			allowedMethods.add(HttpMethod.OPTIONS.name());
 
 		}
@@ -200,7 +198,6 @@ public abstract class WebContentGenerator extends WebApplicationObjectSupport {
 	 * call to {@link #checkRequest(HttpServletRequest)}.
 	 * @since 4.3
 	 */
-	@Nullable
 	protected String getAllowHeader() {
 		return this.allowHeader;
 	}
@@ -224,7 +221,7 @@ public abstract class WebContentGenerator extends WebApplicationObjectSupport {
 	 * the Cache-Control HTTP response header.
 	 * @since 4.2
 	 */
-	public final void setCacheControl(@Nullable CacheControl cacheControl) {
+	public final void setCacheControl(CacheControl cacheControl) {
 		this.cacheControl = cacheControl;
 	}
 
@@ -233,7 +230,6 @@ public abstract class WebContentGenerator extends WebApplicationObjectSupport {
 	 * that builds the Cache-Control HTTP response header.
 	 * @since 4.2
 	 */
-	@Nullable
 	public final CacheControl getCacheControl() {
 		return this.cacheControl;
 	}
@@ -244,7 +240,7 @@ public abstract class WebContentGenerator extends WebApplicationObjectSupport {
 	 * <ul>
 	 * <li>seconds == -1 (default value): no generation cache-related headers</li>
 	 * <li>seconds == 0: "Cache-Control: no-store" will prevent caching</li>
-	 * <li>seconds &gt; 0: "Cache-Control: max-age=seconds" will ask to cache content</li>
+	 * <li>seconds > 0: "Cache-Control: max-age=seconds" will ask to cache content</li>
 	 * </ul>
 	 * <p>For more specific needs, a custom {@link org.springframework.http.CacheControl}
 	 * should be used.
@@ -267,10 +263,12 @@ public abstract class WebContentGenerator extends WebApplicationObjectSupport {
 	 * subject to content negotiation and variances based on the value of the
 	 * given request headers. The configured request header names are added only
 	 * if not already present in the response "Vary" header.
+	 * <p><strong>Note:</strong> This property is only supported on Servlet 3.0+
+	 * which allows checking existing response header values.
 	 * @param varyByRequestHeaders one or more request header names
 	 * @since 4.3
 	 */
-	public final void setVaryByRequestHeaders(@Nullable String... varyByRequestHeaders) {
+	public final void setVaryByRequestHeaders(String... varyByRequestHeaders) {
 		this.varyByRequestHeaders = varyByRequestHeaders;
 	}
 
@@ -278,7 +276,6 @@ public abstract class WebContentGenerator extends WebApplicationObjectSupport {
 	 * Return the configured request header names for the "Vary" response header.
 	 * @since 4.3
 	 */
-	@Nullable
 	public final String[] getVaryByRequestHeaders() {
 		return this.varyByRequestHeaders;
 	}
@@ -395,19 +392,13 @@ public abstract class WebContentGenerator extends WebApplicationObjectSupport {
 	 */
 	protected final void prepareResponse(HttpServletResponse response) {
 		if (this.cacheControl != null) {
-			if (logger.isTraceEnabled()) {
-				logger.trace("Applying default " + getCacheControl());
-			}
 			applyCacheControl(response, this.cacheControl);
 		}
 		else {
-			if (logger.isTraceEnabled()) {
-				logger.trace("Applying default cacheSeconds=" + this.cacheSeconds);
-			}
 			applyCacheSeconds(response, this.cacheSeconds);
 		}
-		if (this.varyByRequestHeaders != null) {
-			for (String value : getVaryRequestHeadersToAdd(response, this.varyByRequestHeaders)) {
+		if (servlet3Present && this.varyByRequestHeaders != null) {
+			for (String value : getVaryRequestHeadersToAdd(response)) {
 				response.addHeader("Vary", value);
 			}
 		}
@@ -476,8 +467,20 @@ public abstract class WebContentGenerator extends WebApplicationObjectSupport {
 
 
 	/**
-	 * Check and prepare the given request and response according to the settings
-	 * of this generator.
+	 * @see #checkRequest(HttpServletRequest)
+	 * @see #prepareResponse(HttpServletResponse)
+	 * @deprecated as of 4.2, since the {@code lastModified} flag is effectively ignored,
+	 * with a must-revalidate header only generated if explicitly configured
+	 */
+	@Deprecated
+	protected final void checkAndPrepare(
+			HttpServletRequest request, HttpServletResponse response, boolean lastModified) throws ServletException {
+
+		checkRequest(request);
+		prepareResponse(response);
+	}
+
+	/**
 	 * @see #checkRequest(HttpServletRequest)
 	 * @see #applyCacheSeconds(HttpServletResponse, int)
 	 * @deprecated as of 4.2, since the {@code lastModified} flag is effectively ignored,
@@ -568,7 +571,7 @@ public abstract class WebContentGenerator extends WebApplicationObjectSupport {
 	/**
 	 * Prevent the response from being cached.
 	 * Only called in HTTP 1.0 compatibility mode.
-	 * <p>See {@code https://www.mnot.net/cache_docs}.
+	 * <p>See {@code http://www.mnot.net/cache_docs}.
 	 * @deprecated as of 4.2, in favor of {@link #applyCacheControl}
 	 */
 	@Deprecated
@@ -591,18 +594,18 @@ public abstract class WebContentGenerator extends WebApplicationObjectSupport {
 	}
 
 
-	private Collection<String> getVaryRequestHeadersToAdd(HttpServletResponse response, String[] varyByRequestHeaders) {
+	private Collection<String> getVaryRequestHeadersToAdd(HttpServletResponse response) {
 		if (!response.containsHeader(HttpHeaders.VARY)) {
-			return Arrays.asList(varyByRequestHeaders);
+			return Arrays.asList(getVaryByRequestHeaders());
 		}
-		Collection<String> result = new ArrayList<>(varyByRequestHeaders.length);
-		Collections.addAll(result, varyByRequestHeaders);
+		Collection<String> result = new ArrayList<String>(getVaryByRequestHeaders().length);
+		Collections.addAll(result, getVaryByRequestHeaders());
 		for (String header : response.getHeaders(HttpHeaders.VARY)) {
 			for (String existing : StringUtils.tokenizeToStringArray(header, ",")) {
 				if ("*".equals(existing)) {
 					return Collections.emptyList();
 				}
-				for (String value : varyByRequestHeaders) {
+				for (String value : getVaryByRequestHeaders()) {
 					if (value.equalsIgnoreCase(existing)) {
 						result.remove(value);
 					}

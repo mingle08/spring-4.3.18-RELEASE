@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@
 package org.springframework.messaging.handler.invocation;
 
 import org.springframework.core.MethodParameter;
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 
 /**
@@ -47,7 +46,7 @@ public interface HandlerMethodReturnValueHandler {
 	 * @param message the message that caused this method to be called
 	 * @throws Exception if the return value handling results in an error
 	 */
-	void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType, Message<?> message)
+	void handleReturnValue(Object returnValue, MethodParameter returnType, Message<?> message)
 			throws Exception;
 
 }

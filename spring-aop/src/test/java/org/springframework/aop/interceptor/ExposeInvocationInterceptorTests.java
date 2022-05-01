@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +16,17 @@
 
 package org.springframework.aop.interceptor;
 
-import org.junit.jupiter.api.Test;
+import org.aopalliance.intercept.MethodInvocation;
+import org.junit.Test;
 
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
-import org.springframework.beans.testfixture.beans.ITestBean;
+import org.springframework.core.io.Resource;
+import org.springframework.tests.sample.beans.ITestBean;
+import org.springframework.tests.sample.beans.TestBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.core.testfixture.io.ResourceTestUtils.qualifiedResource;
+import static org.junit.Assert.*;
+import static org.springframework.tests.TestResourceUtils.*;
 
 /**
  * Non-XML tests are in AbstractAopProxyTests
@@ -31,18 +34,50 @@ import static org.springframework.core.testfixture.io.ResourceTestUtils.qualifie
  * @author Rod Johnson
  * @author Chris Beams
  */
-public class ExposeInvocationInterceptorTests {
+public final class ExposeInvocationInterceptorTests {
+
+	private static final Resource CONTEXT =
+		qualifiedResource(ExposeInvocationInterceptorTests.class, "context.xml");
 
 	@Test
 	public void testXmlConfig() {
 		DefaultListableBeanFactory bf = new DefaultListableBeanFactory();
-		new XmlBeanDefinitionReader(bf).loadBeanDefinitions(
-				qualifiedResource(ExposeInvocationInterceptorTests.class, "context.xml"));
+		new XmlBeanDefinitionReader(bf).loadBeanDefinitions(CONTEXT);
 		ITestBean tb = (ITestBean) bf.getBean("proxy");
 		String name = "tony";
 		tb.setName(name);
 		// Fires context checks
-		assertThat(tb.getName()).isEqualTo(name);
+		assertEquals(name, tb.getName());
 	}
 
+}
+
+
+abstract class ExposedInvocationTestBean extends TestBean {
+
+	@Override
+	public String getName() {
+		MethodInvocation invocation = ExposeInvocationInterceptor.currentInvocation();
+		assertions(invocation);
+		return super.getName();
+	}
+
+	@Override
+	public void absquatulate() {
+		MethodInvocation invocation = ExposeInvocationInterceptor.currentInvocation();
+		assertions(invocation);
+		super.absquatulate();
+	}
+
+	protected abstract void assertions(MethodInvocation invocation);
+}
+
+
+class InvocationCheckExposedInvocationTestBean extends ExposedInvocationTestBean {
+	@Override
+	protected void assertions(MethodInvocation invocation) {
+		assertTrue(invocation.getThis() == this);
+		assertTrue("Invocation should be on ITestBean: " + invocation.getMethod(),
+				ITestBean.class.isAssignableFrom(invocation.getMethod().getDeclaringClass()));
+	}
 }

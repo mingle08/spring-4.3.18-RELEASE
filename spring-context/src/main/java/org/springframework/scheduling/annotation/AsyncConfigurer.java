@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,6 @@ package org.springframework.scheduling.annotation;
 import java.util.concurrent.Executor;
 
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
-import org.springframework.lang.Nullable;
 
 /**
  * Interface to be implemented by @{@link org.springframework.context.annotation.Configuration
@@ -28,6 +27,11 @@ import org.springframework.lang.Nullable;
  * {@link AsyncUncaughtExceptionHandler} instance used to process exception thrown from
  * async method with {@code void} return type.
  *
+ * <p>Consider using {@link AsyncConfigurerSupport} providing default implementations for
+ * both methods if only one element needs to be customized. Furthermore, backward compatibility
+ * of this interface will be insured in case new customization options are introduced
+ * in the future.
+ *
  * <p>See @{@link EnableAsync} for usage examples.
  *
  * @author Chris Beams
@@ -35,6 +39,7 @@ import org.springframework.lang.Nullable;
  * @since 3.1
  * @see AbstractAsyncConfiguration
  * @see EnableAsync
+ * @see AsyncConfigurerSupport
  */
 public interface AsyncConfigurer {
 
@@ -42,19 +47,13 @@ public interface AsyncConfigurer {
 	 * The {@link Executor} instance to be used when processing async
 	 * method invocations.
 	 */
-	@Nullable
-	default Executor getAsyncExecutor() {
-		return null;
-	}
+	Executor getAsyncExecutor();
 
 	/**
 	 * The {@link AsyncUncaughtExceptionHandler} instance to be used
 	 * when an exception is thrown during an asynchronous method execution
 	 * with {@code void} return type.
 	 */
-	@Nullable
-	default AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
-		return null;
-	}
+	AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler();
 
 }

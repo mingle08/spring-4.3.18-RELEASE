@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,8 +33,7 @@ import org.springframework.context.ResourceLoaderAware;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.core.io.support.ResourcePropertiesPersister;
-import org.springframework.lang.Nullable;
+import org.springframework.util.DefaultPropertiesPersister;
 import org.springframework.util.PropertiesPersister;
 import org.springframework.util.StringUtils;
 
@@ -80,7 +79,7 @@ import org.springframework.util.StringUtils;
  * @see #setFileEncodings
  * @see #setPropertiesPersister
  * @see #setResourceLoader
- * @see ResourcePropertiesPersister
+ * @see org.springframework.util.DefaultPropertiesPersister
  * @see org.springframework.core.io.DefaultResourceLoader
  * @see ResourceBundleMessageSource
  * @see java.util.ResourceBundle
@@ -93,29 +92,31 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 	private static final String XML_SUFFIX = ".xml";
 
 
-	@Nullable
 	private Properties fileEncodings;
 
 	private boolean concurrentRefresh = true;
 
-	private PropertiesPersister propertiesPersister = ResourcePropertiesPersister.INSTANCE;
+	private PropertiesPersister propertiesPersister = new DefaultPropertiesPersister();
 
 	private ResourceLoader resourceLoader = new DefaultResourceLoader();
 
 	// Cache to hold filename lists per Locale
-	private final ConcurrentMap<String, Map<Locale, List<String>>> cachedFilenames = new ConcurrentHashMap<>();
+	private final ConcurrentMap<String, Map<Locale, List<String>>> cachedFilenames =
+			new ConcurrentHashMap<String, Map<Locale, List<String>>>();
 
 	// Cache to hold already loaded properties per filename
-	private final ConcurrentMap<String, PropertiesHolder> cachedProperties = new ConcurrentHashMap<>();
+	private final ConcurrentMap<String, PropertiesHolder> cachedProperties =
+			new ConcurrentHashMap<String, PropertiesHolder>();
 
-	// Cache to hold already loaded properties per filename
-	private final ConcurrentMap<Locale, PropertiesHolder> cachedMergedProperties = new ConcurrentHashMap<>();
+	// Cache to hold merged loaded properties per locale
+	private final ConcurrentMap<Locale, PropertiesHolder> cachedMergedProperties =
+			new ConcurrentHashMap<Locale, PropertiesHolder>();
 
 
 	/**
 	 * Set per-file charsets to use for parsing properties files.
 	 * <p>Only applies to classic properties files, not to XML files.
-	 * @param fileEncodings a Properties with filenames as keys and charset
+	 * @param fileEncodings Properties with filenames as keys and charset
 	 * names as values. Filenames have to match the basename syntax,
 	 * with optional locale-specific components: e.g. "WEB-INF/messages"
 	 * or "WEB-INF/messages_en".
@@ -143,12 +144,12 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 
 	/**
 	 * Set the PropertiesPersister to use for parsing properties files.
-	 * <p>The default is ResourcePropertiesPersister.
-	 * @see ResourcePropertiesPersister#INSTANCE
+	 * <p>The default is a DefaultPropertiesPersister.
+	 * @see org.springframework.util.DefaultPropertiesPersister
 	 */
-	public void setPropertiesPersister(@Nullable PropertiesPersister propertiesPersister) {
+	public void setPropertiesPersister(PropertiesPersister propertiesPersister) {
 		this.propertiesPersister =
-				(propertiesPersister != null ? propertiesPersister : ResourcePropertiesPersister.INSTANCE);
+				(propertiesPersister != null ? propertiesPersister : new DefaultPropertiesPersister());
 	}
 
 	/**
@@ -161,7 +162,7 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 	 * @see org.springframework.context.ResourceLoaderAware
 	 */
 	@Override
-	public void setResourceLoader(@Nullable ResourceLoader resourceLoader) {
+	public void setResourceLoader(ResourceLoader resourceLoader) {
 		this.resourceLoader = (resourceLoader != null ? resourceLoader : new DefaultResourceLoader());
 	}
 
@@ -199,7 +200,6 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 	 * using a cached MessageFormat instance per message code.
 	 */
 	@Override
-	@Nullable
 	protected MessageFormat resolveCode(String code, Locale locale) {
 		if (getCacheMillis() < 0) {
 			PropertiesHolder propHolder = getMergedProperties(locale);
@@ -229,7 +229,7 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 	 * for a Locale, after merging all specified resource bundles.
 	 * Either fetches the holder from the cache or freshly loads it.
 	 * <p>Only used when caching resource bundle contents forever, i.e.
-	 * with cacheSeconds &lt; 0. Therefore, merged properties are always
+	 * with cacheSeconds < 0. Therefore, merged properties are always
 	 * cached forever.
 	 */
 	protected PropertiesHolder getMergedProperties(Locale locale) {
@@ -237,7 +237,6 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 		if (mergedHolder != null) {
 			return mergedHolder;
 		}
-
 		Properties mergedProps = newProperties();
 		long latestTimestamp = -1;
 		String[] basenames = StringUtils.toStringArray(getBasenameSet());
@@ -254,7 +253,6 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 				}
 			}
 		}
-
 		mergedHolder = new PropertiesHolder(mergedProps, latestTimestamp);
 		PropertiesHolder existing = this.cachedMergedProperties.putIfAbsent(locale, mergedHolder);
 		if (existing != null) {
@@ -281,15 +279,10 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 				return filenames;
 			}
 		}
-
-		// Filenames for given Locale
-		List<String> filenames = new ArrayList<>(7);
+		List<String> filenames = new ArrayList<String>(7);
 		filenames.addAll(calculateFilenamesForLocale(basename, locale));
-
-		// Filenames for default Locale, if any
-		Locale defaultLocale = getDefaultLocale();
-		if (defaultLocale != null && !defaultLocale.equals(locale)) {
-			List<String> fallbackFilenames = calculateFilenamesForLocale(basename, defaultLocale);
+		if (isFallbackToSystemLocale() && !locale.equals(Locale.getDefault())) {
+			List<String> fallbackFilenames = calculateFilenamesForLocale(basename, Locale.getDefault());
 			for (String fallbackFilename : fallbackFilenames) {
 				if (!filenames.contains(fallbackFilename)) {
 					// Entry for fallback locale that isn't already in filenames list.
@@ -297,12 +290,9 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 				}
 			}
 		}
-
-		// Filename for default bundle file
 		filenames.add(basename);
-
 		if (localeMap == null) {
-			localeMap = new ConcurrentHashMap<>();
+			localeMap = new ConcurrentHashMap<Locale, List<String>>();
 			Map<Locale, List<String>> existing = this.cachedFilenames.putIfAbsent(basename, localeMap);
 			if (existing != null) {
 				localeMap = existing;
@@ -315,7 +305,7 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 	/**
 	 * Calculate the filenames for the given bundle basename and Locale,
 	 * appending language code, country code, and variant code.
-	 * <p>For example, basename "messages", Locale "de_AT_oo" &rarr; "messages_de_AT_OO",
+	 * E.g.: basename "messages", Locale "de_AT_oo" -> "messages_de_AT_OO",
 	 * "messages_de_AT", "messages_de".
 	 * <p>Follows the rules defined by {@link java.util.Locale#toString()}.
 	 * @param basename the basename of the bundle
@@ -323,7 +313,7 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 	 * @return the List of filenames to check
 	 */
 	protected List<String> calculateFilenamesForLocale(String basename, Locale locale) {
-		List<String> result = new ArrayList<>(3);
+		List<String> result = new ArrayList<String>(3);
 		String language = locale.getLanguage();
 		String country = locale.getCountry();
 		String variant = locale.getVariant();
@@ -406,7 +396,7 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 	 * @param filename the bundle filename (basename + Locale)
 	 * @param propHolder the current PropertiesHolder for the bundle
 	 */
-	protected PropertiesHolder refreshProperties(String filename, @Nullable PropertiesHolder propHolder) {
+	protected PropertiesHolder refreshProperties(String filename, PropertiesHolder propHolder) {
 		long refreshTimestamp = (getCacheMillis() < 0 ? -1 : System.currentTimeMillis());
 
 		Resource resource = this.resourceLoader.getResource(filename + PROPERTIES_SUFFIX);
@@ -471,10 +461,10 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 	 * @throws IOException if properties loading failed
 	 */
 	protected Properties loadProperties(Resource resource, String filename) throws IOException {
+		InputStream is = resource.getInputStream();
 		Properties props = newProperties();
-		try (InputStream is = resource.getInputStream()) {
-			String resourceFilename = resource.getFilename();
-			if (resourceFilename != null && resourceFilename.endsWith(XML_SUFFIX)) {
+		try {
+			if (resource.getFilename().endsWith(XML_SUFFIX)) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Loading properties [" + resource.getFilename() + "]");
 				}
@@ -502,6 +492,9 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 				}
 			}
 			return props;
+		}
+		finally {
+			is.close();
 		}
 	}
 
@@ -555,7 +548,6 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 	 */
 	protected class PropertiesHolder {
 
-		@Nullable
 		private final Properties properties;
 
 		private final long fileTimestamp;
@@ -564,9 +556,9 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 
 		private final ReentrantLock refreshLock = new ReentrantLock();
 
-		/** Cache to hold already generated MessageFormats per message code. */
+		/** Cache to hold already generated MessageFormats per message code */
 		private final ConcurrentMap<String, Map<Locale, MessageFormat>> cachedMessageFormats =
-				new ConcurrentHashMap<>();
+				new ConcurrentHashMap<String, Map<Locale, MessageFormat>>();
 
 		public PropertiesHolder() {
 			this.properties = null;
@@ -578,7 +570,6 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 			this.fileTimestamp = fileTimestamp;
 		}
 
-		@Nullable
 		public Properties getProperties() {
 			return this.properties;
 		}
@@ -595,7 +586,6 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 			return this.refreshTimestamp;
 		}
 
-		@Nullable
 		public String getProperty(String code) {
 			if (this.properties == null) {
 				return null;
@@ -603,7 +593,6 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 			return this.properties.getProperty(code);
 		}
 
-		@Nullable
 		public MessageFormat getMessageFormat(String code, Locale locale) {
 			if (this.properties == null) {
 				return null;
@@ -618,7 +607,7 @@ public class ReloadableResourceBundleMessageSource extends AbstractResourceBased
 			String msg = this.properties.getProperty(code);
 			if (msg != null) {
 				if (localeMap == null) {
-					localeMap = new ConcurrentHashMap<>();
+					localeMap = new ConcurrentHashMap<Locale, MessageFormat>();
 					Map<Locale, MessageFormat> existing = this.cachedMessageFormats.putIfAbsent(code, localeMap);
 					if (existing != null) {
 						localeMap = existing;

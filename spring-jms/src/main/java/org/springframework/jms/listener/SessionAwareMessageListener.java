@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,12 @@
 
 package org.springframework.jms.listener;
 
-import jakarta.jms.JMSException;
-import jakarta.jms.Message;
-import jakarta.jms.Session;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.Session;
 
 /**
- * Variant of the standard JMS {@link jakarta.jms.MessageListener} interface,
+ * Variant of the standard JMS {@link javax.jms.MessageListener} interface,
  * offering not only the received Message but also the underlying
  * JMS Session object. The latter can be used to send reply messages,
  * without the need to access an external Connection/Session,
@@ -35,14 +35,12 @@ import jakarta.jms.Session;
  *
  * @author Juergen Hoeller
  * @since 2.0
- * @param <M> the message type
  * @see AbstractMessageListenerContainer#setMessageListener
  * @see DefaultMessageListenerContainer
  * @see SimpleMessageListenerContainer
  * @see org.springframework.jms.listener.endpoint.JmsMessageEndpointManager
- * @see jakarta.jms.MessageListener
+ * @see javax.jms.MessageListener
  */
-@FunctionalInterface
 public interface SessionAwareMessageListener<M extends Message> {
 
 	/**

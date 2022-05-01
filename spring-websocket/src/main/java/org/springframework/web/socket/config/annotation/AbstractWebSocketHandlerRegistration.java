@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.springframework.lang.Nullable;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -35,29 +35,32 @@ import org.springframework.web.socket.sockjs.SockJsService;
 import org.springframework.web.socket.sockjs.transport.handler.WebSocketTransportHandler;
 
 /**
- * Base class for {@link WebSocketHandlerRegistration WebSocketHandlerRegistrations} that gathers all the configuration
+ * Base class for {@link WebSocketHandlerRegistration}s that gathers all the configuration
  * options but allows sub-classes to put together the actual HTTP request mappings.
  *
  * @author Rossen Stoyanchev
  * @author Sebastien Deleuze
  * @since 4.0
- * @param <M> the mappings type
  */
 public abstract class AbstractWebSocketHandlerRegistration<M> implements WebSocketHandlerRegistration {
 
-	private final MultiValueMap<WebSocketHandler, String> handlerMap = new LinkedMultiValueMap<>();
+	private final TaskScheduler sockJsTaskScheduler;
 
-	@Nullable
+	private final MultiValueMap<WebSocketHandler, String> handlerMap =
+			new LinkedMultiValueMap<WebSocketHandler, String>();
+
 	private HandshakeHandler handshakeHandler;
 
-	private final List<HandshakeInterceptor> interceptors = new ArrayList<>();
+	private final List<HandshakeInterceptor> interceptors = new ArrayList<HandshakeInterceptor>();
 
-	private final List<String> allowedOrigins = new ArrayList<>();
+	private final List<String> allowedOrigins = new ArrayList<String>();
 
-	private final List<String> allowedOriginPatterns = new ArrayList<>();
-
-	@Nullable
 	private SockJsServiceRegistration sockJsServiceRegistration;
+
+
+	public AbstractWebSocketHandlerRegistration(TaskScheduler defaultTaskScheduler) {
+		this.sockJsTaskScheduler = defaultTaskScheduler;
+	}
 
 
 	@Override
@@ -69,12 +72,11 @@ public abstract class AbstractWebSocketHandlerRegistration<M> implements WebSock
 	}
 
 	@Override
-	public WebSocketHandlerRegistration setHandshakeHandler(@Nullable HandshakeHandler handshakeHandler) {
+	public WebSocketHandlerRegistration setHandshakeHandler(HandshakeHandler handshakeHandler) {
 		this.handshakeHandler = handshakeHandler;
 		return this;
 	}
 
-	@Nullable
 	protected HandshakeHandler getHandshakeHandler() {
 		return this.handshakeHandler;
 	}
@@ -97,17 +99,8 @@ public abstract class AbstractWebSocketHandlerRegistration<M> implements WebSock
 	}
 
 	@Override
-	public WebSocketHandlerRegistration setAllowedOriginPatterns(String... allowedOriginPatterns) {
-		this.allowedOriginPatterns.clear();
-		if (!ObjectUtils.isEmpty(allowedOriginPatterns)) {
-			this.allowedOriginPatterns.addAll(Arrays.asList(allowedOriginPatterns));
-		}
-		return this;
-	}
-
-	@Override
 	public SockJsServiceRegistration withSockJS() {
-		this.sockJsServiceRegistration = new SockJsServiceRegistration();
+		this.sockJsServiceRegistration = new SockJsServiceRegistration(this.sockJsTaskScheduler);
 		HandshakeInterceptor[] interceptors = getInterceptors();
 		if (interceptors.length > 0) {
 			this.sockJsServiceRegistration.setInterceptors(interceptors);
@@ -119,54 +112,36 @@ public abstract class AbstractWebSocketHandlerRegistration<M> implements WebSock
 		if (!this.allowedOrigins.isEmpty()) {
 			this.sockJsServiceRegistration.setAllowedOrigins(StringUtils.toStringArray(this.allowedOrigins));
 		}
-		if (!this.allowedOriginPatterns.isEmpty()) {
-			this.sockJsServiceRegistration.setAllowedOriginPatterns(
-					StringUtils.toStringArray(this.allowedOriginPatterns));
-		}
 		return this.sockJsServiceRegistration;
 	}
 
 	protected HandshakeInterceptor[] getInterceptors() {
-		List<HandshakeInterceptor> interceptors = new ArrayList<>(this.interceptors.size() + 1);
+		List<HandshakeInterceptor> interceptors =
+				new ArrayList<HandshakeInterceptor>(this.interceptors.size() + 1);
 		interceptors.addAll(this.interceptors);
-		OriginHandshakeInterceptor interceptor = new OriginHandshakeInterceptor(this.allowedOrigins);
-		if (!ObjectUtils.isEmpty(this.allowedOriginPatterns)) {
-			interceptor.setAllowedOriginPatterns(this.allowedOriginPatterns);
-		}
-		interceptors.add(interceptor);
-		return interceptors.toArray(new HandshakeInterceptor[0]);
-	}
-
-	/**
-	 * Expose the {@code SockJsServiceRegistration} -- if SockJS is enabled or
-	 * {@code null} otherwise -- so that it can be configured with a TaskScheduler
-	 * if the application did not provide one. This should be done prior to
-	 * calling {@link #getMappings()}.
-	 */
-	@Nullable
-	protected SockJsServiceRegistration getSockJsServiceRegistration() {
-		return this.sockJsServiceRegistration;
+		interceptors.add(new OriginHandshakeInterceptor(this.allowedOrigins));
+		return interceptors.toArray(new HandshakeInterceptor[interceptors.size()]);
 	}
 
 	protected final M getMappings() {
 		M mappings = createMappings();
 		if (this.sockJsServiceRegistration != null) {
 			SockJsService sockJsService = this.sockJsServiceRegistration.getSockJsService();
-			this.handlerMap.forEach((wsHandler, paths) -> {
-				for (String path : paths) {
+			for (WebSocketHandler wsHandler : this.handlerMap.keySet()) {
+				for (String path : this.handlerMap.get(wsHandler)) {
 					String pathPattern = (path.endsWith("/") ? path + "**" : path + "/**");
 					addSockJsServiceMapping(mappings, sockJsService, wsHandler, pathPattern);
 				}
-			});
+			}
 		}
 		else {
 			HandshakeHandler handshakeHandler = getOrCreateHandshakeHandler();
 			HandshakeInterceptor[] interceptors = getInterceptors();
-			this.handlerMap.forEach((wsHandler, paths) -> {
-				for (String path : paths) {
+			for (WebSocketHandler wsHandler : this.handlerMap.keySet()) {
+				for (String path : this.handlerMap.get(wsHandler)) {
 					addWebSocketHandlerMapping(mappings, wsHandler, handshakeHandler, interceptors, path);
 				}
-			});
+			}
 		}
 
 		return mappings;

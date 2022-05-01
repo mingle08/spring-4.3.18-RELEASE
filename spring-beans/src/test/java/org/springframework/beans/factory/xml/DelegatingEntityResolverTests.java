@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,11 +16,9 @@
 
 package org.springframework.beans.factory.xml;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
-
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * Unit tests for the {@link DelegatingEntityResolver} class.
@@ -28,24 +26,21 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  * @author Rick Evans
  * @author Chris Beams
  */
-public class DelegatingEntityResolverTests {
+public final class DelegatingEntityResolverTests {
 
-	@Test
+	@Test(expected=IllegalArgumentException.class)
 	public void testCtorWhereDtdEntityResolverIsNull() throws Exception {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				new DelegatingEntityResolver(null, new NoOpEntityResolver()));
+		new DelegatingEntityResolver(null, new NoOpEntityResolver());
 	}
 
-	@Test
+	@Test(expected=IllegalArgumentException.class)
 	public void testCtorWhereSchemaEntityResolverIsNull() throws Exception {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				new DelegatingEntityResolver(new NoOpEntityResolver(), null));
+		new DelegatingEntityResolver(new NoOpEntityResolver(), null);
 	}
 
-	@Test
+	@Test(expected=IllegalArgumentException.class)
 	public void testCtorWhereEntityResolversAreBothNull() throws Exception {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				new DelegatingEntityResolver(null, null));
+		new DelegatingEntityResolver(null, null);
 	}
 
 

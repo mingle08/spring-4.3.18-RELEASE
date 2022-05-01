@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 /**
@@ -30,7 +29,6 @@ import org.springframework.util.StringUtils;
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
- * @author Sam Brannen
  * @since 2.0
  */
 public class XmlValidationModeDetector {
@@ -58,7 +56,7 @@ public class XmlValidationModeDetector {
 
 
 	/**
-	 * The token in an XML document that declares the DTD to use for validation
+	 * The token in a XML document that declares the DTD to use for validation
 	 * and thus that DTD validation is being used.
 	 */
 	private static final String DOCTYPE = "DOCTYPE";
@@ -82,22 +80,21 @@ public class XmlValidationModeDetector {
 
 	/**
 	 * Detect the validation mode for the XML document in the supplied {@link InputStream}.
-	 * <p>Note that the supplied {@link InputStream} is closed by this method before returning.
+	 * Note that the supplied {@link InputStream} is closed by this method before returning.
 	 * @param inputStream the InputStream to parse
 	 * @throws IOException in case of I/O failure
 	 * @see #VALIDATION_DTD
 	 * @see #VALIDATION_XSD
 	 */
 	public int detectValidationMode(InputStream inputStream) throws IOException {
-		this.inComment = false;
-
 		// Peek into the file to look for DOCTYPE.
-		try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+		BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+		try {
 			boolean isDtdValidated = false;
 			String content;
 			while ((content = reader.readLine()) != null) {
 				content = consumeCommentTokens(content);
-				if (!StringUtils.hasText(content)) {
+				if (this.inComment || !StringUtils.hasText(content)) {
 					continue;
 				}
 				if (hasDoctype(content)) {
@@ -116,6 +113,9 @@ public class XmlValidationModeDetector {
 			// Leave the decision up to the caller.
 			return VALIDATION_AUTO;
 		}
+		finally {
+			reader.close();
+		}
 	}
 
 
@@ -127,11 +127,9 @@ public class XmlValidationModeDetector {
 	}
 
 	/**
-	 * Determine if the supplied content contains an XML opening tag.
-	 * <p>It is expected that all comment tokens will have been consumed for the
-	 * supplied content before passing the remainder to this method. However, as
-	 * a sanity check, if the parse state is currently in an XML comment this
-	 * method always returns {@code false}.
+	 * Does the supplied content contain an XML opening tag. If the parse state is currently
+	 * in an XML comment then this method always returns false. It is expected that all comment
+	 * tokens will have consumed for the supplied content before passing the remainder to this method.
 	 */
 	private boolean hasOpeningTag(String content) {
 		if (this.inComment) {
@@ -143,34 +141,27 @@ public class XmlValidationModeDetector {
 	}
 
 	/**
-	 * Consume all comments in the given String and return the remaining content,
-	 * which may be empty since the supplied content might be all comment data.
-	 * <p>This method takes the current "in comment" parsing state into account.
+	 * Consumes all the leading comment data in the given String and returns the remaining content, which
+	 * may be empty since the supplied content might be all comment data. For our purposes it is only important
+	 * to strip leading comment content on a line since the first piece of non comment content will be either
+	 * the DOCTYPE declaration or the root element of the document.
 	 */
 	private String consumeCommentTokens(String line) {
-		int indexOfStartComment = line.indexOf(START_COMMENT);
-		if (indexOfStartComment == -1 && !line.contains(END_COMMENT)) {
+		if (!line.contains(START_COMMENT) && !line.contains(END_COMMENT)) {
 			return line;
 		}
-
-		String result = "";
-		String currLine = line;
-		if (!this.inComment && (indexOfStartComment >= 0)) {
-			result = line.substring(0, indexOfStartComment);
-			currLine = line.substring(indexOfStartComment);
+		while ((line = consume(line)) != null) {
+			if (!this.inComment && !line.trim().startsWith(START_COMMENT)) {
+				return line;
+			}
 		}
-
-		if ((currLine = consume(currLine)) != null) {
-			result += consumeCommentTokens(currLine);
-		}
-		return result;
+		return line;
 	}
 
 	/**
-	 * Consume the next comment token, update the "inComment" flag,
+	 * Consume the next comment token, update the "inComment" flag
 	 * and return the remaining content.
 	 */
-	@Nullable
 	private String consume(String line) {
 		int index = (this.inComment ? endComment(line) : startComment(line));
 		return (index == -1 ? null : line.substring(index));
@@ -184,19 +175,14 @@ public class XmlValidationModeDetector {
 		return commentToken(line, START_COMMENT, true);
 	}
 
-	/**
-	 * Try to consume the {@link #END_COMMENT} token.
-	 * @see #commentToken(String, String, boolean)
-	 */
 	private int endComment(String line) {
 		return commentToken(line, END_COMMENT, false);
 	}
 
 	/**
 	 * Try to consume the supplied token against the supplied content and update the
-	 * "in comment" parse state to the supplied value.
-	 * <p>Returns the index into the content which is after the token or -1 if the
-	 * token is not found.
+	 * in comment parse state to the supplied value. Returns the index into the content
+	 * which is after the token or -1 if the token is not found.
 	 */
 	private int commentToken(String line, String token, boolean inCommentIfPresent) {
 		int index = line.indexOf(token);

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,15 +16,15 @@
 
 package org.springframework.beans.factory.xml;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.aop.interceptor.DebugInterceptor;
-import org.springframework.beans.testfixture.beans.ITestBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.tests.sample.beans.ITestBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Tests lookup methods wrapped by a CGLIB proxy (see SPR-391).
@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Juergen Hoeller
  * @author Chris Beams
  */
-public class LookupMethodWrappedByCglibProxyTests {
+public final class LookupMethodWrappedByCglibProxyTests {
 
 	private static final Class<?> CLASS = LookupMethodWrappedByCglibProxyTests.class;
 	private static final String CLASSNAME = CLASS.getSimpleName();
@@ -42,7 +42,7 @@ public class LookupMethodWrappedByCglibProxyTests {
 
 	private ApplicationContext applicationContext;
 
-	@BeforeEach
+	@Before
 	public void setUp() {
 		this.applicationContext = new ClassPathXmlApplicationContext(CONTEXT, CLASS);
 		resetInterceptor();
@@ -52,8 +52,8 @@ public class LookupMethodWrappedByCglibProxyTests {
 	public void testAutoProxiedLookup() {
 		OverloadLookup olup = (OverloadLookup) applicationContext.getBean("autoProxiedOverload");
 		ITestBean jenny = olup.newTestBean();
-		assertThat(jenny.getName()).isEqualTo("Jenny");
-		assertThat(olup.testMethod()).isEqualTo("foo");
+		assertEquals("Jenny", jenny.getName());
+		assertEquals("foo", olup.testMethod());
 		assertInterceptorCount(2);
 	}
 
@@ -61,14 +61,14 @@ public class LookupMethodWrappedByCglibProxyTests {
 	public void testRegularlyProxiedLookup() {
 		OverloadLookup olup = (OverloadLookup) applicationContext.getBean("regularlyProxiedOverload");
 		ITestBean jenny = olup.newTestBean();
-		assertThat(jenny.getName()).isEqualTo("Jenny");
-		assertThat(olup.testMethod()).isEqualTo("foo");
+		assertEquals("Jenny", jenny.getName());
+		assertEquals("foo", olup.testMethod());
 		assertInterceptorCount(2);
 	}
 
 	private void assertInterceptorCount(int count) {
 		DebugInterceptor interceptor = getInterceptor();
-		assertThat(interceptor.getCount()).as("Interceptor count is incorrect").isEqualTo(count);
+		assertEquals("Interceptor count is incorrect", count, interceptor.getCount());
 	}
 
 	private void resetInterceptor() {

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.cache.Cache;
 import org.springframework.context.expression.AnnotatedElementKey;
@@ -28,7 +29,6 @@ import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.context.expression.CachedExpressionEvaluator;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
-import org.springframework.lang.Nullable;
 
 /**
  * Utility class handling the SpEL expression parsing.
@@ -61,12 +61,25 @@ class CacheOperationExpressionEvaluator extends CachedExpressionEvaluator {
 	public static final String RESULT_VARIABLE = "result";
 
 
-	private final Map<ExpressionKey, Expression> keyCache = new ConcurrentHashMap<>(64);
+	private final Map<ExpressionKey, Expression> keyCache = new ConcurrentHashMap<ExpressionKey, Expression>(64);
 
-	private final Map<ExpressionKey, Expression> conditionCache = new ConcurrentHashMap<>(64);
+	private final Map<ExpressionKey, Expression> conditionCache = new ConcurrentHashMap<ExpressionKey, Expression>(64);
 
-	private final Map<ExpressionKey, Expression> unlessCache = new ConcurrentHashMap<>(64);
+	private final Map<ExpressionKey, Expression> unlessCache = new ConcurrentHashMap<ExpressionKey, Expression>(64);
 
+	private final Map<AnnotatedElementKey, Method> targetMethodCache =
+			new ConcurrentHashMap<AnnotatedElementKey, Method>(64);
+
+
+	/**
+	 * Create an {@link EvaluationContext} without a return value.
+	 * @see #createEvaluationContext(Collection, Method, Object[], Object, Class, Object, BeanFactory)
+	 */
+	public EvaluationContext createEvaluationContext(Collection<? extends Cache> caches,
+			Method method, Object[] args, Object target, Class<?> targetClass, BeanFactory beanFactory) {
+
+		return createEvaluationContext(caches, method, args, target, targetClass, NO_RESULT, beanFactory);
+	}
 
 	/**
 	 * Create an {@link EvaluationContext}.
@@ -80,11 +93,12 @@ class CacheOperationExpressionEvaluator extends CachedExpressionEvaluator {
 	 * @return the evaluation context
 	 */
 	public EvaluationContext createEvaluationContext(Collection<? extends Cache> caches,
-			Method method, Object[] args, Object target, Class<?> targetClass, Method targetMethod,
-			@Nullable Object result, @Nullable BeanFactory beanFactory) {
+			Method method, Object[] args, Object target, Class<?> targetClass, Object result,
+			BeanFactory beanFactory) {
 
 		CacheExpressionRootObject rootObject = new CacheExpressionRootObject(
 				caches, method, args, target, targetClass);
+		Method targetMethod = getTargetMethod(targetClass, method);
 		CacheEvaluationContext evaluationContext = new CacheEvaluationContext(
 				rootObject, targetMethod, args, getParameterNameDiscoverer());
 		if (result == RESULT_UNAVAILABLE) {
@@ -99,19 +113,16 @@ class CacheOperationExpressionEvaluator extends CachedExpressionEvaluator {
 		return evaluationContext;
 	}
 
-	@Nullable
 	public Object key(String keyExpression, AnnotatedElementKey methodKey, EvaluationContext evalContext) {
 		return getExpression(this.keyCache, methodKey, keyExpression).getValue(evalContext);
 	}
 
 	public boolean condition(String conditionExpression, AnnotatedElementKey methodKey, EvaluationContext evalContext) {
-		return (Boolean.TRUE.equals(getExpression(this.conditionCache, methodKey, conditionExpression).getValue(
-				evalContext, Boolean.class)));
+		return getExpression(this.conditionCache, methodKey, conditionExpression).getValue(evalContext, boolean.class);
 	}
 
 	public boolean unless(String unlessExpression, AnnotatedElementKey methodKey, EvaluationContext evalContext) {
-		return (Boolean.TRUE.equals(getExpression(this.unlessCache, methodKey, unlessExpression).getValue(
-				evalContext, Boolean.class)));
+		return getExpression(this.unlessCache, methodKey, unlessExpression).getValue(evalContext, boolean.class);
 	}
 
 	/**
@@ -121,6 +132,18 @@ class CacheOperationExpressionEvaluator extends CachedExpressionEvaluator {
 		this.keyCache.clear();
 		this.conditionCache.clear();
 		this.unlessCache.clear();
+		this.targetMethodCache.clear();
 	}
+
+	private Method getTargetMethod(Class<?> targetClass, Method method) {
+		AnnotatedElementKey methodKey = new AnnotatedElementKey(method, targetClass);
+		Method targetMethod = this.targetMethodCache.get(methodKey);
+		if (targetMethod == null) {
+			targetMethod = AopUtils.getMostSpecificMethod(method, targetClass);
+			this.targetMethodCache.put(methodKey, targetMethod);
+		}
+		return targetMethod;
+	}
+
 
 }

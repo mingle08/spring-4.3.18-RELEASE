@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import org.springframework.dao.DataAccessException;
-import org.springframework.lang.Nullable;
 
 /**
  * Generic callback interface for code that operates on a PreparedStatement.
@@ -38,11 +37,9 @@ import org.springframework.lang.Nullable;
  *
  * @author Juergen Hoeller
  * @since 16.03.2004
- * @param <T> the result type
  * @see JdbcTemplate#execute(String, PreparedStatementCallback)
  * @see JdbcTemplate#execute(PreparedStatementCreator, PreparedStatementCallback)
  */
-@FunctionalInterface
 public interface PreparedStatementCallback<T> {
 
 	/**
@@ -69,12 +66,11 @@ public interface PreparedStatementCallback<T> {
 	 * @param ps active JDBC PreparedStatement
 	 * @return a result object, or {@code null} if none
 	 * @throws SQLException if thrown by a JDBC method, to be auto-converted
-	 * to a DataAccessException by an SQLExceptionTranslator
+	 * to a DataAccessException by a SQLExceptionTranslator
 	 * @throws DataAccessException in case of custom exceptions
 	 * @see JdbcTemplate#queryForObject(String, Object[], Class)
 	 * @see JdbcTemplate#queryForList(String, Object[])
 	 */
-	@Nullable
 	T doInPreparedStatement(PreparedStatement ps) throws SQLException, DataAccessException;
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,9 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.Interceptor;
@@ -43,8 +45,6 @@ import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.FactoryBeanNotInitializedException;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
 
@@ -100,10 +100,8 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	@Nullable
 	private String[] interceptorNames;
 
-	@Nullable
 	private String targetName;
 
 	private boolean autodetectInterfaces = true;
@@ -114,19 +112,16 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 
 	private boolean freezeProxy = false;
 
-	@Nullable
 	private transient ClassLoader proxyClassLoader = ClassUtils.getDefaultClassLoader();
 
 	private transient boolean classLoaderConfigured = false;
 
-	@Nullable
 	private transient BeanFactory beanFactory;
 
-	/** Whether the advisor chain has already been initialized. */
+	/** Whether the advisor chain has already been initialized */
 	private boolean advisorChainInitialized = false;
 
-	/** If this is a singleton, the cached singleton proxy instance. */
-	@Nullable
+	/** If this is a singleton, the cached singleton proxy instance */
 	private Object singletonInstance;
 
 
@@ -218,7 +213,7 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 	 * containing BeanFactory for loading all bean classes. This can be
 	 * overridden here for specific proxies.
 	 */
-	public void setProxyClassLoader(@Nullable ClassLoader classLoader) {
+	public void setProxyClassLoader(ClassLoader classLoader) {
 		this.proxyClassLoader = classLoader;
 		this.classLoaderConfigured = (classLoader != null);
 	}
@@ -245,7 +240,6 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 	 * @return a fresh AOP proxy reflecting the current state of this factory
 	 */
 	@Override
-	@Nullable
 	public Object getObject() throws BeansException {
 		initializeAdvisorChain();
 		if (isSingleton()) {
@@ -253,7 +247,7 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 		}
 		else {
 			if (this.targetName == null) {
-				logger.info("Using non-singleton proxies with singleton targets is often undesirable. " +
+				logger.warn("Using non-singleton proxies with singleton targets is often undesirable. " +
 						"Enable prototype proxies by setting the 'targetName' property.");
 			}
 			return newPrototypeInstance();
@@ -340,20 +334,24 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 		// an independent instance of the configuration.
 		// In this case, no proxy will have an instance of this object's configuration,
 		// but will have an independent copy.
-		ProxyCreatorSupport copy = new ProxyCreatorSupport(getAopProxyFactory());
+		if (logger.isTraceEnabled()) {
+			logger.trace("Creating copy of prototype ProxyFactoryBean config: " + this);
+		}
 
+		ProxyCreatorSupport copy = new ProxyCreatorSupport(getAopProxyFactory());
 		// The copy needs a fresh advisor chain, and a fresh TargetSource.
 		TargetSource targetSource = freshTargetSource();
 		copy.copyConfigurationFrom(this, targetSource, freshAdvisorChain());
 		if (this.autodetectInterfaces && getProxiedInterfaces().length == 0 && !isProxyTargetClass()) {
 			// Rely on AOP infrastructure to tell us what interfaces to proxy.
-			Class<?> targetClass = targetSource.getTargetClass();
-			if (targetClass != null) {
-				copy.setInterfaces(ClassUtils.getAllInterfacesForClass(targetClass, this.proxyClassLoader));
-			}
+			copy.setInterfaces(
+					ClassUtils.getAllInterfacesForClass(targetSource.getTargetClass(), this.proxyClassLoader));
 		}
 		copy.setFrozen(this.freezeProxy);
 
+		if (logger.isTraceEnabled()) {
+			logger.trace("Using ProxyCreatorSupport copy: " + copy);
+		}
 		return getProxy(copy.createAopProxy());
 	}
 
@@ -387,7 +385,9 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 						logger.debug("Bean with name '" + finalName + "' concluding interceptor chain " +
 								"is not an advisor class: treating it as a target or TargetSource");
 					}
-					this.interceptorNames = Arrays.copyOf(this.interceptorNames, this.interceptorNames.length - 1);
+					String[] newNames = new String[this.interceptorNames.length - 1];
+					System.arraycopy(this.interceptorNames, 0, newNames, 0, newNames.length);
+					this.interceptorNames = newNames;
 				}
 			}
 		}
@@ -401,7 +401,6 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 	 * @return {@code true} if it's an Advisor or Advice
 	 */
 	private boolean isNamedBeanAnAdvisorOrAdvice(String beanName) {
-		Assert.state(this.beanFactory != null, "No BeanFactory set");
 		Class<?> namedBeanClass = this.beanFactory.getType(beanName);
 		if (namedBeanClass != null) {
 			return (Advisor.class.isAssignableFrom(namedBeanClass) || Advice.class.isAssignableFrom(namedBeanClass));
@@ -421,7 +420,11 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 	 * are unaffected by such changes.
 	 */
 	private synchronized void initializeAdvisorChain() throws AopConfigException, BeansException {
-		if (!this.advisorChainInitialized && !ObjectUtils.isEmpty(this.interceptorNames)) {
+		if (this.advisorChainInitialized) {
+			return;
+		}
+
+		if (!ObjectUtils.isEmpty(this.interceptorNames)) {
 			if (this.beanFactory == null) {
 				throw new IllegalStateException("No BeanFactory available anymore (probably due to serialization) " +
 						"- cannot resolve interceptor names " + Arrays.asList(this.interceptorNames));
@@ -435,12 +438,16 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 
 			// Materialize interceptor chain from bean names.
 			for (String name : this.interceptorNames) {
+				if (logger.isTraceEnabled()) {
+					logger.trace("Configuring advisor or advice '" + name + "'");
+				}
+
 				if (name.endsWith(GLOBAL_SUFFIX)) {
 					if (!(this.beanFactory instanceof ListableBeanFactory)) {
 						throw new AopConfigException(
 								"Can only use global advisors or interceptors with a ListableBeanFactory");
 					}
-					addGlobalAdvisors((ListableBeanFactory) this.beanFactory,
+					addGlobalAdvisor((ListableBeanFactory) this.beanFactory,
 							name.substring(0, name.length() - GLOBAL_SUFFIX.length()));
 				}
 
@@ -457,12 +464,12 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 						// Avoid unnecessary creation of prototype bean just for advisor chain initialization.
 						advice = new PrototypePlaceholderAdvisor(name);
 					}
-					addAdvisorOnChainCreation(advice);
+					addAdvisorOnChainCreation(advice, name);
 				}
 			}
-
-			this.advisorChainInitialized = true;
 		}
+
+		this.advisorChainInitialized = true;
 	}
 
 
@@ -473,16 +480,18 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 	 */
 	private List<Advisor> freshAdvisorChain() {
 		Advisor[] advisors = getAdvisors();
-		List<Advisor> freshAdvisors = new ArrayList<>(advisors.length);
+		List<Advisor> freshAdvisors = new ArrayList<Advisor>(advisors.length);
 		for (Advisor advisor : advisors) {
-			if (advisor instanceof PrototypePlaceholderAdvisor pa) {
+			if (advisor instanceof PrototypePlaceholderAdvisor) {
+				PrototypePlaceholderAdvisor pa = (PrototypePlaceholderAdvisor) advisor;
 				if (logger.isDebugEnabled()) {
 					logger.debug("Refreshing bean named '" + pa.getBeanName() + "'");
 				}
-				// Replace the placeholder with a fresh prototype instance resulting from a getBean lookup
+				// Replace the placeholder with a fresh prototype instance resulting
+				// from a getBean() lookup
 				if (this.beanFactory == null) {
-					throw new IllegalStateException("No BeanFactory available anymore (probably due to " +
-							"serialization) - cannot resolve prototype advisor '" + pa.getBeanName() + "'");
+					throw new IllegalStateException("No BeanFactory available anymore (probably due to serialization) " +
+							"- cannot resolve prototype advisor '" + pa.getBeanName() + "'");
 				}
 				Object bean = this.beanFactory.getBean(pa.getBeanName());
 				Advisor refreshedAdvisor = namedBeanToAdvisor(bean);
@@ -499,26 +508,28 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 	/**
 	 * Add all global interceptors and pointcuts.
 	 */
-	private void addGlobalAdvisors(ListableBeanFactory beanFactory, String prefix) {
+	private void addGlobalAdvisor(ListableBeanFactory beanFactory, String prefix) {
 		String[] globalAdvisorNames =
 				BeanFactoryUtils.beanNamesForTypeIncludingAncestors(beanFactory, Advisor.class);
 		String[] globalInterceptorNames =
 				BeanFactoryUtils.beanNamesForTypeIncludingAncestors(beanFactory, Interceptor.class);
-		if (globalAdvisorNames.length > 0 || globalInterceptorNames.length > 0) {
-			List<Object> beans = new ArrayList<>(globalAdvisorNames.length + globalInterceptorNames.length);
-			for (String name : globalAdvisorNames) {
-				if (name.startsWith(prefix)) {
-					beans.add(beanFactory.getBean(name));
-				}
-			}
-			for (String name : globalInterceptorNames) {
-				if (name.startsWith(prefix)) {
-					beans.add(beanFactory.getBean(name));
-				}
-			}
-			AnnotationAwareOrderComparator.sort(beans);
-			for (Object bean : beans) {
-				addAdvisorOnChainCreation(bean);
+		List<Object> beans = new ArrayList<Object>(globalAdvisorNames.length + globalInterceptorNames.length);
+		Map<Object, String> names = new HashMap<Object, String>(beans.size());
+		for (String name : globalAdvisorNames) {
+			Object bean = beanFactory.getBean(name);
+			beans.add(bean);
+			names.put(bean, name);
+		}
+		for (String name : globalInterceptorNames) {
+			Object bean = beanFactory.getBean(name);
+			beans.add(bean);
+			names.put(bean, name);
+		}
+		AnnotationAwareOrderComparator.sort(beans);
+		for (Object bean : beans) {
+			String name = names.get(bean);
+			if (name.startsWith(prefix)) {
+				addAdvisorOnChainCreation(bean, name);
 			}
 		}
 	}
@@ -529,11 +540,17 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 	 * Because of these three possibilities, we can't type the signature
 	 * more strongly.
 	 * @param next advice, advisor or target object
+	 * @param name bean name from which we obtained this object in our owning
+	 * bean factory
 	 */
-	private void addAdvisorOnChainCreation(Object next) {
+	private void addAdvisorOnChainCreation(Object next, String name) {
 		// We need to convert to an Advisor if necessary so that our source reference
 		// matches what we find from superclass interceptors.
-		addAdvisor(namedBeanToAdvisor(next));
+		Advisor advisor = namedBeanToAdvisor(next);
+		if (logger.isTraceEnabled()) {
+			logger.trace("Adding advisor with name '" + name + "'");
+		}
+		addAdvisor(advisor);
 	}
 
 	/**
@@ -544,7 +561,9 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 	 */
 	private TargetSource freshTargetSource() {
 		if (this.targetName == null) {
-			// Not refreshing target: bean name not specified in 'interceptorNames'
+			if (logger.isTraceEnabled()) {
+				logger.trace("Not refreshing target: Bean name not specified in 'interceptorNames'.");
+			}
 			return this.targetSource;
 		}
 		else {
@@ -572,8 +591,8 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 			// We expected this to be an Advisor or Advice,
 			// but it wasn't. This is a configuration error.
 			throw new AopConfigException("Unknown advisor type " + next.getClass() +
-					"; can only include Advisor or Advice type beans in interceptorNames chain " +
-					"except for last entry which may also be target instance or TargetSource", ex);
+					"; Can only include Advisor or Advice type beans in interceptorNames chain except for last entry," +
+					"which may also be target or TargetSource", ex);
 		}
 	}
 
@@ -584,7 +603,7 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 	protected void adviceChanged() {
 		super.adviceChanged();
 		if (this.singleton) {
-			logger.debug("Advice has changed; re-caching singleton instance");
+			logger.debug("Advice has changed; recaching singleton instance");
 			synchronized (this) {
 				this.singletonInstance = null;
 			}
@@ -621,7 +640,7 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 		}
 
 		public String getBeanName() {
-			return this.beanName;
+			return beanName;
 		}
 
 		@Override

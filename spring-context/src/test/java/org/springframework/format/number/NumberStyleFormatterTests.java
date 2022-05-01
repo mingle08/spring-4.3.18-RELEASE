@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,10 +20,9 @@ import java.math.BigDecimal;
 import java.text.ParseException;
 import java.util.Locale;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * @author Keith Donald
@@ -35,24 +34,22 @@ public class NumberStyleFormatterTests {
 
 	@Test
 	public void formatValue() {
-		assertThat(formatter.print(new BigDecimal("23.56"), Locale.US)).isEqualTo("23.56");
+		assertEquals("23.56", formatter.print(new BigDecimal("23.56"), Locale.US));
 	}
 
 	@Test
 	public void parseValue() throws ParseException {
-		assertThat(formatter.parse("23.56", Locale.US)).isEqualTo(new BigDecimal("23.56"));
+		assertEquals(new BigDecimal("23.56"), formatter.parse("23.56", Locale.US));
 	}
 
-	@Test
+	@Test(expected = ParseException.class)
 	public void parseBogusValue() throws ParseException {
-		assertThatExceptionOfType(ParseException.class).isThrownBy(() ->
-				formatter.parse("bogus", Locale.US));
+		formatter.parse("bogus", Locale.US);
 	}
 
-	@Test
+	@Test(expected = ParseException.class)
 	public void parsePercentValueNotLenientFailure() throws ParseException {
-		assertThatExceptionOfType(ParseException.class).isThrownBy(() ->
-				formatter.parse("23.56bogus", Locale.US));
+		formatter.parse("23.56bogus", Locale.US);
 	}
 
 }

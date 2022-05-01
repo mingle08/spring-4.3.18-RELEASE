@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,11 +17,8 @@
 package org.springframework.web.socket.sockjs.frame;
 
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 /**
  * Represents a SockJS frame. Provides factory methods to create SockJS frames.
@@ -31,10 +28,7 @@ import org.springframework.util.StringUtils;
  */
 public class SockJsFrame {
 
-	/**
-	 * The charset used by SockJS.
-	 */
-	public static final Charset CHARSET = StandardCharsets.UTF_8;
+	public static final Charset CHARSET = Charset.forName("UTF-8");
 
 	private static final SockJsFrame OPEN_FRAME = new SockJsFrame("o");
 
@@ -109,7 +103,6 @@ public class SockJsFrame {
 	 * for SockJS "open" and "close" frames, which do not contain data, return
 	 * {@code null}.
 	 */
-	@Nullable
 	public String getFrameData() {
 		if (getType() == SockJsFrameType.OPEN || getType() == SockJsFrameType.HEARTBEAT) {
 			return null;
@@ -121,13 +114,14 @@ public class SockJsFrame {
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}
-		if (!(other instanceof SockJsFrame otherFrame)) {
+		if (!(other instanceof SockJsFrame)) {
 			return false;
 		}
+		SockJsFrame otherFrame = (SockJsFrame) other;
 		return (this.type.equals(otherFrame.type) && this.content.equals(otherFrame.content));
 	}
 
@@ -142,9 +136,7 @@ public class SockJsFrame {
 		if (result.length() > 80) {
 			result = result.substring(0, 80) + "...(truncated)";
 		}
-		result = StringUtils.replace(result, "\n", "\\n");
-		result = StringUtils.replace(result, "\r", "\\r");
-		return "SockJsFrame content='" + result + "'";
+		return "SockJsFrame content='" + result.replace("\n", "\\n").replace("\r", "\\r") + "'";
 	}
 
 
@@ -169,8 +161,8 @@ public class SockJsFrame {
 		return CLOSE_ANOTHER_CONNECTION_OPEN_FRAME;
 	}
 
-	public static SockJsFrame closeFrame(int code, @Nullable String reason) {
-		return new SockJsFrame("c[" + code + ",\"" + (reason != null ? reason : "") + "\"]");
+	public static SockJsFrame closeFrame(int code, String reason) {
+		return new SockJsFrame("c[" + code + ",\"" + reason + "\"]");
 	}
 
 }

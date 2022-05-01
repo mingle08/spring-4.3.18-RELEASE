@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import example.scannable.DefaultNamedComponent;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.annotation.AnnotatedGenericBeanDefinition;
@@ -33,7 +33,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@link AnnotationBeanNameGenerator}.
@@ -54,9 +54,9 @@ public class AnnotationBeanNameGeneratorTests {
 		BeanDefinitionRegistry registry = new SimpleBeanDefinitionRegistry();
 		AnnotatedBeanDefinition bd = new AnnotatedGenericBeanDefinition(ComponentWithName.class);
 		String beanName = this.beanNameGenerator.generateBeanName(bd, registry);
-		assertThat(beanName).as("The generated beanName must *never* be null.").isNotNull();
-		assertThat(StringUtils.hasText(beanName)).as("The generated beanName must *never* be blank.").isTrue();
-		assertThat(beanName).isEqualTo("walden");
+		assertNotNull("The generated beanName must *never* be null.", beanName);
+		assertTrue("The generated beanName must *never* be blank.", StringUtils.hasText(beanName));
+		assertEquals("walden", beanName);
 	}
 
 	@Test
@@ -64,9 +64,9 @@ public class AnnotationBeanNameGeneratorTests {
 		BeanDefinitionRegistry registry = new SimpleBeanDefinitionRegistry();
 		AnnotatedBeanDefinition bd = new AnnotatedGenericBeanDefinition(DefaultNamedComponent.class);
 		String beanName = this.beanNameGenerator.generateBeanName(bd, registry);
-		assertThat(beanName).as("The generated beanName must *never* be null.").isNotNull();
-		assertThat(StringUtils.hasText(beanName)).as("The generated beanName must *never* be blank.").isTrue();
-		assertThat(beanName).isEqualTo("thoreau");
+		assertNotNull("The generated beanName must *never* be null.", beanName);
+		assertTrue("The generated beanName must *never* be blank.", StringUtils.hasText(beanName));
+		assertEquals("thoreau", beanName);
 	}
 
 	@Test
@@ -74,10 +74,10 @@ public class AnnotationBeanNameGeneratorTests {
 		BeanDefinitionRegistry registry = new SimpleBeanDefinitionRegistry();
 		AnnotatedBeanDefinition bd = new AnnotatedGenericBeanDefinition(ComponentWithBlankName.class);
 		String beanName = this.beanNameGenerator.generateBeanName(bd, registry);
-		assertThat(beanName).as("The generated beanName must *never* be null.").isNotNull();
-		assertThat(StringUtils.hasText(beanName)).as("The generated beanName must *never* be blank.").isTrue();
+		assertNotNull("The generated beanName must *never* be null.", beanName);
+		assertTrue("The generated beanName must *never* be blank.", StringUtils.hasText(beanName));
 		String expectedGeneratedBeanName = this.beanNameGenerator.buildDefaultBeanName(bd);
-		assertThat(beanName).isEqualTo(expectedGeneratedBeanName);
+		assertEquals(expectedGeneratedBeanName, beanName);
 	}
 
 	@Test
@@ -85,10 +85,10 @@ public class AnnotationBeanNameGeneratorTests {
 		BeanDefinitionRegistry registry = new SimpleBeanDefinitionRegistry();
 		AnnotatedBeanDefinition bd = new AnnotatedGenericBeanDefinition(AnonymousComponent.class);
 		String beanName = this.beanNameGenerator.generateBeanName(bd, registry);
-		assertThat(beanName).as("The generated beanName must *never* be null.").isNotNull();
-		assertThat(StringUtils.hasText(beanName)).as("The generated beanName must *never* be blank.").isTrue();
+		assertNotNull("The generated beanName must *never* be null.", beanName);
+		assertTrue("The generated beanName must *never* be blank.", StringUtils.hasText(beanName));
 		String expectedGeneratedBeanName = this.beanNameGenerator.buildDefaultBeanName(bd);
-		assertThat(beanName).isEqualTo(expectedGeneratedBeanName);
+		assertEquals(expectedGeneratedBeanName, beanName);
 	}
 
 	@Test
@@ -96,7 +96,7 @@ public class AnnotationBeanNameGeneratorTests {
 		BeanDefinitionRegistry registry = new SimpleBeanDefinitionRegistry();
 		AnnotatedBeanDefinition bd = new AnnotatedGenericBeanDefinition(ComponentFromStringMeta.class);
 		String beanName = this.beanNameGenerator.generateBeanName(bd, registry);
-		assertThat(beanName).isEqualTo("henry");
+		assertEquals("henry", beanName);
 	}
 
 	@Test
@@ -104,37 +104,46 @@ public class AnnotationBeanNameGeneratorTests {
 		BeanDefinitionRegistry registry = new SimpleBeanDefinitionRegistry();
 		AnnotatedBeanDefinition bd = new AnnotatedGenericBeanDefinition(ComponentFromNonStringMeta.class);
 		String beanName = this.beanNameGenerator.generateBeanName(bd, registry);
-		assertThat(beanName).isEqualTo("annotationBeanNameGeneratorTests.ComponentFromNonStringMeta");
+		assertEquals("annotationBeanNameGeneratorTests.ComponentFromNonStringMeta", beanName);
 	}
 
+	/**
+	 * @since 4.0.1
+	 * @see https://jira.spring.io/browse/SPR-11360
+	 */
 	@Test
 	public void generateBeanNameFromComposedControllerAnnotationWithoutName() {
-		// SPR-11360
 		BeanDefinitionRegistry registry = new SimpleBeanDefinitionRegistry();
 		AnnotatedBeanDefinition bd = new AnnotatedGenericBeanDefinition(ComposedControllerAnnotationWithoutName.class);
 		String beanName = this.beanNameGenerator.generateBeanName(bd, registry);
 		String expectedGeneratedBeanName = this.beanNameGenerator.buildDefaultBeanName(bd);
-		assertThat(beanName).isEqualTo(expectedGeneratedBeanName);
+		assertEquals(expectedGeneratedBeanName, beanName);
 	}
 
+	/**
+	 * @since 4.0.1
+	 * @see https://jira.spring.io/browse/SPR-11360
+	 */
 	@Test
 	public void generateBeanNameFromComposedControllerAnnotationWithBlankName() {
-		// SPR-11360
 		BeanDefinitionRegistry registry = new SimpleBeanDefinitionRegistry();
 		AnnotatedBeanDefinition bd = new AnnotatedGenericBeanDefinition(ComposedControllerAnnotationWithBlankName.class);
 		String beanName = this.beanNameGenerator.generateBeanName(bd, registry);
 		String expectedGeneratedBeanName = this.beanNameGenerator.buildDefaultBeanName(bd);
-		assertThat(beanName).isEqualTo(expectedGeneratedBeanName);
+		assertEquals(expectedGeneratedBeanName, beanName);
 	}
 
+	/**
+	 * @since 4.0.1
+	 * @see https://jira.spring.io/browse/SPR-11360
+	 */
 	@Test
 	public void generateBeanNameFromComposedControllerAnnotationWithStringValue() {
-		// SPR-11360
 		BeanDefinitionRegistry registry = new SimpleBeanDefinitionRegistry();
 		AnnotatedBeanDefinition bd = new AnnotatedGenericBeanDefinition(
 			ComposedControllerAnnotationWithStringValue.class);
 		String beanName = this.beanNameGenerator.generateBeanName(bd, registry);
-		assertThat(beanName).isEqualTo("restController");
+		assertEquals("restController", beanName);
 	}
 
 

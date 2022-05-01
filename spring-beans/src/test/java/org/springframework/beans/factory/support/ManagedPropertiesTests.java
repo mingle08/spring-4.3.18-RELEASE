@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,11 +18,9 @@ package org.springframework.beans.factory.support;
 
 import java.util.Map;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.junit.Assert.*;
 
 /**
  * @author Rick Evans
@@ -41,29 +39,27 @@ public class ManagedPropertiesTests {
 		child.setProperty("three", "three");
 		child.setMergeEnabled(true);
 		Map mergedMap = (Map) child.merge(parent);
-		assertThat(mergedMap.size()).as("merge() obviously did not work.").isEqualTo(3);
+		assertEquals("merge() obviously did not work.", 3, mergedMap.size());
 	}
 
 	@Test
 	public void mergeWithNullParent() {
 		ManagedProperties child = new ManagedProperties();
 		child.setMergeEnabled(true);
-		assertThat(child.merge(null)).isSameAs(child);
+		assertSame(child, child.merge(null));
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void mergeWithNonCompatibleParentType() {
 		ManagedProperties map = new ManagedProperties();
 		map.setMergeEnabled(true);
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				map.merge("hello"));
+		map.merge("hello");
 	}
 
-	@Test
+	@Test(expected = IllegalStateException.class)
 	public void mergeNotAllowedWhenMergeNotEnabled() {
 		ManagedProperties map = new ManagedProperties();
-		assertThatIllegalStateException().isThrownBy(() ->
-				map.merge(null));
+		map.merge(null);
 	}
 
 	@Test
@@ -74,7 +70,7 @@ public class ManagedPropertiesTests {
 		ManagedProperties child = new ManagedProperties();
 		child.setMergeEnabled(true);
 		Map mergedMap = (Map) child.merge(parent);
-		assertThat(mergedMap.size()).as("merge() obviously did not work.").isEqualTo(2);
+		assertEquals("merge() obviously did not work.", 2, mergedMap.size());
 	}
 
 	@Test
@@ -87,8 +83,8 @@ public class ManagedPropertiesTests {
 		child.setMergeEnabled(true);
 		Map mergedMap = (Map) child.merge(parent);
 		// child value for 'one' must override parent value...
-		assertThat(mergedMap.size()).as("merge() obviously did not work.").isEqualTo(2);
-		assertThat(mergedMap.get("one")).as("Parent value not being overridden during merge().").isEqualTo("fork");
+		assertEquals("merge() obviously did not work.", 2, mergedMap.size());
+		assertEquals("Parent value not being overridden during merge().", "fork", mergedMap.get("one"));
 	}
 
 }

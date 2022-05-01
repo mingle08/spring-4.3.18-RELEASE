@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,14 +22,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
-import org.springframework.messaging.simp.SimpLogging;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessageType;
 import org.springframework.util.Assert;
+import org.springframework.util.PathMatcher;
 import org.springframework.util.StringUtils;
 
 /**
@@ -51,7 +51,7 @@ import org.springframework.util.StringUtils;
  */
 public class DefaultUserDestinationResolver implements UserDestinationResolver {
 
-	private static final Log logger = SimpLogging.forLogName(DefaultUserDestinationResolver.class);
+	private static final Log logger = LogFactory.getLog(DefaultUserDestinationResolver.class);
 
 
 	private final SimpUserRegistry userRegistry;
@@ -121,9 +121,31 @@ public class DefaultUserDestinationResolver implements UserDestinationResolver {
 		return this.removeLeadingSlash;
 	}
 
+	/**
+	 * Provide the {@code PathMatcher} in use for working with destinations
+	 * which in turn helps to determine whether the leading slash should be
+	 * kept in actual destinations after removing the
+	 * {@link #setUserDestinationPrefix userDestinationPrefix}.
+	 * <p>By default actual destinations have a leading slash, e.g.
+	 * {@code /queue/position-updates} which makes sense with brokers that
+	 * support destinations with slash as separator. When a {@code PathMatcher}
+	 * is provided that supports an alternative separator, then resulting
+	 * destinations won't have a leading slash, e.g. {@code
+	 * jms.queue.position-updates}.
+	 * @param pathMatcher the PathMatcher used to work with destinations
+	 * @since 4.3
+	 * @deprecated as of 4.3.14 this property is no longer used and is replaced
+	 * by {@link #setRemoveLeadingSlash(boolean)} that indicates more explicitly
+	 * whether to keep the leading slash which may or may not be the case
+	 * regardless of how the {@code PathMatcher} is configured.
+	 */
+	@Deprecated
+	public void setPathMatcher(PathMatcher pathMatcher) {
+		// Do nothing
+	}
+
 
 	@Override
-	@Nullable
 	public UserDestinationResult resolveDestination(Message<?> message) {
 		ParseResult parseResult = parse(message);
 		if (parseResult == null) {
@@ -131,7 +153,7 @@ public class DefaultUserDestinationResolver implements UserDestinationResolver {
 		}
 		String user = parseResult.getUser();
 		String sourceDestination = parseResult.getSourceDestination();
-		Set<String> targetSet = new HashSet<>();
+		Set<String> targetSet = new HashSet<String>();
 		for (String sessionId : parseResult.getSessionIds()) {
 			String actualDestination = parseResult.getActualDestination();
 			String targetDestination = getTargetDestination(
@@ -144,7 +166,6 @@ public class DefaultUserDestinationResolver implements UserDestinationResolver {
 		return new UserDestinationResult(sourceDestination, targetSet, subscribeDestination, user);
 	}
 
-	@Nullable
 	private ParseResult parse(Message<?> message) {
 		MessageHeaders headers = message.getHeaders();
 		String sourceDestination = SimpMessageHeaderAccessor.getDestination(headers);
@@ -152,19 +173,17 @@ public class DefaultUserDestinationResolver implements UserDestinationResolver {
 			return null;
 		}
 		SimpMessageType messageType = SimpMessageHeaderAccessor.getMessageType(headers);
-		if (messageType != null) {
-			switch (messageType) {
-				case SUBSCRIBE:
-				case UNSUBSCRIBE:
-					return parseSubscriptionMessage(message, sourceDestination);
-				case MESSAGE:
-					return parseMessage(headers, sourceDestination);
-			}
+		switch (messageType) {
+			case SUBSCRIBE:
+			case UNSUBSCRIBE:
+				return parseSubscriptionMessage(message, sourceDestination);
+			case MESSAGE:
+				return parseMessage(headers, sourceDestination);
+			default:
+				return null;
 		}
-		return null;
 	}
 
-	@Nullable
 	private ParseResult parseSubscriptionMessage(Message<?> message, String sourceDestination) {
 		MessageHeaders headers = message.getHeaders();
 		String sessionId = SimpMessageHeaderAccessor.getSessionId(headers);
@@ -179,7 +198,6 @@ public class DefaultUserDestinationResolver implements UserDestinationResolver {
 		}
 		Principal principal = SimpMessageHeaderAccessor.getUser(headers);
 		String user = (principal != null ? principal.getName() : null);
-		Assert.isTrue(user == null || !user.contains("%2F"), "Invalid sequence \"%2F\" in user name: " + user);
 		Set<String> sessionIds = Collections.singleton(sessionId);
 		return new ParseResult(sourceDestination, actualDestination, sourceDestination, sessionIds, user);
 	}
@@ -209,16 +227,16 @@ public class DefaultUserDestinationResolver implements UserDestinationResolver {
 		return new ParseResult(sourceDest, actualDest, subscribeDest, sessionIds, userName);
 	}
 
-	private Set<String> getSessionIdsByUser(String userName, @Nullable String sessionId) {
+	private Set<String> getSessionIdsByUser(String userName, String sessionId) {
 		Set<String> sessionIds;
 		SimpUser user = this.userRegistry.getUser(userName);
 		if (user != null) {
-			if (sessionId != null && user.getSession(sessionId) != null) {
+			if (user.getSession(sessionId) != null) {
 				sessionIds = Collections.singleton(sessionId);
 			}
 			else {
 				Set<SimpSession> sessions = user.getSessions();
-				sessionIds = new HashSet<>(sessions.size());
+				sessionIds = new HashSet<String>(sessions.size());
 				for (SimpSession session : sessions) {
 					sessionIds.add(session.getId());
 				}
@@ -244,9 +262,8 @@ public class DefaultUserDestinationResolver implements UserDestinationResolver {
 	 * @return a target destination, or {@code null} if none
 	 */
 	@SuppressWarnings("unused")
-	@Nullable
 	protected String getTargetDestination(String sourceDestination, String actualDestination,
-			String sessionId, @Nullable String user) {
+			String sessionId, String user) {
 
 		return actualDestination + "-user" + sessionId;
 	}
@@ -270,11 +287,10 @@ public class DefaultUserDestinationResolver implements UserDestinationResolver {
 
 		private final Set<String> sessionIds;
 
-		@Nullable
 		private final String user;
 
 		public ParseResult(String sourceDest, String actualDest, String subscribeDest,
-				Set<String> sessionIds, @Nullable String user) {
+				Set<String> sessionIds, String user) {
 
 			this.sourceDestination = sourceDest;
 			this.actualDestination = actualDest;
@@ -299,7 +315,6 @@ public class DefaultUserDestinationResolver implements UserDestinationResolver {
 			return this.sessionIds;
 		}
 
-		@Nullable
 		public String getUser() {
 			return this.user;
 		}

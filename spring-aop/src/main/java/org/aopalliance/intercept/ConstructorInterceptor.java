@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,8 +15,6 @@
  */
 
 package org.aopalliance.intercept;
-
-import javax.annotation.Nonnull;
 
 /**
  * Intercepts the construction of a new object.
@@ -56,7 +54,6 @@ public interface ConstructorInterceptor extends Interceptor  {
 	 * @throws Throwable if the interceptors or the target object
 	 * throws an exception
 	 */
-	@Nonnull
 	Object construct(ConstructorInvocation invocation) throws Throwable;
 
 }

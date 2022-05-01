@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,14 +21,11 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import jakarta.servlet.ServletContext;
+import javax.servlet.ServletContext;
 
 import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.Ordered;
-import org.springframework.lang.Nullable;
-import org.springframework.util.AntPathMatcher;
 import org.springframework.util.Assert;
 import org.springframework.web.HttpRequestHandler;
 import org.springframework.web.accept.ContentNegotiationManager;
@@ -37,24 +34,18 @@ import org.springframework.web.servlet.handler.AbstractHandlerMapping;
 import org.springframework.web.servlet.handler.SimpleUrlHandlerMapping;
 import org.springframework.web.servlet.resource.ResourceHttpRequestHandler;
 import org.springframework.web.util.UrlPathHelper;
-import org.springframework.web.util.pattern.PathPattern;
 
 /**
- * Stores registrations of resource handlers for serving static resources such
- * as images, css files and others through Spring MVC including setting cache
- * headers optimized for efficient loading in a web browser. Resources can be
- * served out of locations under web application root, from the classpath, and
- * others.
+ * Stores registrations of resource handlers for serving static resources such as images, css files and others
+ * through Spring MVC including setting cache headers optimized for efficient loading in a web browser.
+ * Resources can be served out of locations under web application root, from the classpath, and others.
  *
- * <p>To create a resource handler, use {@link #addResourceHandler(String...)}
- * providing the URL path patterns for which the handler should be invoked to
- * serve static resources (e.g. {@code "/resources/**"}).
+ * <p>To create a resource handler, use {@link #addResourceHandler(String...)} providing the URL path patterns
+ * for which the handler should be invoked to serve static resources (e.g. {@code "/resources/**"}).
  *
- * <p>Then use additional methods on the returned
- * {@link ResourceHandlerRegistration} to add one or more locations from which
- * to serve static content from (e.g. {{@code "/"},
- * {@code "classpath:/META-INF/public-web-resources/"}}) or to specify a cache
- * period for served resources.
+ * <p>Then use additional methods on the returned {@link ResourceHandlerRegistration} to add one or more
+ * locations from which to serve static content from (e.g. {{@code "/"},
+ * {@code "classpath:/META-INF/public-web-resources/"}}) or to specify a cache period for served resources.
  *
  * @author Rossen Stoyanchev
  * @since 3.1
@@ -66,13 +57,11 @@ public class ResourceHandlerRegistry {
 
 	private final ApplicationContext applicationContext;
 
-	@Nullable
 	private final ContentNegotiationManager contentNegotiationManager;
 
-	@Nullable
 	private final UrlPathHelper pathHelper;
 
-	private final List<ResourceHandlerRegistration> registrations = new ArrayList<>();
+	private final List<ResourceHandlerRegistration> registrations = new ArrayList<ResourceHandlerRegistration>();
 
 	private int order = Ordered.LOWEST_PRECEDENCE - 1;
 
@@ -94,7 +83,7 @@ public class ResourceHandlerRegistry {
 	 * @since 4.3
 	 */
 	public ResourceHandlerRegistry(ApplicationContext applicationContext, ServletContext servletContext,
-			@Nullable ContentNegotiationManager contentNegotiationManager) {
+			ContentNegotiationManager contentNegotiationManager) {
 
 		this(applicationContext, servletContext, contentNegotiationManager, null);
 	}
@@ -106,7 +95,7 @@ public class ResourceHandlerRegistry {
 	 * @since 4.3.13
 	 */
 	public ResourceHandlerRegistry(ApplicationContext applicationContext, ServletContext servletContext,
-			@Nullable ContentNegotiationManager contentNegotiationManager, @Nullable UrlPathHelper pathHelper) {
+			ContentNegotiationManager contentNegotiationManager, UrlPathHelper pathHelper) {
 
 		Assert.notNull(applicationContext, "ApplicationContext is required");
 		this.applicationContext = applicationContext;
@@ -117,14 +106,13 @@ public class ResourceHandlerRegistry {
 
 
 	/**
-	 * Add a resource handler to serve static resources. The handler is invoked
-	 * for requests that match one of the specified URL path patterns.
-	 * <p>Patterns such as {@code "/static/**"} or {@code "/css/{filename:\\w+\\.css}"}
-	 * are supported.
-	 * <p>For pattern syntax see {@link PathPattern} when parsed patterns
-	 * are {@link PathMatchConfigurer#setPatternParser enabled} or
-	 * {@link AntPathMatcher} otherwise. The syntax is largely the same with
-	 * {@link PathPattern} more tailored for web usage and more efficient.
+	 * Add a resource handler for serving static resources based on the specified URL path patterns.
+	 * The handler will be invoked for every incoming request that matches to one of the specified
+	 * path patterns.
+	 * <p>Patterns like {@code "/static/**"} or {@code "/css/{filename:\\w+\\.css}"} are allowed.
+	 * See {@link org.springframework.util.AntPathMatcher} for more details on the syntax.
+	 * @return a {@link ResourceHandlerRegistration} to use to further configure the
+	 * registered resource handler
 	 */
 	public ResourceHandlerRegistration addResourceHandler(String... pathPatterns) {
 		ResourceHandlerRegistration registration = new ResourceHandlerRegistration(pathPatterns);
@@ -145,7 +133,7 @@ public class ResourceHandlerRegistry {
 	}
 
 	/**
-	 * Specify the order to use for resource handling relative to other {@link HandlerMapping HandlerMappings}
+	 * Specify the order to use for resource handling relative to other {@link HandlerMapping}s
 	 * configured in the Spring MVC application context.
 	 * <p>The default value used is {@code Integer.MAX_VALUE-1}.
 	 */
@@ -158,39 +146,37 @@ public class ResourceHandlerRegistry {
 	 * Return a handler mapping with the mapped resource handlers; or {@code null} in case
 	 * of no registrations.
 	 */
-	@Nullable
 	protected AbstractHandlerMapping getHandlerMapping() {
 		if (this.registrations.isEmpty()) {
 			return null;
 		}
-		Map<String, HttpRequestHandler> urlMap = new LinkedHashMap<>();
+
+		Map<String, HttpRequestHandler> urlMap = new LinkedHashMap<String, HttpRequestHandler>();
 		for (ResourceHandlerRegistration registration : this.registrations) {
-			ResourceHttpRequestHandler handler = getRequestHandler(registration);
 			for (String pathPattern : registration.getPathPatterns()) {
+				ResourceHttpRequestHandler handler = registration.getRequestHandler();
+				if (this.pathHelper != null) {
+					handler.setUrlPathHelper(this.pathHelper);
+				}
+				if (this.contentNegotiationManager != null) {
+					handler.setContentNegotiationManager(this.contentNegotiationManager);
+				}
+				handler.setServletContext(this.servletContext);
+				handler.setApplicationContext(this.applicationContext);
+				try {
+					handler.afterPropertiesSet();
+				}
+				catch (Throwable ex) {
+					throw new BeanInitializationException("Failed to init ResourceHttpRequestHandler", ex);
+				}
 				urlMap.put(pathPattern, handler);
 			}
 		}
-		return new SimpleUrlHandlerMapping(urlMap, this.order);
-	}
 
-	@SuppressWarnings("deprecation")
-	private ResourceHttpRequestHandler getRequestHandler(ResourceHandlerRegistration registration) {
-		ResourceHttpRequestHandler handler = registration.getRequestHandler();
-		if (this.pathHelper != null) {
-			handler.setUrlPathHelper(this.pathHelper);
-		}
-		if (this.contentNegotiationManager != null) {
-			handler.setContentNegotiationManager(this.contentNegotiationManager);
-		}
-		handler.setServletContext(this.servletContext);
-		handler.setApplicationContext(this.applicationContext);
-		try {
-			handler.afterPropertiesSet();
-		}
-		catch (Throwable ex) {
-			throw new BeanInitializationException("Failed to init ResourceHttpRequestHandler", ex);
-		}
-		return handler;
+		SimpleUrlHandlerMapping handlerMapping = new SimpleUrlHandlerMapping();
+		handlerMapping.setOrder(order);
+		handlerMapping.setUrlMap(urlMap);
+		return handlerMapping;
 	}
 
 }

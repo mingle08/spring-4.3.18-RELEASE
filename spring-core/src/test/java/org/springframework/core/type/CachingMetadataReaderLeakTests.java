@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,17 +18,18 @@ package org.springframework.core.type;
 
 import java.net.URL;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
-import org.springframework.core.testfixture.EnabledForTestGroups;
 import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
+import org.springframework.tests.Assume;
+import org.springframework.tests.TestGroup;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.core.testfixture.TestGroup.LONG_RUNNING;
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for checking the behaviour of {@link CachingMetadataReaderFactory} under
@@ -38,18 +39,19 @@ import static org.springframework.core.testfixture.TestGroup.LONG_RUNNING;
  * @author Costin Leau
  * @author Sam Brannen
  */
-@EnabledForTestGroups(LONG_RUNNING)
-class CachingMetadataReaderLeakTests {
+public class CachingMetadataReaderLeakTests {
 
 	private static final int ITEMS_TO_LOAD = 9999;
 
 	private final MetadataReaderFactory mrf = new CachingMetadataReaderFactory();
 
 	@Test
-	void significantLoad() throws Exception {
+	public void testSignificantLoad() throws Exception {
+		Assume.group(TestGroup.LONG_RUNNING);
+
 		// the biggest public class in the JDK (>60k)
 		URL url = getClass().getResource("/java/awt/Component.class");
-		assertThat(url).isNotNull();
+		assertThat(url, notNullValue());
 
 		// look at a LOT of items
 		for (int i = 0; i < ITEMS_TO_LOAD; i++) {
@@ -67,7 +69,7 @@ class CachingMetadataReaderLeakTests {
 			};
 
 			MetadataReader reader = mrf.getMetadataReader(resource);
-			assertThat(reader).isNotNull();
+			assertThat(reader, notNullValue());
 		}
 
 		// useful for profiling to take snapshots

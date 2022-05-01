@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,8 +34,8 @@ import org.springframework.util.NumberUtils;
  */
 public class OperatorPower extends Operator {
 
-	public OperatorPower(int startPos, int endPos, SpelNodeImpl... operands) {
-		super("^", startPos, endPos, operands);
+	public OperatorPower(int pos, SpelNodeImpl... operands) {
+		super("^", pos, operands);
 	}
 
 
@@ -47,7 +47,10 @@ public class OperatorPower extends Operator {
 		Object leftOperand = leftOp.getValueInternal(state).getValue();
 		Object rightOperand = rightOp.getValueInternal(state).getValue();
 
-		if (leftOperand instanceof Number leftNumber && rightOperand instanceof Number rightNumber) {
+		if (leftOperand instanceof Number && rightOperand instanceof Number) {
+			Number leftNumber = (Number) leftOperand;
+			Number rightNumber = (Number) rightOperand;
+
 			if (leftNumber instanceof BigDecimal) {
 				BigDecimal leftBigDecimal = NumberUtils.convertNumberToTargetClass(leftNumber, BigDecimal.class);
 				return new TypedValue(leftBigDecimal.pow(rightNumber.intValue()));

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,29 +19,28 @@ package org.springframework.aop.aspectj.autoproxy;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.io.Resource;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Adrian Colyer
  * @author Juergen Hoeller
  * @author Chris Beams
  */
-public class AtAspectJAnnotationBindingTests {
+public final class AtAspectJAnnotationBindingTests {
 
 	private AnnotatedTestBean testBean;
-
 	private ClassPathXmlApplicationContext ctx;
 
 
-	@BeforeEach
-	public void setup() {
+	@Before
+	public void setUp() {
 		ctx = new ClassPathXmlApplicationContext(getClass().getSimpleName() + "-context.xml", getClass());
 		testBean = (AnnotatedTestBean) ctx.getBean("testBean");
 	}
@@ -49,18 +48,18 @@ public class AtAspectJAnnotationBindingTests {
 
 	@Test
 	public void testAnnotationBindingInAroundAdvice() {
-		assertThat(testBean.doThis()).isEqualTo("this value doThis");
-		assertThat(testBean.doThat()).isEqualTo("that value doThat");
-		assertThat(testBean.doArray().length).isEqualTo(2);
+		assertEquals("this value doThis", testBean.doThis());
+		assertEquals("that value doThat", testBean.doThat());
+		assertEquals(2, testBean.doArray().length);
 	}
 
 	@Test
 	public void testNoMatchingWithoutAnnotationPresent() {
-		assertThat(testBean.doTheOther()).isEqualTo("doTheOther");
+		assertEquals("doTheOther", testBean.doTheOther());
 	}
 
 	@Test
-	public void testPointcutEvaluatedAgainstArray() {
+	public void testPointcutEvaulatedAgainstArray() {
 		ctx.getBean("arrayFactoryBean");
 	}
 
@@ -71,7 +70,8 @@ public class AtAspectJAnnotationBindingTests {
 class AtAspectJAnnotationBindingTestAspect {
 
 	@Around("execution(* *(..)) && @annotation(testAnn)")
-	public Object doWithAnnotation(ProceedingJoinPoint pjp, TestAnnotation testAnn) throws Throwable {
+	public Object doWithAnnotation(ProceedingJoinPoint pjp, TestAnnotation testAnn)
+	throws Throwable {
 		String annValue = testAnn.value();
 		Object result = pjp.proceed();
 		return (result instanceof String ? annValue + " " + result : result);
@@ -84,7 +84,7 @@ class ResourceArrayFactoryBean implements FactoryBean<Object> {
 
 	@Override
 	@TestAnnotation("some value")
-	public Object getObject() {
+	public Object getObject() throws Exception {
 		return new Resource[0];
 	}
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,12 @@
 
 package org.springframework.web.util;
 
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -49,15 +49,12 @@ public class CookieGenerator {
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	@Nullable
 	private String cookieName;
 
-	@Nullable
 	private String cookieDomain;
 
 	private String cookiePath = DEFAULT_COOKIE_PATH;
 
-	@Nullable
 	private Integer cookieMaxAge;
 
 	private boolean cookieSecure = false;
@@ -67,16 +64,15 @@ public class CookieGenerator {
 
 	/**
 	 * Use the given name for cookies created by this generator.
-	 * @see jakarta.servlet.http.Cookie#getName()
+	 * @see javax.servlet.http.Cookie#getName()
 	 */
-	public void setCookieName(@Nullable String cookieName) {
+	public void setCookieName(String cookieName) {
 		this.cookieName = cookieName;
 	}
 
 	/**
 	 * Return the given name for cookies created by this generator.
 	 */
-	@Nullable
 	public String getCookieName() {
 		return this.cookieName;
 	}
@@ -84,16 +80,15 @@ public class CookieGenerator {
 	/**
 	 * Use the given domain for cookies created by this generator.
 	 * The cookie is only visible to servers in this domain.
-	 * @see jakarta.servlet.http.Cookie#setDomain
+	 * @see javax.servlet.http.Cookie#setDomain
 	 */
-	public void setCookieDomain(@Nullable String cookieDomain) {
+	public void setCookieDomain(String cookieDomain) {
 		this.cookieDomain = cookieDomain;
 	}
 
 	/**
 	 * Return the domain for cookies created by this generator, if any.
 	 */
-	@Nullable
 	public String getCookieDomain() {
 		return this.cookieDomain;
 	}
@@ -101,7 +96,7 @@ public class CookieGenerator {
 	/**
 	 * Use the given path for cookies created by this generator.
 	 * The cookie is only visible to URLs in this path and below.
-	 * @see jakarta.servlet.http.Cookie#setPath
+	 * @see javax.servlet.http.Cookie#setPath
 	 */
 	public void setCookiePath(String cookiePath) {
 		this.cookiePath = cookiePath;
@@ -119,16 +114,15 @@ public class CookieGenerator {
 	 * Useful special value: -1 ... not persistent, deleted when client shuts down.
 	 * <p>Default is no specific maximum age at all, using the Servlet container's
 	 * default.
-	 * @see jakarta.servlet.http.Cookie#setMaxAge
+	 * @see javax.servlet.http.Cookie#setMaxAge
 	 */
-	public void setCookieMaxAge(@Nullable Integer cookieMaxAge) {
+	public void setCookieMaxAge(Integer cookieMaxAge) {
 		this.cookieMaxAge = cookieMaxAge;
 	}
 
 	/**
 	 * Return the maximum age for cookies created by this generator.
 	 */
-	@Nullable
 	public Integer getCookieMaxAge() {
 		return this.cookieMaxAge;
 	}
@@ -138,7 +132,7 @@ public class CookieGenerator {
 	 * such as HTTPS (SSL). This is an indication to the receiving browser,
 	 * not processed by the HTTP server itself.
 	 * <p>Default is "false".
-	 * @see jakarta.servlet.http.Cookie#setSecure
+	 * @see javax.servlet.http.Cookie#setSecure
 	 */
 	public void setCookieSecure(boolean cookieSecure) {
 		this.cookieSecure = cookieSecure;
@@ -155,7 +149,7 @@ public class CookieGenerator {
 	/**
 	 * Set whether the cookie is supposed to be marked with the "HttpOnly" attribute.
 	 * <p>Default is "false".
-	 * @see jakarta.servlet.http.Cookie#setHttpOnly
+	 * @see javax.servlet.http.Cookie#setHttpOnly
 	 */
 	public void setCookieHttpOnly(boolean cookieHttpOnly) {
 		this.cookieHttpOnly = cookieHttpOnly;
@@ -194,8 +188,8 @@ public class CookieGenerator {
 			cookie.setHttpOnly(true);
 		}
 		response.addCookie(cookie);
-		if (logger.isTraceEnabled()) {
-			logger.trace("Added cookie [" + getCookieName() + "=" + cookieValue + "]");
+		if (logger.isDebugEnabled()) {
+			logger.debug("Added cookie with name [" + getCookieName() + "] and value [" + cookieValue + "]");
 		}
 	}
 
@@ -219,8 +213,8 @@ public class CookieGenerator {
 			cookie.setHttpOnly(true);
 		}
 		response.addCookie(cookie);
-		if (logger.isTraceEnabled()) {
-			logger.trace("Removed cookie '" + getCookieName() + "'");
+		if (logger.isDebugEnabled()) {
+			logger.debug("Removed cookie with name [" + getCookieName() + "]");
 		}
 	}
 

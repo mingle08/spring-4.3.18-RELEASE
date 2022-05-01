@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,10 +18,11 @@ package org.springframework.test.context.cache;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.testng.TestNG;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -35,12 +36,13 @@ import org.springframework.test.context.support.DirtiesContextTestExecutionListe
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.springframework.test.context.testng.TrackingTestNGTestListener;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.context.cache.ContextCacheTestUtils.assertContextCacheStatistics;
-import static org.springframework.test.context.cache.ContextCacheTestUtils.resetContextCache;
+import org.testng.TestNG;
+
+import static org.junit.Assert.*;
+import static org.springframework.test.context.cache.ContextCacheTestUtils.*;
 
 /**
- * JUnit based integration test which verifies correct {@linkplain ContextCache
+ * JUnit 4 based integration test which verifies correct {@linkplain ContextCache
  * application context caching} in conjunction with Spring's TestNG support
  * and {@link DirtiesContext @DirtiesContext} at the class level.
  *
@@ -50,14 +52,15 @@ import static org.springframework.test.context.cache.ContextCacheTestUtils.reset
  * @author Sam Brannen
  * @since 4.2
  */
-class ClassLevelDirtiesContextTestNGTests {
+@RunWith(JUnit4.class)
+public class ClassLevelDirtiesContextTestNGTests {
 
-	private static final AtomicInteger cacheHits = new AtomicInteger();
-	private static final AtomicInteger cacheMisses = new AtomicInteger();
+	private static final AtomicInteger cacheHits = new AtomicInteger(0);
+	private static final AtomicInteger cacheMisses = new AtomicInteger(0);
 
 
-	@BeforeAll
-	static void verifyInitialCacheState() {
+	@BeforeClass
+	public static void verifyInitialCacheState() {
 		resetContextCache();
 		// Reset static counters in case tests are run multiple times in a test suite --
 		// for example, via JUnit's @Suite.
@@ -67,7 +70,7 @@ class ClassLevelDirtiesContextTestNGTests {
 	}
 
 	@Test
-	void verifyDirtiesContextBehavior() throws Exception {
+	public void verifyDirtiesContextBehavior() throws Exception {
 
 		assertBehaviorForCleanTestCase();
 
@@ -144,9 +147,12 @@ class ClassLevelDirtiesContextTestNGTests {
 		testNG.setVerbose(0);
 		testNG.run();
 
-		assertThat(listener.testFailureCount).as("Failures for test class [" + testClass + "].").isEqualTo(expectedTestFailureCount);
-		assertThat(listener.testStartCount).as("Tests started for test class [" + testClass + "].").isEqualTo(expectedTestStartedCount);
-		assertThat(listener.testSuccessCount).as("Successful tests for test class [" + testClass + "].").isEqualTo(expectedTestFinishedCount);
+		assertEquals("Failures for test class [" + testClass + "].", expectedTestFailureCount,
+			listener.testFailureCount);
+		assertEquals("Tests started for test class [" + testClass + "].", expectedTestStartedCount,
+			listener.testStartCount);
+		assertEquals("Successful tests for test class [" + testClass + "].", expectedTestFinishedCount,
+			listener.testSuccessCount);
 	}
 
 	private void assertBehaviorForCleanTestCase() {
@@ -154,8 +160,8 @@ class ClassLevelDirtiesContextTestNGTests {
 		assertContextCacheStatistics("after clean test class", 1, cacheHits.get(), cacheMisses.incrementAndGet());
 	}
 
-	@AfterAll
-	static void verifyFinalCacheState() {
+	@AfterClass
+	public static void verifyFinalCacheState() {
 		assertContextCacheStatistics("AfterClass", 0, cacheHits.get(), cacheMisses.get());
 	}
 
@@ -178,7 +184,8 @@ class ClassLevelDirtiesContextTestNGTests {
 
 
 		protected void assertApplicationContextWasAutowired() {
-			assertThat(this.applicationContext).as("The application context should have been autowired.").isNotNull();
+			org.testng.Assert.assertNotNull(this.applicationContext,
+				"The application context should have been autowired.");
 		}
 	}
 

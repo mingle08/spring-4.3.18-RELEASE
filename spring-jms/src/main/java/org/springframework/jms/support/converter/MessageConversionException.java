@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,11 +17,10 @@
 package org.springframework.jms.support.converter;
 
 import org.springframework.jms.JmsException;
-import org.springframework.lang.Nullable;
 
 /**
  * Thrown by {@link MessageConverter} implementations when the conversion
- * of an object to/from a {@link jakarta.jms.Message} fails.
+ * of an object to/from a {@link javax.jms.Message} fails.
  *
  * @author Mark Pollack
  * @since 1.1
@@ -43,7 +42,7 @@ public class MessageConversionException extends JmsException {
 	 * @param msg the detail message
 	 * @param cause the root cause (if any)
 	 */
-	public MessageConversionException(String msg, @Nullable Throwable cause) {
+	public MessageConversionException(String msg, Throwable cause) {
 		super(msg, cause);
 	}
 

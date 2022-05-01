@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,24 +23,24 @@ import java.lang.annotation.Target;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.aop.scope.ScopedObject;
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.support.RootBeanDefinition;
-import org.springframework.beans.testfixture.beans.ITestBean;
-import org.springframework.beans.testfixture.beans.TestBean;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.tests.sample.beans.ITestBean;
+import org.springframework.tests.sample.beans.TestBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Tests that scopes are properly supported by using a custom Scope implementations
@@ -60,13 +60,13 @@ public class ScopingTests {
 	private GenericApplicationContext ctx;
 
 
-	@BeforeEach
+	@Before
 	public void setUp() throws Exception {
 		customScope = new CustomScope();
 		ctx = createContext(ScopedConfigurationClass.class);
 	}
 
-	@AfterEach
+	@After
 	public void tearDown() throws Exception {
 		if (ctx != null) {
 			ctx.close();
@@ -100,33 +100,33 @@ public class ScopingTests {
 		Object bean1 = ctx.getBean(beanName);
 		Object bean2 = ctx.getBean(beanName);
 
-		assertThat(bean2).as(message).isSameAs(bean1);
+		assertSame(message, bean1, bean2);
 
 		Object bean3 = ctx.getBean(beanName);
 
-		assertThat(bean3).as(message).isSameAs(bean1);
+		assertSame(message, bean1, bean3);
 
 		// make the scope create a new object
 		customScope.createNewScope = true;
 
 		Object newBean1 = ctx.getBean(beanName);
-		assertThat(newBean1).as(message).isNotSameAs(bean1);
+		assertNotSame(message, bean1, newBean1);
 
 		Object sameBean1 = ctx.getBean(beanName);
 
-		assertThat(sameBean1).as(message).isSameAs(newBean1);
+		assertSame(message, newBean1, sameBean1);
 
 		// make the scope create a new object
 		customScope.createNewScope = true;
 
 		Object newBean2 = ctx.getBean(beanName);
-		assertThat(newBean2).as(message).isNotSameAs(newBean1);
+		assertNotSame(message, newBean1, newBean2);
 
 		// make the scope create a new object .. again
 		customScope.createNewScope = true;
 
 		Object newBean3 = ctx.getBean(beanName);
-		assertThat(newBean3).as(message).isNotSameAs(newBean2);
+		assertNotSame(message, newBean2, newBean3);
 	}
 
 	@Test
@@ -134,16 +134,16 @@ public class ScopingTests {
 		Object beanAInScope = ctx.getBean("scopedClass");
 		Object beanBInScope = ctx.getBean("scopedInterface");
 
-		assertThat(beanBInScope).isNotSameAs(beanAInScope);
+		assertNotSame(beanAInScope, beanBInScope);
 
 		customScope.createNewScope = true;
 
 		Object newBeanAInScope = ctx.getBean("scopedClass");
 		Object newBeanBInScope = ctx.getBean("scopedInterface");
 
-		assertThat(newBeanBInScope).isNotSameAs(newBeanAInScope);
-		assertThat(beanAInScope).isNotSameAs(newBeanAInScope);
-		assertThat(beanBInScope).isNotSameAs(newBeanBInScope);
+		assertNotSame(newBeanAInScope, newBeanBInScope);
+		assertNotSame(newBeanAInScope, beanAInScope);
+		assertNotSame(newBeanBInScope, beanBInScope);
 	}
 
 	@Test
@@ -153,28 +153,26 @@ public class ScopingTests {
 		// get hidden bean
 		Object bean = ctx.getBean("scopedTarget." + beanName);
 
-		boolean condition = bean instanceof ScopedObject;
-		assertThat(condition).isFalse();
+		assertFalse(bean instanceof ScopedObject);
 	}
 
 	@Test
 	public void testScopedProxyConfiguration() throws Exception {
 		TestBean singleton = (TestBean) ctx.getBean("singletonWithScopedInterfaceDep");
 		ITestBean spouse = singleton.getSpouse();
-		boolean condition = spouse instanceof ScopedObject;
-		assertThat(condition).as("scoped bean is not wrapped by the scoped-proxy").isTrue();
+		assertTrue("scoped bean is not wrapped by the scoped-proxy", spouse instanceof ScopedObject);
 
 		String beanName = "scopedProxyInterface";
 
 		String scopedBeanName = "scopedTarget." + beanName;
 
 		// get hidden bean
-		assertThat(spouse.getName()).isEqualTo(flag);
+		assertEquals(flag, spouse.getName());
 
 		ITestBean spouseFromBF = (ITestBean) ctx.getBean(scopedBeanName);
-		assertThat(spouseFromBF.getName()).isEqualTo(spouse.getName());
+		assertEquals(spouse.getName(), spouseFromBF.getName());
 		// the scope proxy has kicked in
-		assertThat(spouseFromBF).isNotSameAs(spouse);
+		assertNotSame(spouse, spouseFromBF);
 
 		// create a new bean
 		customScope.createNewScope = true;
@@ -182,32 +180,31 @@ public class ScopingTests {
 		// get the bean again from the BF
 		spouseFromBF = (ITestBean) ctx.getBean(scopedBeanName);
 		// make sure the name has been updated
-		assertThat(spouseFromBF.getName()).isSameAs(spouse.getName());
-		assertThat(spouseFromBF).isNotSameAs(spouse);
+		assertSame(spouse.getName(), spouseFromBF.getName());
+		assertNotSame(spouse, spouseFromBF);
 
 		// get the bean again
 		spouseFromBF = (ITestBean) ctx.getBean(scopedBeanName);
-		assertThat(spouseFromBF.getName()).isSameAs(spouse.getName());
+		assertSame(spouse.getName(), spouseFromBF.getName());
 	}
 
 	@Test
 	public void testScopedProxyConfigurationWithClasses() throws Exception {
 		TestBean singleton = (TestBean) ctx.getBean("singletonWithScopedClassDep");
 		ITestBean spouse = singleton.getSpouse();
-		boolean condition = spouse instanceof ScopedObject;
-		assertThat(condition).as("scoped bean is not wrapped by the scoped-proxy").isTrue();
+		assertTrue("scoped bean is not wrapped by the scoped-proxy", spouse instanceof ScopedObject);
 
 		String beanName = "scopedProxyClass";
 
 		String scopedBeanName = "scopedTarget." + beanName;
 
 		// get hidden bean
-		assertThat(spouse.getName()).isEqualTo(flag);
+		assertEquals(flag, spouse.getName());
 
 		TestBean spouseFromBF = (TestBean) ctx.getBean(scopedBeanName);
-		assertThat(spouseFromBF.getName()).isEqualTo(spouse.getName());
+		assertEquals(spouse.getName(), spouseFromBF.getName());
 		// the scope proxy has kicked in
-		assertThat(spouseFromBF).isNotSameAs(spouse);
+		assertNotSame(spouse, spouseFromBF);
 
 		// create a new bean
 		customScope.createNewScope = true;
@@ -216,12 +213,12 @@ public class ScopingTests {
 		// get the bean again from the BF
 		spouseFromBF = (TestBean) ctx.getBean(scopedBeanName);
 		// make sure the name has been updated
-		assertThat(spouseFromBF.getName()).isSameAs(spouse.getName());
-		assertThat(spouseFromBF).isNotSameAs(spouse);
+		assertSame(spouse.getName(), spouseFromBF.getName());
+		assertNotSame(spouse, spouseFromBF);
 
 		// get the bean again
 		spouseFromBF = (TestBean) ctx.getBean(scopedBeanName);
-		assertThat(spouseFromBF.getName()).isSameAs(spouse.getName());
+		assertSame(spouse.getName(), spouseFromBF.getName());
 	}
 
 
@@ -333,7 +330,7 @@ public class ScopingTests {
 
 		public boolean createNewScope = true;
 
-		private Map<String, Object> beans = new HashMap<>();
+		private Map<String, Object> beans = new HashMap<String, Object>();
 
 		@Override
 		public Object get(String name, ObjectFactory<?> objectFactory) {

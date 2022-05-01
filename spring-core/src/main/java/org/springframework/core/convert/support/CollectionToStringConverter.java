@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,12 +19,10 @@ package org.springframework.core.convert.support;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
-import java.util.StringJoiner;
 
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.converter.ConditionalGenericConverter;
-import org.springframework.lang.Nullable;
 
 /**
  * Converts a Collection to a comma-delimited String.
@@ -56,8 +54,7 @@ final class CollectionToStringConverter implements ConditionalGenericConverter {
 	}
 
 	@Override
-	@Nullable
-	public Object convert(@Nullable Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
+	public Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
 		if (source == null) {
 			return null;
 		}
@@ -65,13 +62,18 @@ final class CollectionToStringConverter implements ConditionalGenericConverter {
 		if (sourceCollection.isEmpty()) {
 			return "";
 		}
-		StringJoiner sj = new StringJoiner(DELIMITER);
+		StringBuilder sb = new StringBuilder();
+		int i = 0;
 		for (Object sourceElement : sourceCollection) {
+			if (i > 0) {
+				sb.append(DELIMITER);
+			}
 			Object targetElement = this.conversionService.convert(
 					sourceElement, sourceType.elementTypeDescriptor(sourceElement), targetType);
-			sj.add(String.valueOf(targetElement));
+			sb.append(targetElement);
+			i++;
 		}
-		return sj.toString();
+		return sb.toString();
 	}
 
 }

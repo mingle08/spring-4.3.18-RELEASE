@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,18 +17,16 @@
 package org.springframework.web.socket.sockjs.support;
 
 import java.io.IOException;
-
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.context.Lifecycle;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.http.server.ServletServerHttpResponse;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.web.HttpRequestHandler;
 import org.springframework.web.context.ServletContextAware;
@@ -58,7 +56,7 @@ public class SockJsHttpRequestHandler
 
 	private final WebSocketHandler webSocketHandler;
 
-	private volatile boolean running;
+	private volatile boolean running = false;
 
 
 	/**
@@ -133,7 +131,7 @@ public class SockJsHttpRequestHandler
 		try {
 			this.sockJsService.handleRequest(request, response, getSockJsPath(servletRequest), this.webSocketHandler);
 		}
-		catch (Exception ex) {
+		catch (Throwable ex) {
 			throw new SockJsException("Uncaught failure in SockJS request, uri=" + request.getURI(), ex);
 		}
 	}
@@ -145,7 +143,6 @@ public class SockJsHttpRequestHandler
 	}
 
 	@Override
-	@Nullable
 	public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
 		if (this.sockJsService instanceof CorsConfigurationSource) {
 			return ((CorsConfigurationSource) this.sockJsService).getCorsConfiguration(request);

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,21 +16,24 @@
 
 package org.springframework.orm.jpa.support;
 
-import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.orm.jpa.AbstractEntityManagerFactoryIntegrationTests;
 import org.springframework.orm.jpa.support.PersistenceInjectionTests.DefaultPublicPersistenceContextSetter;
 import org.springframework.orm.jpa.support.PersistenceInjectionTests.DefaultPublicPersistenceUnitSetterNamedPerson;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @author Sam Brannen
  */
+@SuppressWarnings("deprecation")
 public class PersistenceInjectionIntegrationTests extends AbstractEntityManagerFactoryIntegrationTests {
+
+	// Enable support for @Autowired
+	{
+		setAutowireMode(AUTOWIRE_NO);
+		setDependencyCheck(false);
+	}
 
 	@Autowired
 	private DefaultPublicPersistenceContextSetter defaultSetterInjected;
@@ -39,14 +42,12 @@ public class PersistenceInjectionIntegrationTests extends AbstractEntityManagerF
 	private DefaultPublicPersistenceUnitSetterNamedPerson namedSetterInjected;
 
 
-	@Test
 	public void testDefaultPersistenceContextSetterInjection() {
-		assertThat(defaultSetterInjected.getEntityManager()).isNotNull();
+		assertNotNull(defaultSetterInjected.getEntityManager());
 	}
 
-	@Test
 	public void testSetterInjectionOfNamedPersistenceContext() {
-		assertThat(namedSetterInjected.getEntityManagerFactory()).isNotNull();
+		assertNotNull(namedSetterInjected.getEntityManagerFactory());
 	}
 
 }

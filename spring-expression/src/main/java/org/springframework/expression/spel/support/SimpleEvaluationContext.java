@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,6 +27,7 @@ import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.expression.BeanResolver;
 import org.springframework.expression.ConstructorResolver;
 import org.springframework.expression.EvaluationContext;
+import org.springframework.expression.EvaluationException;
 import org.springframework.expression.MethodResolver;
 import org.springframework.expression.OperatorOverloader;
 import org.springframework.expression.PropertyAccessor;
@@ -36,7 +37,6 @@ import org.springframework.expression.TypeLocator;
 import org.springframework.expression.TypedValue;
 import org.springframework.expression.spel.SpelEvaluationException;
 import org.springframework.expression.spel.SpelMessage;
-import org.springframework.lang.Nullable;
 
 /**
  * A basic implementation of {@link EvaluationContext} that focuses on a subset
@@ -86,10 +86,13 @@ import org.springframework.lang.Nullable;
  * @see StandardTypeConverter
  * @see DataBindingPropertyAccessor
  */
-public final class SimpleEvaluationContext implements EvaluationContext {
+public class SimpleEvaluationContext implements EvaluationContext {
 
-	private static final TypeLocator typeNotFoundTypeLocator = typeName -> {
-		throw new SpelEvaluationException(SpelMessage.TYPE_NOT_FOUND, typeName);
+	private static final TypeLocator typeNotFoundTypeLocator = new TypeLocator() {
+		@Override
+		public Class<?> findType(String typeName) throws EvaluationException {
+			throw new SpelEvaluationException(SpelMessage.TYPE_NOT_FOUND, typeName);
+		}
 	};
 
 
@@ -105,11 +108,11 @@ public final class SimpleEvaluationContext implements EvaluationContext {
 
 	private final OperatorOverloader operatorOverloader = new StandardOperatorOverloader();
 
-	private final Map<String, Object> variables = new HashMap<>();
+	private final Map<String, Object> variables = new HashMap<String, Object>();
 
 
 	private SimpleEvaluationContext(List<PropertyAccessor> accessors, List<MethodResolver> resolvers,
-			@Nullable TypeConverter converter, @Nullable TypedValue rootObject) {
+			TypeConverter converter, TypedValue rootObject) {
 
 		this.propertyAccessors = accessors;
 		this.methodResolvers = resolvers;
@@ -158,7 +161,6 @@ public final class SimpleEvaluationContext implements EvaluationContext {
 	 * @return always {@code null}
 	 */
 	@Override
-	@Nullable
 	public BeanResolver getBeanResolver() {
 		return null;
 	}
@@ -201,12 +203,11 @@ public final class SimpleEvaluationContext implements EvaluationContext {
 	}
 
 	@Override
-	public void setVariable(String name, @Nullable Object value) {
+	public void setVariable(String name, Object value) {
 		this.variables.put(name, value);
 	}
 
 	@Override
-	@Nullable
 	public Object lookupVariable(String name) {
 		return this.variables.get(name);
 	}
@@ -261,10 +262,8 @@ public final class SimpleEvaluationContext implements EvaluationContext {
 
 		private List<MethodResolver> resolvers = Collections.emptyList();
 
-		@Nullable
 		private TypeConverter typeConverter;
 
-		@Nullable
 		private TypedValue rootObject;
 
 		public Builder(PropertyAccessor... accessors) {
@@ -298,7 +297,8 @@ public final class SimpleEvaluationContext implements EvaluationContext {
 		 * @see SimpleEvaluationContext#forReadWriteDataBinding()
 		 */
 		public Builder withInstanceMethods() {
-			this.resolvers = Collections.singletonList(DataBindingMethodResolver.forInstanceMethodInvocation());
+			this.resolvers = Collections.singletonList(
+					(MethodResolver) DataBindingMethodResolver.forInstanceMethodInvocation());
 			return this;
 		}
 

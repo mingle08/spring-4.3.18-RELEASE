@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,16 +17,13 @@
 package org.springframework.web.servlet.handler;
 
 import java.util.Set;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.core.Ordered;
-import org.springframework.core.log.LogFormatUtils;
-import org.springframework.lang.Nullable;
-import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -47,18 +44,15 @@ public abstract class AbstractHandlerExceptionResolver implements HandlerExcepti
 	private static final String HEADER_CACHE_CONTROL = "Cache-Control";
 
 
-	/** Logger available to subclasses. */
+	/** Logger available to subclasses */
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	private int order = Ordered.LOWEST_PRECEDENCE;
 
-	@Nullable
 	private Set<?> mappedHandlers;
 
-	@Nullable
 	private Class<?>[] mappedHandlerClasses;
 
-	@Nullable
 	private Log warnLogger;
 
 	private boolean preventResponseCaching = false;
@@ -101,17 +95,15 @@ public abstract class AbstractHandlerExceptionResolver implements HandlerExcepti
 	/**
 	 * Set the log category for warn logging. The name will be passed to the underlying logger
 	 * implementation through Commons Logging, getting interpreted as a log category according
-	 * to the logger's configuration. If {@code null} or empty String is passed, warn logging
-	 * is turned off.
-	 * <p>By default there is no warn logging although subclasses like
-	 * {@link org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver}
-	 * can change that default. Specify this setting to activate warn logging into a specific
+	 * to the logger's configuration.
+	 * <p>Default is no warn logging. Specify this setting to activate warn logging into a specific
 	 * category. Alternatively, override the {@link #logException} method for custom logging.
 	 * @see org.apache.commons.logging.LogFactory#getLog(String)
+	 * @see org.apache.log4j.Logger#getLogger(String)
 	 * @see java.util.logging.Logger#getLogger(String)
 	 */
 	public void setWarnLogCategory(String loggerName) {
-		this.warnLogger = (StringUtils.hasLength(loggerName) ? LogFactory.getLog(loggerName) : null);
+		this.warnLogger = LogFactory.getLog(loggerName);
 	}
 
 	/**
@@ -132,19 +124,16 @@ public abstract class AbstractHandlerExceptionResolver implements HandlerExcepti
 	 * to the {@link #doResolveException} template method.
 	 */
 	@Override
-	@Nullable
 	public ModelAndView resolveException(
-			HttpServletRequest request, HttpServletResponse response, @Nullable Object handler, Exception ex) {
+			HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
 
 		if (shouldApplyTo(request, handler)) {
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("Resolving exception from handler [" + handler + "]: " + ex);
+			}
 			prepareResponse(ex, response);
 			ModelAndView result = doResolveException(request, response, handler, ex);
 			if (result != null) {
-				// Print debug message when warn logger is not enabled.
-				if (logger.isDebugEnabled() && (this.warnLogger == null || !this.warnLogger.isWarnEnabled())) {
-					logger.debug(buildLogMessage(ex, request) + (result.isEmpty() ? "" : " to " + result));
-				}
-				// Explicitly configured warn logger in logException method.
 				logException(ex, request);
 			}
 			return result;
@@ -167,7 +156,7 @@ public abstract class AbstractHandlerExceptionResolver implements HandlerExcepti
 	 * @see #setMappedHandlers
 	 * @see #setMappedHandlerClasses
 	 */
-	protected boolean shouldApplyTo(HttpServletRequest request, @Nullable Object handler) {
+	protected boolean shouldApplyTo(HttpServletRequest request, Object handler) {
 		if (handler != null) {
 			if (this.mappedHandlers != null && this.mappedHandlers.contains(handler)) {
 				return true;
@@ -180,16 +169,8 @@ public abstract class AbstractHandlerExceptionResolver implements HandlerExcepti
 				}
 			}
 		}
-		return !hasHandlerMappings();
-	}
-
-	/**
-	 * Whether there are any handler mappings registered via
-	 * {@link #setMappedHandlers(Set)} or {@link #setMappedHandlerClasses(Class[])}.
-	 * @since 5.3
-	 */
-	protected boolean hasHandlerMappings() {
-		return (this.mappedHandlers != null || this.mappedHandlerClasses != null);
+		// Else only apply if there are no explicit handler mappings.
+		return (this.mappedHandlers == null && this.mappedHandlerClasses == null);
 	}
 
 	/**
@@ -215,7 +196,7 @@ public abstract class AbstractHandlerExceptionResolver implements HandlerExcepti
 	 * @return the log message to use
 	 */
 	protected String buildLogMessage(Exception ex, HttpServletRequest request) {
-		return "Resolved [" + LogFormatUtils.formatValue(ex, -1, true) + "]";
+		return "Resolved exception caused by Handler execution: " + ex;
 	}
 
 	/**
@@ -258,8 +239,7 @@ public abstract class AbstractHandlerExceptionResolver implements HandlerExcepti
 	 * @return a corresponding {@code ModelAndView} to forward to,
 	 * or {@code null} for default processing in the resolution chain
 	 */
-	@Nullable
 	protected abstract ModelAndView doResolveException(
-			HttpServletRequest request, HttpServletResponse response, @Nullable Object handler, Exception ex);
+			HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex);
 
 }

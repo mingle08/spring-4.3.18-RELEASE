@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,13 +17,14 @@
 package org.springframework.core.io;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests that serve as regression tests for the bugs described in SPR-6888
@@ -32,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  * @author Chris Beams
  * @author Sam Brannen
  */
-class ClassPathResourceTests {
+public class ClassPathResourceTests {
 
 	private static final String PACKAGE_PATH = "org/springframework/core/io";
 	private static final String NONEXISTENT_RESOURCE_NAME = "nonexistent.xml";
@@ -43,96 +44,90 @@ class ClassPathResourceTests {
 	 */
 	private static final String FQ_RESOURCE_PATH_WITH_LEADING_SLASH = '/' + FQ_RESOURCE_PATH;
 
-	private static final Pattern DESCRIPTION_PATTERN = Pattern.compile("^class path resource \\[(.+?)]$");
+	private static final Pattern DESCRIPTION_PATTERN = Pattern.compile("^class path resource \\[(.+?)\\]$");
 
 
 	@Test
-	void stringConstructorRaisesExceptionWithFullyQualifiedPath() {
+	public void stringConstructorRaisesExceptionWithFullyQualifiedPath() {
 		assertExceptionContainsFullyQualifiedPath(new ClassPathResource(FQ_RESOURCE_PATH));
 	}
 
 	@Test
-	void classLiteralConstructorRaisesExceptionWithFullyQualifiedPath() {
+	public void classLiteralConstructorRaisesExceptionWithFullyQualifiedPath() {
 		assertExceptionContainsFullyQualifiedPath(new ClassPathResource(NONEXISTENT_RESOURCE_NAME, getClass()));
 	}
 
 	@Test
-	void classLoaderConstructorRaisesExceptionWithFullyQualifiedPath() {
+	public void classLoaderConstructorRaisesExceptionWithFullyQualifiedPath() {
 		assertExceptionContainsFullyQualifiedPath(new ClassPathResource(FQ_RESOURCE_PATH, getClass().getClassLoader()));
 	}
 
 	@Test
-	void getDescriptionWithStringConstructor() {
+	public void getDescriptionWithStringConstructor() {
 		assertDescriptionContainsExpectedPath(new ClassPathResource(FQ_RESOURCE_PATH), FQ_RESOURCE_PATH);
 	}
 
 	@Test
-	void getDescriptionWithStringConstructorAndLeadingSlash() {
+	public void getDescriptionWithStringConstructorAndLeadingSlash() {
 		assertDescriptionContainsExpectedPath(new ClassPathResource(FQ_RESOURCE_PATH_WITH_LEADING_SLASH),
 				FQ_RESOURCE_PATH);
 	}
 
 	@Test
-	void getDescriptionWithClassLiteralConstructor() {
+	public void getDescriptionWithClassLiteralConstructor() {
 		assertDescriptionContainsExpectedPath(new ClassPathResource(NONEXISTENT_RESOURCE_NAME, getClass()),
 				FQ_RESOURCE_PATH);
 	}
 
 	@Test
-	void getDescriptionWithClassLiteralConstructorAndLeadingSlash() {
+	public void getDescriptionWithClassLiteralConstructorAndLeadingSlash() {
 		assertDescriptionContainsExpectedPath(
 				new ClassPathResource(FQ_RESOURCE_PATH_WITH_LEADING_SLASH, getClass()), FQ_RESOURCE_PATH);
 	}
 
 	@Test
-	void getDescriptionWithClassLoaderConstructor() {
+	public void getDescriptionWithClassLoaderConstructor() {
 		assertDescriptionContainsExpectedPath(
 				new ClassPathResource(FQ_RESOURCE_PATH, getClass().getClassLoader()), FQ_RESOURCE_PATH);
 	}
 
 	@Test
-	void getDescriptionWithClassLoaderConstructorAndLeadingSlash() {
+	public void getDescriptionWithClassLoaderConstructorAndLeadingSlash() {
 		assertDescriptionContainsExpectedPath(
 				new ClassPathResource(FQ_RESOURCE_PATH_WITH_LEADING_SLASH, getClass().getClassLoader()), FQ_RESOURCE_PATH);
 	}
 
 	@Test
-	void dropLeadingSlashForClassLoaderAccess() {
-		assertThat(new ClassPathResource("/test.html").getPath()).isEqualTo("test.html");
-		assertThat(((ClassPathResource) new ClassPathResource("").createRelative("/test.html")).getPath()).isEqualTo("test.html");
+	public void dropLeadingSlashForClassLoaderAccess() {
+		assertEquals("test.html", new ClassPathResource("/test.html").getPath());
+		assertEquals("test.html", ((ClassPathResource) new ClassPathResource("").createRelative("/test.html")).getPath());
 	}
 
 	@Test
-	void preserveLeadingSlashForClassRelativeAccess() {
-		assertThat(new ClassPathResource("/test.html", getClass()).getPath()).isEqualTo("/test.html");
-		assertThat(((ClassPathResource) new ClassPathResource("", getClass()).createRelative("/test.html")).getPath()).isEqualTo("/test.html");
-	}
-
-	@Test
-	void directoryNotReadable() {
-		Resource fileDir = new ClassPathResource("org/springframework/core");
-		assertThat(fileDir.exists()).isTrue();
-		assertThat(fileDir.isReadable()).isFalse();
-
-		Resource jarDir = new ClassPathResource("reactor/core");
-		assertThat(jarDir.exists()).isTrue();
-		assertThat(jarDir.isReadable()).isFalse();
+	public void preserveLeadingSlashForClassRelativeAccess() {
+		assertEquals("/test.html", new ClassPathResource("/test.html", getClass()).getPath());
+		assertEquals("/test.html", ((ClassPathResource) new ClassPathResource("", getClass()).createRelative("/test.html")).getPath());
 	}
 
 
 	private void assertDescriptionContainsExpectedPath(ClassPathResource resource, String expectedPath) {
 		Matcher matcher = DESCRIPTION_PATTERN.matcher(resource.getDescription());
-		assertThat(matcher.matches()).isTrue();
-		assertThat(matcher.groupCount()).isEqualTo(1);
+		assertTrue(matcher.matches());
+		assertEquals(1, matcher.groupCount());
 		String match = matcher.group(1);
 
-		assertThat(match).isEqualTo(expectedPath);
+		assertEquals(expectedPath, match);
 	}
 
 	private void assertExceptionContainsFullyQualifiedPath(ClassPathResource resource) {
-		assertThatExceptionOfType(FileNotFoundException.class).isThrownBy(
-				resource::getInputStream)
-			.withMessageContaining(FQ_RESOURCE_PATH);
+		try {
+			resource.getInputStream();
+			fail("FileNotFoundException expected for resource: " + resource);
+		}
+		catch (IOException ex) {
+			assertThat(ex, instanceOf(FileNotFoundException.class));
+			assertThat(ex.getMessage(), containsString(FQ_RESOURCE_PATH));
+		}
 	}
 
 }

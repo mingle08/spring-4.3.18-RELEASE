@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +16,14 @@
 
 package org.springframework.orm.jpa;
 
-import jakarta.persistence.EntityManager;
+import javax.persistence.EntityManager;
 
 /**
- * Subinterface of {@link jakarta.persistence.EntityManager} to be implemented by
+ * Subinterface of {@link javax.persistence.EntityManager} to be implemented by
  * EntityManager proxies. Allows access to the underlying target EntityManager.
  *
  * <p>This interface is mainly intended for framework usage. Application code
- * should prefer the use of the {@link jakarta.persistence.EntityManager#getDelegate()}
+ * should prefer the use of the {@link javax.persistence.EntityManager#getDelegate()}
  * method to access native functionality of the underlying resource.
  *
  * @author Juergen Hoeller

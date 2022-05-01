@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,8 +24,6 @@ import org.springframework.expression.spel.CodeFlow;
 import org.springframework.expression.spel.ExpressionState;
 import org.springframework.expression.spel.SpelEvaluationException;
 import org.springframework.expression.spel.SpelMessage;
-import org.springframework.util.Assert;
-import org.springframework.util.ObjectUtils;
 
 /**
  * Represents a ternary expression, for example: "someCheck()?true:false".
@@ -36,8 +34,8 @@ import org.springframework.util.ObjectUtils;
  */
 public class Ternary extends SpelNodeImpl {
 
-	public Ternary(int startPos, int endPos, SpelNodeImpl... args) {
-		super(startPos, endPos, args);
+	public Ternary(int pos, SpelNodeImpl... args) {
+		super(pos, args);
 	}
 
 
@@ -59,7 +57,7 @@ public class Ternary extends SpelNodeImpl {
 		computeExitTypeDescriptor();
 		return result;
 	}
-
+	
 	@Override
 	public String toStringAST() {
 		return getChild(0).toStringAST() + " ? " + getChild(1).toStringAST() + " : " + getChild(2).toStringAST();
@@ -70,7 +68,7 @@ public class Ternary extends SpelNodeImpl {
 				this.children[2].exitTypeDescriptor != null) {
 			String leftDescriptor = this.children[1].exitTypeDescriptor;
 			String rightDescriptor = this.children[2].exitTypeDescriptor;
-			if (ObjectUtils.nullSafeEquals(leftDescriptor, rightDescriptor)) {
+			if (leftDescriptor.equals(rightDescriptor)) {
 				this.exitTypeDescriptor = leftDescriptor;
 			}
 			else {
@@ -89,17 +87,15 @@ public class Ternary extends SpelNodeImpl {
 				CodeFlow.isBooleanCompatible(condition.exitTypeDescriptor) &&
 				left.exitTypeDescriptor != null && right.exitTypeDescriptor != null);
 	}
-
+	
 	@Override
 	public void generateCode(MethodVisitor mv, CodeFlow cf) {
 		// May reach here without it computed if all elements are literals
 		computeExitTypeDescriptor();
 		cf.enterCompilationScope();
 		this.children[0].generateCode(mv, cf);
-		String lastDesc = cf.lastDescriptor();
-		Assert.state(lastDesc != null, "No last descriptor");
-		if (!CodeFlow.isPrimitive(lastDesc)) {
-			CodeFlow.insertUnboxInsns(mv, 'Z', lastDesc);
+		if (!CodeFlow.isPrimitive(cf.lastDescriptor())) {
+			CodeFlow.insertUnboxInsns(mv, 'Z', cf.lastDescriptor());
 		}
 		cf.exitCompilationScope();
 		Label elseTarget = new Label();
@@ -108,9 +104,7 @@ public class Ternary extends SpelNodeImpl {
 		cf.enterCompilationScope();
 		this.children[1].generateCode(mv, cf);
 		if (!CodeFlow.isPrimitive(this.exitTypeDescriptor)) {
-			lastDesc = cf.lastDescriptor();
-			Assert.state(lastDesc != null, "No last descriptor");
-			CodeFlow.insertBoxIfNecessary(mv, lastDesc.charAt(0));
+			CodeFlow.insertBoxIfNecessary(mv, cf.lastDescriptor().charAt(0));
 		}
 		cf.exitCompilationScope();
 		mv.visitJumpInsn(GOTO, endOfIf);
@@ -118,9 +112,7 @@ public class Ternary extends SpelNodeImpl {
 		cf.enterCompilationScope();
 		this.children[2].generateCode(mv, cf);
 		if (!CodeFlow.isPrimitive(this.exitTypeDescriptor)) {
-			lastDesc = cf.lastDescriptor();
-			Assert.state(lastDesc != null, "No last descriptor");
-			CodeFlow.insertBoxIfNecessary(mv, lastDesc.charAt(0));
+			CodeFlow.insertBoxIfNecessary(mv, cf.lastDescriptor().charAt(0));
 		}
 		cf.exitCompilationScope();
 		mv.visitLabel(endOfIf);

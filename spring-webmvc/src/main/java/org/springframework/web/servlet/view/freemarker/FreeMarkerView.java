@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,26 +18,40 @@ package org.springframework.web.servlet.view.freemarker;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Map;
+import javax.servlet.GenericServlet;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import freemarker.core.ParseException;
+import freemarker.ext.jsp.TaglibFactory;
+import freemarker.ext.servlet.AllHttpScopesHashModel;
+import freemarker.ext.servlet.FreemarkerServlet;
+import freemarker.ext.servlet.HttpRequestHashModel;
+import freemarker.ext.servlet.HttpRequestParametersHashModel;
+import freemarker.ext.servlet.HttpSessionHashModel;
+import freemarker.ext.servlet.ServletContextHashModel;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
 import freemarker.template.ObjectWrapper;
 import freemarker.template.SimpleHash;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactoryUtils;
+import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContextException;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
 import org.springframework.web.servlet.support.RequestContextUtils;
 import org.springframework.web.servlet.view.AbstractTemplateView;
 
@@ -54,9 +68,8 @@ import org.springframework.web.servlet.view.AbstractTemplateView;
  *
  * <p>Depends on a single {@link FreeMarkerConfig} object such as {@link FreeMarkerConfigurer}
  * being accessible in the current web application context, with any bean name.
- * Alternatively, you can set the FreeMarker {@link Configuration} object as a
- * bean property. See {@link #setConfiguration} for more details on the impacts
- * of this approach.
+ * Alternatively, you can set the FreeMarker {@link Configuration} object as bean property.
+ * See {@link #setConfiguration} for more details on the impacts of this approach.
  *
  * <p>Note: Spring's FreeMarker support requires FreeMarker 2.3 or higher.
  *
@@ -72,11 +85,13 @@ import org.springframework.web.servlet.view.AbstractTemplateView;
  */
 public class FreeMarkerView extends AbstractTemplateView {
 
-	@Nullable
 	private String encoding;
 
-	@Nullable
 	private Configuration configuration;
+
+	private TaglibFactory taglibFactory;
+
+	private ServletContextHashModel servletContextHashModel;
 
 
 	/**
@@ -85,14 +100,13 @@ public class FreeMarkerView extends AbstractTemplateView {
 	 * <p>Specify the encoding in the FreeMarker Configuration rather than per
 	 * template if all your templates share a common encoding.
 	 */
-	public void setEncoding(@Nullable String encoding) {
+	public void setEncoding(String encoding) {
 		this.encoding = encoding;
 	}
 
 	/**
 	 * Return the encoding for the FreeMarker template.
 	 */
-	@Nullable
 	protected String getEncoding() {
 		return this.encoding;
 	}
@@ -101,29 +115,20 @@ public class FreeMarkerView extends AbstractTemplateView {
 	 * Set the FreeMarker Configuration to be used by this view.
 	 * <p>If this is not set, the default lookup will occur: a single {@link FreeMarkerConfig}
 	 * is expected in the current web application context, with any bean name.
+	 * <strong>Note:</strong> using this method will cause a new instance of {@link TaglibFactory}
+	 * to created for every single {@link FreeMarkerView} instance. This can be quite expensive
+	 * in terms of memory and initial CPU usage. In production it is recommended that you use
+	 * a {@link FreeMarkerConfig} which exposes a single shared {@link TaglibFactory}.
 	 */
-	public void setConfiguration(@Nullable Configuration configuration) {
+	public void setConfiguration(Configuration configuration) {
 		this.configuration = configuration;
 	}
 
 	/**
 	 * Return the FreeMarker configuration used by this view.
 	 */
-	@Nullable
 	protected Configuration getConfiguration() {
 		return this.configuration;
-	}
-
-	/**
-	 * Obtain the FreeMarker configuration for actual use.
-	 * @return the FreeMarker configuration (never {@code null})
-	 * @throws IllegalStateException in case of no Configuration object set
-	 * @since 5.0
-	 */
-	protected Configuration obtainConfiguration() {
-		Configuration configuration = getConfiguration();
-		Assert.state(configuration != null, "No Configuration set");
-		return configuration;
 	}
 
 
@@ -137,10 +142,23 @@ public class FreeMarkerView extends AbstractTemplateView {
 	 */
 	@Override
 	protected void initServletContext(ServletContext servletContext) throws BeansException {
-		if (getConfiguration() == null) {
+		if (getConfiguration() != null) {
+			this.taglibFactory = new TaglibFactory(servletContext);
+		}
+		else {
 			FreeMarkerConfig config = autodetectConfiguration();
 			setConfiguration(config.getConfiguration());
+			this.taglibFactory = config.getTaglibFactory();
 		}
+
+		GenericServlet servlet = new GenericServletAdapter();
+		try {
+			servlet.init(new DelegatingServletConfig());
+		}
+		catch (ServletException ex) {
+			throw new BeanInitializationException("Initialization of GenericServlet adapter failed", ex);
+		}
+		this.servletContextHashModel = new ServletContextHashModel(servlet, getObjectWrapper());
 	}
 
 	/**
@@ -153,7 +171,7 @@ public class FreeMarkerView extends AbstractTemplateView {
 	protected FreeMarkerConfig autodetectConfiguration() throws BeansException {
 		try {
 			return BeanFactoryUtils.beanOfTypeIncludingAncestors(
-					obtainApplicationContext(), FreeMarkerConfig.class, true, false);
+					getApplicationContext(), FreeMarkerConfig.class, true, false);
 		}
 		catch (NoSuchBeanDefinitionException ex) {
 			throw new ApplicationContextException(
@@ -169,7 +187,7 @@ public class FreeMarkerView extends AbstractTemplateView {
 	 * @see freemarker.template.Configuration#getObjectWrapper()
 	 */
 	protected ObjectWrapper getObjectWrapper() {
-		ObjectWrapper ow = obtainConfiguration().getObjectWrapper();
+		ObjectWrapper ow = getConfiguration().getObjectWrapper();
 		return (ow != null ? ow :
 				new DefaultObjectWrapperBuilder(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS).build());
 	}
@@ -182,22 +200,24 @@ public class FreeMarkerView extends AbstractTemplateView {
 	@Override
 	public boolean checkResource(Locale locale) throws Exception {
 		String url = getUrl();
-		Assert.state(url != null, "'url' not set");
-
 		try {
 			// Check that we can get the template, even if we might subsequently get it again.
 			getTemplate(url, locale);
 			return true;
 		}
 		catch (FileNotFoundException ex) {
-			// Allow for ViewResolver chaining...
+			if (logger.isDebugEnabled()) {
+				logger.debug("No FreeMarker view found for URL: " + url);
+			}
 			return false;
 		}
 		catch (ParseException ex) {
-			throw new ApplicationContextException("Failed to parse [" + url + "]", ex);
+			throw new ApplicationContextException(
+					"Failed to parse FreeMarker template for URL [" + url + "]", ex);
 		}
 		catch (IOException ex) {
-			throw new ApplicationContextException("Failed to load [" + url + "]", ex);
+			throw new ApplicationContextException(
+					"Could not load FreeMarker template for URL [" + url + "]", ex);
 		}
 	}
 
@@ -220,7 +240,7 @@ public class FreeMarkerView extends AbstractTemplateView {
 	 * different rendering operations can't overwrite each other's formats etc.
 	 * <p>Called by {@code renderMergedTemplateModel}. The default implementation
 	 * is empty. This method can be overridden to add custom helpers to the model.
-	 * @param model the model that will be passed to the template at merge time
+	 * @param model The model that will be passed to the template at merge time
 	 * @param request current HTTP request
 	 * @throws Exception if there's a fatal error while we're adding information to the context
 	 * @see #renderMergedTemplateModel
@@ -251,14 +271,15 @@ public class FreeMarkerView extends AbstractTemplateView {
 	 * @see #processTemplate
 	 * @see freemarker.ext.servlet.FreemarkerServlet
 	 */
-	protected void doRender(Map<String, Object> model, HttpServletRequest request,
-			HttpServletResponse response) throws Exception {
-
+	protected void doRender(Map<String, Object> model, HttpServletRequest request, HttpServletResponse response) throws Exception {
 		// Expose model to JSP tags (as request attributes).
 		exposeModelAsRequestAttributes(model, request);
 		// Expose all standard FreeMarker hash models.
 		SimpleHash fmModel = buildTemplateModel(model, request, response);
 
+		if (logger.isDebugEnabled()) {
+			logger.debug("Rendering FreeMarker template [" + getUrl() + "] in FreeMarkerView '" + getBeanName() + "'");
+		}
 		// Grab the locale-specific version of the template.
 		Locale locale = RequestContextUtils.getLocale(request);
 		processTemplate(getTemplate(locale), fmModel, response);
@@ -266,18 +287,38 @@ public class FreeMarkerView extends AbstractTemplateView {
 
 	/**
 	 * Build a FreeMarker template model for the given model Map.
-	 * <p>The default implementation builds a {@link SimpleHash}.
+	 * <p>The default implementation builds a {@link AllHttpScopesHashModel}.
 	 * @param model the model to use for rendering
 	 * @param request current HTTP request
 	 * @param response current servlet response
 	 * @return the FreeMarker template model, as a {@link SimpleHash} or subclass thereof
 	 */
-	protected SimpleHash buildTemplateModel(Map<String, Object> model, HttpServletRequest request,
-			HttpServletResponse response) {
-
-		SimpleHash fmModel = new SimpleHash(getObjectWrapper());
+	protected SimpleHash buildTemplateModel(Map<String, Object> model, HttpServletRequest request, HttpServletResponse response) {
+		AllHttpScopesHashModel fmModel = new AllHttpScopesHashModel(getObjectWrapper(), getServletContext(), request);
+		fmModel.put(FreemarkerServlet.KEY_JSP_TAGLIBS, this.taglibFactory);
+		fmModel.put(FreemarkerServlet.KEY_APPLICATION, this.servletContextHashModel);
+		fmModel.put(FreemarkerServlet.KEY_SESSION, buildSessionModel(request, response));
+		fmModel.put(FreemarkerServlet.KEY_REQUEST, new HttpRequestHashModel(request, response, getObjectWrapper()));
+		fmModel.put(FreemarkerServlet.KEY_REQUEST_PARAMETERS, new HttpRequestParametersHashModel(request));
 		fmModel.putAll(model);
 		return fmModel;
+	}
+
+	/**
+	 * Build a FreeMarker {@link HttpSessionHashModel} for the given request,
+	 * detecting whether a session already exists and reacting accordingly.
+	 * @param request current HTTP request
+	 * @param response current servlet response
+	 * @return the FreeMarker HttpSessionHashModel
+	 */
+	private HttpSessionHashModel buildSessionModel(HttpServletRequest request, HttpServletResponse response) {
+		HttpSession session = request.getSession(false);
+		if (session != null) {
+			return new HttpSessionHashModel(session, getObjectWrapper());
+		}
+		else {
+			return new HttpSessionHashModel(null, request, response, getObjectWrapper());
+		}
 	}
 
 	/**
@@ -292,9 +333,7 @@ public class FreeMarkerView extends AbstractTemplateView {
 	 * @see #getTemplate(String, java.util.Locale)
 	 */
 	protected Template getTemplate(Locale locale) throws IOException {
-		String url = getUrl();
-		Assert.state(url != null, "'url' not set");
-		return getTemplate(url, locale);
+		return getTemplate(getUrl(), locale);
 	}
 
 	/**
@@ -309,8 +348,8 @@ public class FreeMarkerView extends AbstractTemplateView {
 	 */
 	protected Template getTemplate(String name, Locale locale) throws IOException {
 		return (getEncoding() != null ?
-				obtainConfiguration().getTemplate(name, locale, getEncoding()) :
-				obtainConfiguration().getTemplate(name, locale));
+				getConfiguration().getTemplate(name, locale, getEncoding()) :
+				getConfiguration().getTemplate(name, locale));
 	}
 
 	/**
@@ -327,6 +366,48 @@ public class FreeMarkerView extends AbstractTemplateView {
 			throws IOException, TemplateException {
 
 		template.process(model, response.getWriter());
+	}
+
+
+	/**
+	 * Simple adapter class that extends {@link GenericServlet}.
+	 * Needed for JSP access in FreeMarker.
+	 */
+	@SuppressWarnings("serial")
+	private static class GenericServletAdapter extends GenericServlet {
+
+		@Override
+		public void service(ServletRequest servletRequest, ServletResponse servletResponse) {
+			// no-op
+		}
+	}
+
+
+	/**
+	 * Internal implementation of the {@link ServletConfig} interface,
+	 * to be passed to the servlet adapter.
+	 */
+	private class DelegatingServletConfig implements ServletConfig {
+
+		@Override
+		public String getServletName() {
+			return FreeMarkerView.this.getBeanName();
+		}
+
+		@Override
+		public ServletContext getServletContext() {
+			return FreeMarkerView.this.getServletContext();
+		}
+
+		@Override
+		public String getInitParameter(String paramName) {
+			return null;
+		}
+
+		@Override
+		public Enumeration<String> getInitParameterNames() {
+			return Collections.enumeration(Collections.<String>emptySet());
+		}
 	}
 
 }

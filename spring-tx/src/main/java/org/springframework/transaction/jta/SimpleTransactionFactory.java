@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,25 +16,24 @@
 
 package org.springframework.transaction.jta;
 
-import jakarta.transaction.NotSupportedException;
-import jakarta.transaction.SystemException;
-import jakarta.transaction.Transaction;
-import jakarta.transaction.TransactionManager;
+import javax.transaction.NotSupportedException;
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
  * Default implementation of the {@link TransactionFactory} strategy interface,
- * simply wrapping a standard JTA {@link jakarta.transaction.TransactionManager}.
+ * simply wrapping a standard JTA {@link javax.transaction.TransactionManager}.
  *
  * <p>Does not support transaction names; simply ignores any specified name.
  *
  * @author Juergen Hoeller
  * @since 2.5
- * @see jakarta.transaction.TransactionManager#setTransactionTimeout(int)
- * @see jakarta.transaction.TransactionManager#begin()
- * @see jakarta.transaction.TransactionManager#getTransaction()
+ * @see javax.transaction.TransactionManager#setTransactionTimeout(int)
+ * @see javax.transaction.TransactionManager#begin()
+ * @see javax.transaction.TransactionManager#getTransaction()
  */
 public class SimpleTransactionFactory implements TransactionFactory {
 
@@ -42,7 +41,7 @@ public class SimpleTransactionFactory implements TransactionFactory {
 
 
 	/**
-	 * Create a new SimpleTransactionFactory for the given TransactionManager.
+	 * Create a new SimpleTransactionFactory for the given TransactionManager
 	 * @param transactionManager the JTA TransactionManager to wrap
 	 */
 	public SimpleTransactionFactory(TransactionManager transactionManager) {
@@ -52,7 +51,7 @@ public class SimpleTransactionFactory implements TransactionFactory {
 
 
 	@Override
-	public Transaction createTransaction(@Nullable String name, int timeout) throws NotSupportedException, SystemException {
+	public Transaction createTransaction(String name, int timeout) throws NotSupportedException, SystemException {
 		if (timeout >= 0) {
 			this.transactionManager.setTransactionTimeout(timeout);
 		}

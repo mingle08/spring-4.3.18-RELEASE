@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,7 +24,6 @@ import java.net.URISyntaxException;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.lang.Nullable;
 import org.springframework.util.StreamUtils;
 
 /**
@@ -34,8 +33,6 @@ import org.springframework.util.StreamUtils;
  * @author Arjen Poutsma
  * @since 3.0
  * @see SimpleClientHttpRequestFactory#createRequest(java.net.URI, HttpMethod)
- * @see org.springframework.http.client.support.HttpAccessor
- * @see org.springframework.web.client.RestTemplate
  */
 final class SimpleStreamingClientHttpRequest extends AbstractClientHttpRequest {
 
@@ -43,7 +40,6 @@ final class SimpleStreamingClientHttpRequest extends AbstractClientHttpRequest {
 
 	private final int chunkSize;
 
-	@Nullable
 	private OutputStream body;
 
 	private final boolean outputStreaming;
@@ -55,15 +51,9 @@ final class SimpleStreamingClientHttpRequest extends AbstractClientHttpRequest {
 		this.outputStreaming = outputStreaming;
 	}
 
-	@Override
-	public HttpMethod getMethod() {
-		return HttpMethod.valueOf(this.connection.getRequestMethod());
-	}
 
-	@Override
-	@Deprecated
-	public String getMethodValue() {
-		return this.connection.getRequestMethod();
+	public HttpMethod getMethod() {
+		return HttpMethod.resolve(this.connection.getRequestMethod());
 	}
 
 	@Override
@@ -80,7 +70,7 @@ final class SimpleStreamingClientHttpRequest extends AbstractClientHttpRequest {
 	protected OutputStream getBodyInternal(HttpHeaders headers) throws IOException {
 		if (this.body == null) {
 			if (this.outputStreaming) {
-				long contentLength = headers.getContentLength();
+				int contentLength = (int) headers.getContentLength();
 				if (contentLength >= 0) {
 					this.connection.setFixedLengthStreamingMode(contentLength);
 				}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,12 +18,9 @@ package org.springframework.oxm;
 
 import java.io.ByteArrayInputStream;
 import java.io.StringReader;
-
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
@@ -33,17 +30,18 @@ import javax.xml.transform.sax.SAXSource;
 import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamSource;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Text;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.XMLReaderFactory;
 
 import org.springframework.util.xml.StaxUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Arjen Poutsma
@@ -57,7 +55,7 @@ public abstract class AbstractUnmarshallerTests<U extends Unmarshaller> {
 			"<tns:flights xmlns:tns=\"http://samples.springframework.org/flight\">" +
 					"<tns:flight><tns:number>42</tns:number></tns:flight></tns:flights>";
 
-	@BeforeEach
+	@Before
 	public final void setUp() throws Exception {
 		unmarshaller = createUnmarshaller();
 	}
@@ -101,10 +99,7 @@ public abstract class AbstractUnmarshallerTests<U extends Unmarshaller> {
 
 	@Test
 	public void unmarshalSAXSource() throws Exception {
-		SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
-		saxParserFactory.setNamespaceAware(true);
-		SAXParser saxParser = saxParserFactory.newSAXParser();
-		XMLReader reader = saxParser.getXMLReader();
+		XMLReader reader = XMLReaderFactory.createXMLReader();
 		SAXSource source = new SAXSource(reader, new InputSource(new StringReader(INPUT_STRING)));
 		Object flights = unmarshaller.unmarshal(source);
 		testFlights(flights);
@@ -151,9 +146,11 @@ public abstract class AbstractUnmarshallerTests<U extends Unmarshaller> {
 		XMLInputFactory inputFactory = XMLInputFactory.newInstance();
 		XMLStreamReader streamReader = inputFactory.createXMLStreamReader(new StringReader(INPUT_STRING));
 		streamReader.nextTag(); // skip to flights
-		assertThat(streamReader.getName()).as("Invalid element").isEqualTo(new QName("http://samples.springframework.org/flight", "flights"));
+		assertEquals("Invalid element", new QName("http://samples.springframework.org/flight", "flights"),
+				streamReader.getName());
 		streamReader.nextTag(); // skip to flight
-		assertThat(streamReader.getName()).as("Invalid element").isEqualTo(new QName("http://samples.springframework.org/flight", "flight"));
+		assertEquals("Invalid element", new QName("http://samples.springframework.org/flight", "flight"),
+				streamReader.getName());
 		Source source = StaxUtils.createStaxSource(streamReader);
 		Object flight = unmarshaller.unmarshal(source);
 		testFlight(flight);

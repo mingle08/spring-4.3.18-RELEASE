@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,10 +19,10 @@ package org.springframework.web.client;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
@@ -32,102 +32,92 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.converter.GenericHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 
-import static java.util.Arrays.asList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * Test fixture for {@link HttpMessageConverter}.
  *
  * @author Arjen Poutsma
- * @author Brian Clozel
- * @author Sam Brannen
  */
-class HttpMessageConverterExtractorTests {
+public class HttpMessageConverterExtractorTests {
 
-	@SuppressWarnings("unchecked")
-	private final HttpMessageConverter<String> converter = mock(HttpMessageConverter.class);
-	private final HttpMessageConverterExtractor<?> extractor = new HttpMessageConverterExtractor<>(String.class, asList(converter));
-	private final MediaType contentType = MediaType.TEXT_PLAIN;
-	private final HttpHeaders responseHeaders = new HttpHeaders();
+	private HttpMessageConverterExtractor<?> extractor;
+
 	private final ClientHttpResponse response = mock(ClientHttpResponse.class);
 
 
 	@Test
-	void constructorPreconditions() {
-		assertThatIllegalArgumentException()
-				.isThrownBy(() -> new HttpMessageConverterExtractor<>(String.class, (List<HttpMessageConverter<?>>) null))
-				.withMessage("'messageConverters' must not be empty");
-		assertThatIllegalArgumentException()
-				.isThrownBy(() -> new HttpMessageConverterExtractor<>(String.class, Arrays.asList(null, this.converter)))
-				.withMessage("'messageConverters' must not contain null elements");
-	}
-
-	@Test
-	void noContent() throws IOException {
+	public void noContent() throws IOException {
+		HttpMessageConverter<?> converter = mock(HttpMessageConverter.class);
+		extractor = new HttpMessageConverterExtractor<>(String.class, createConverterList(converter));
 		given(response.getStatusCode()).willReturn(HttpStatus.NO_CONTENT);
 
 		Object result = extractor.extractData(response);
-		assertThat(result).isNull();
+		assertNull(result);
 	}
 
 	@Test
-	void notModified() throws IOException {
+	public void notModified() throws IOException {
+		HttpMessageConverter<?> converter = mock(HttpMessageConverter.class);
+		extractor = new HttpMessageConverterExtractor<>(String.class, createConverterList(converter));
 		given(response.getStatusCode()).willReturn(HttpStatus.NOT_MODIFIED);
 
 		Object result = extractor.extractData(response);
-		assertThat(result).isNull();
+		assertNull(result);
 	}
 
 	@Test
-	void informational() throws IOException {
+	public void informational() throws IOException {
+		HttpMessageConverter<?> converter = mock(HttpMessageConverter.class);
+		extractor = new HttpMessageConverterExtractor<>(String.class, createConverterList(converter));
 		given(response.getStatusCode()).willReturn(HttpStatus.CONTINUE);
 
 		Object result = extractor.extractData(response);
-		assertThat(result).isNull();
+		assertNull(result);
 	}
 
 	@Test
-	void zeroContentLength() throws IOException {
+	public void zeroContentLength() throws IOException {
+		HttpMessageConverter<?> converter = mock(HttpMessageConverter.class);
+		HttpHeaders responseHeaders = new HttpHeaders();
 		responseHeaders.setContentLength(0);
+		extractor = new HttpMessageConverterExtractor<>(String.class, createConverterList(converter));
 		given(response.getStatusCode()).willReturn(HttpStatus.OK);
 		given(response.getHeaders()).willReturn(responseHeaders);
 
 		Object result = extractor.extractData(response);
-		assertThat(result).isNull();
+		assertNull(result);
 	}
 
 	@Test
-	void emptyMessageBody() throws IOException {
+	@SuppressWarnings("unchecked")
+	public void emptyMessageBody() throws IOException {
+		HttpMessageConverter<String> converter = mock(HttpMessageConverter.class);
+		List<HttpMessageConverter<?>> converters = new ArrayList<>();
+		converters.add(converter);
+		HttpHeaders responseHeaders = new HttpHeaders();
+		extractor = new HttpMessageConverterExtractor<>(String.class, createConverterList(converter));
 		given(response.getStatusCode()).willReturn(HttpStatus.OK);
 		given(response.getHeaders()).willReturn(responseHeaders);
 		given(response.getBody()).willReturn(new ByteArrayInputStream("".getBytes()));
 
 		Object result = extractor.extractData(response);
-		assertThat(result).isNull();
-	}
-
-	@Test // gh-22265
-	void nullMessageBody() throws IOException {
-		given(response.getStatusCode()).willReturn(HttpStatus.OK);
-		given(response.getHeaders()).willReturn(responseHeaders);
-		given(response.getBody()).willReturn(null);
-
-		Object result = extractor.extractData(response);
-		assertThat(result).isNull();
+		assertNull(result);
 	}
 
 	@Test
-	void normal() throws IOException {
+	@SuppressWarnings("unchecked")
+	public void normal() throws IOException {
+		HttpMessageConverter<String> converter = mock(HttpMessageConverter.class);
+		List<HttpMessageConverter<?>> converters = new ArrayList<>();
+		converters.add(converter);
+		HttpHeaders responseHeaders = new HttpHeaders();
+		MediaType contentType = MediaType.TEXT_PLAIN;
 		responseHeaders.setContentType(contentType);
 		String expected = "Foo";
+		extractor = new HttpMessageConverterExtractor<>(String.class, converters);
 		given(response.getStatusCode()).willReturn(HttpStatus.OK);
 		given(response.getHeaders()).willReturn(responseHeaders);
 		given(response.getBody()).willReturn(new ByteArrayInputStream(expected.getBytes()));
@@ -135,30 +125,39 @@ class HttpMessageConverterExtractorTests {
 		given(converter.read(eq(String.class), any(HttpInputMessage.class))).willReturn(expected);
 
 		Object result = extractor.extractData(response);
-		assertThat(result).isEqualTo(expected);
+		assertEquals(expected, result);
 	}
 
-	@Test
-	void cannotRead() throws IOException {
+	@Test(expected = RestClientException.class)
+	@SuppressWarnings("unchecked")
+	public void cannotRead() throws IOException {
+		HttpMessageConverter<String> converter = mock(HttpMessageConverter.class);
+		List<HttpMessageConverter<?>> converters = new ArrayList<>();
+		converters.add(converter);
+		HttpHeaders responseHeaders = new HttpHeaders();
+		MediaType contentType = MediaType.TEXT_PLAIN;
 		responseHeaders.setContentType(contentType);
+		extractor = new HttpMessageConverterExtractor<>(String.class, converters);
 		given(response.getStatusCode()).willReturn(HttpStatus.OK);
 		given(response.getHeaders()).willReturn(responseHeaders);
 		given(response.getBody()).willReturn(new ByteArrayInputStream("Foobar".getBytes()));
 		given(converter.canRead(String.class, contentType)).willReturn(false);
-		assertThatExceptionOfType(RestClientException.class).isThrownBy(() -> extractor.extractData(response));
+
+		extractor.extractData(response);
 	}
 
 	@Test
 	@SuppressWarnings("unchecked")
-	void generics() throws IOException {
+	public void generics() throws IOException {
+		GenericHttpMessageConverter<String> converter = mock(GenericHttpMessageConverter.class);
+		List<HttpMessageConverter<?>> converters = createConverterList(converter);
+		HttpHeaders responseHeaders = new HttpHeaders();
+		MediaType contentType = MediaType.TEXT_PLAIN;
 		responseHeaders.setContentType(contentType);
 		String expected = "Foo";
-		ParameterizedTypeReference<List<String>> reference = new ParameterizedTypeReference<>() {};
+		ParameterizedTypeReference<List<String>> reference = new ParameterizedTypeReference<List<String>>() {};
 		Type type = reference.getType();
-
-		GenericHttpMessageConverter<String> converter = mock(GenericHttpMessageConverter.class);
-		HttpMessageConverterExtractor<?> extractor = new HttpMessageConverterExtractor<List<String>>(type, asList(converter));
-
+		extractor = new HttpMessageConverterExtractor<List<String>>(type, converters);
 		given(response.getStatusCode()).willReturn(HttpStatus.OK);
 		given(response.getHeaders()).willReturn(responseHeaders);
 		given(response.getBody()).willReturn(new ByteArrayInputStream(expected.getBytes()));
@@ -166,49 +165,14 @@ class HttpMessageConverterExtractorTests {
 		given(converter.read(eq(type), eq(null), any(HttpInputMessage.class))).willReturn(expected);
 
 		Object result = extractor.extractData(response);
-		assertThat(result).isEqualTo(expected);
+		assertEquals(expected, result);
 	}
 
-	@Test  // SPR-13592
-	void converterThrowsIOException() throws IOException {
-		responseHeaders.setContentType(contentType);
-		given(response.getStatusCode()).willReturn(HttpStatus.OK);
-		given(response.getHeaders()).willReturn(responseHeaders);
-		given(response.getBody()).willReturn(new ByteArrayInputStream("Foobar".getBytes()));
-		given(converter.canRead(String.class, contentType)).willReturn(true);
-		given(converter.read(eq(String.class), any(HttpInputMessage.class))).willThrow(IOException.class);
-		assertThatExceptionOfType(RestClientException.class).isThrownBy(() -> extractor.extractData(response))
-			.withMessageContaining("Error while extracting response for type [class java.lang.String] and content type [text/plain]")
-			.withCauseInstanceOf(IOException.class);
+	private List<HttpMessageConverter<?>> createConverterList(HttpMessageConverter<?> converter) {
+		List<HttpMessageConverter<?>> converters = new ArrayList<>(1);
+		converters.add(converter);
+		return converters;
 	}
 
-	@Test  // SPR-13592
-	void converterThrowsHttpMessageNotReadableException() throws IOException {
-		responseHeaders.setContentType(contentType);
-		given(response.getStatusCode()).willReturn(HttpStatus.OK);
-		given(response.getHeaders()).willReturn(responseHeaders);
-		given(response.getBody()).willReturn(new ByteArrayInputStream("Foobar".getBytes()));
-		given(converter.canRead(String.class, contentType)).willThrow(HttpMessageNotReadableException.class);
-		assertThatExceptionOfType(RestClientException.class).isThrownBy(() -> extractor.extractData(response))
-			.withMessageContaining("Error while extracting response for type [class java.lang.String] and content type [text/plain]")
-			.withCauseInstanceOf(HttpMessageNotReadableException.class);
-	}
-
-	@Test
-	void unknownContentTypeExceptionContainsCorrectResponseBody() throws IOException {
-		responseHeaders.setContentType(contentType);
-		given(response.getStatusCode()).willReturn(HttpStatus.OK);
-		given(response.getHeaders()).willReturn(responseHeaders);
-		given(response.getBody()).willReturn(new ByteArrayInputStream("Foobar".getBytes())  {
-			@Override
-			public boolean markSupported() {
-				return false;
-			}
-		});
-		given(converter.canRead(String.class, contentType)).willReturn(false);
-
-		assertThatExceptionOfType(UnknownContentTypeException.class).isThrownBy(() -> extractor.extractData(response))
-			.satisfies(exception -> assertThat(exception.getResponseBodyAsString()).isEqualTo("Foobar"));
-	}
 
 }

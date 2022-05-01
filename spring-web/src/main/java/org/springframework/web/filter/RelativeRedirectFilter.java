@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,14 +17,12 @@
 package org.springframework.web.filter;
 
 import java.io.IOException;
-
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.util.Assert;
 
 /**
@@ -44,7 +42,7 @@ import org.springframework.util.Assert;
  */
 public class RelativeRedirectFilter extends OncePerRequestFilter {
 
-	private HttpStatusCode redirectStatus = HttpStatus.SEE_OTHER;
+	private HttpStatus redirectStatus = HttpStatus.SEE_OTHER;
 
 
 	/**
@@ -52,7 +50,7 @@ public class RelativeRedirectFilter extends OncePerRequestFilter {
 	 * <p>By default this is {@link HttpStatus#SEE_OTHER}.
 	 * @param status the 3xx redirect status to use
 	 */
-	public void setRedirectStatus(HttpStatusCode status) {
+	public void setRedirectStatus(HttpStatus status) {
 		Assert.notNull(status, "Property 'redirectStatus' is required");
 		Assert.isTrue(status.is3xxRedirection(), "Not a redirect status code");
 		this.redirectStatus = status;
@@ -61,7 +59,7 @@ public class RelativeRedirectFilter extends OncePerRequestFilter {
 	/**
 	 * Return the configured redirect status.
 	 */
-	public HttpStatusCode getRedirectStatus() {
+	public HttpStatus getRedirectStatus() {
 		return this.redirectStatus;
 	}
 

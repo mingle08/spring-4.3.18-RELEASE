@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,6 @@
 
 package org.springframework.beans;
 
-import java.beans.ConstructorProperties;
 import java.beans.PropertyDescriptor;
 import java.beans.PropertyEditor;
 import java.lang.reflect.Constructor;
@@ -25,31 +24,19 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.net.URL;
-import java.time.temporal.Temporal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 
-import kotlin.jvm.JvmClassMappingKt;
-import kotlin.reflect.KFunction;
-import kotlin.reflect.KParameter;
-import kotlin.reflect.full.KClasses;
-import kotlin.reflect.jvm.KCallablesJvm;
-import kotlin.reflect.jvm.ReflectJvmMapping;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
-import org.springframework.core.DefaultParameterNameDiscoverer;
-import org.springframework.core.KotlinDetector;
 import org.springframework.core.MethodParameter;
-import org.springframework.core.ParameterNameDiscoverer;
-import org.springframework.core.ResolvableType;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.ConcurrentReferenceHashMap;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
@@ -58,35 +45,20 @@ import org.springframework.util.StringUtils;
  * Static convenience methods for JavaBeans: for instantiating beans,
  * checking bean property types, copying bean properties, etc.
  *
- * <p>Mainly for internal use within the framework, but to some degree also
- * useful for application classes. Consider
- * <a href="https://commons.apache.org/proper/commons-beanutils/">Apache Commons BeanUtils</a>,
- * <a href="https://hotelsdotcom.github.io/bull/">BULL - Bean Utils Light Library</a>,
- * or similar third-party frameworks for more comprehensive bean utilities.
+ * <p>Mainly for use within the framework, but to some degree also
+ * useful for application classes.
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @author Rob Harrop
  * @author Sam Brannen
- * @author Sebastien Deleuze
  */
 public abstract class BeanUtils {
 
-	private static final ParameterNameDiscoverer parameterNameDiscoverer =
-			new DefaultParameterNameDiscoverer();
+	private static final Log logger = LogFactory.getLog(BeanUtils.class);
 
 	private static final Set<Class<?>> unknownEditorTypes =
-			Collections.newSetFromMap(new ConcurrentReferenceHashMap<>(64));
-
-	private static final Map<Class<?>, Object> DEFAULT_TYPE_VALUES = Map.of(
-			boolean.class, false,
-			byte.class, (byte) 0,
-			short.class, (short) 0,
-			int.class, 0,
-			long.class, 0L,
-			float.class, 0F,
-			double.class, 0D,
-			char.class, '\0');
+			Collections.newSetFromMap(new ConcurrentReferenceHashMap<Class<?>, Boolean>(64));
 
 
 	/**
@@ -95,10 +67,7 @@ public abstract class BeanUtils {
 	 * @return the new instance
 	 * @throws BeanInstantiationException if the bean cannot be instantiated
 	 * @see Class#newInstance()
-	 * @deprecated as of Spring 5.0, following the deprecation of
-	 * {@link Class#newInstance()} in JDK 9
 	 */
-	@Deprecated
 	public static <T> T instantiate(Class<T> clazz) throws BeanInstantiationException {
 		Assert.notNull(clazz, "Class must not be null");
 		if (clazz.isInterface()) {
@@ -116,19 +85,12 @@ public abstract class BeanUtils {
 	}
 
 	/**
-	 * Instantiate a class using its 'primary' constructor (for Kotlin classes,
-	 * potentially having default arguments declared) or its default constructor
-	 * (for regular Java classes, expecting a standard no-arg setup).
+	 * Instantiate a class using its no-arg constructor.
 	 * <p>Note that this method tries to set the constructor accessible
 	 * if given a non-accessible (that is, non-public) constructor.
-	 * @param clazz the class to instantiate
+	 * @param clazz class to instantiate
 	 * @return the new instance
-	 * @throws BeanInstantiationException if the bean cannot be instantiated.
-	 * The cause may notably indicate a {@link NoSuchMethodException} if no
-	 * primary/default constructor was found, a {@link NoClassDefFoundError}
-	 * or other {@link LinkageError} in case of an unresolvable class definition
-	 * (e.g. due to a missing dependency at runtime), or an exception thrown
-	 * from the constructor invocation itself.
+	 * @throws BeanInstantiationException if the bean cannot be instantiated
 	 * @see Constructor#newInstance
 	 */
 	public static <T> T instantiateClass(Class<T> clazz) throws BeanInstantiationException {
@@ -136,20 +98,12 @@ public abstract class BeanUtils {
 		if (clazz.isInterface()) {
 			throw new BeanInstantiationException(clazz, "Specified class is an interface");
 		}
-		Constructor<T> ctor;
 		try {
-			ctor = clazz.getDeclaredConstructor();
+			return instantiateClass(clazz.getDeclaredConstructor());
 		}
 		catch (NoSuchMethodException ex) {
-			ctor = findPrimaryConstructor(clazz);
-			if (ctor == null) {
-				throw new BeanInstantiationException(clazz, "No default constructor found", ex);
-			}
+			throw new BeanInstantiationException(clazz, "No default constructor found", ex);
 		}
-		catch (LinkageError err) {
-			throw new BeanInstantiationException(clazz, "Unresolvable class definition", err);
-		}
-		return instantiateClass(ctor);
 	}
 
 	/**
@@ -174,11 +128,9 @@ public abstract class BeanUtils {
 	/**
 	 * Convenience method to instantiate a class using the given constructor.
 	 * <p>Note that this method tries to set the constructor accessible if given a
-	 * non-accessible (that is, non-public) constructor, and supports Kotlin classes
-	 * with optional parameters and default values.
+	 * non-accessible (that is, non-public) constructor.
 	 * @param ctor the constructor to instantiate
-	 * @param args the constructor arguments to apply (use {@code null} for an unspecified
-	 * parameter, Kotlin optional parameters and Java primitive types are supported)
+	 * @param args the constructor arguments to apply
 	 * @return the new instance
 	 * @throws BeanInstantiationException if the bean cannot be instantiated
 	 * @see Constructor#newInstance
@@ -187,24 +139,7 @@ public abstract class BeanUtils {
 		Assert.notNull(ctor, "Constructor must not be null");
 		try {
 			ReflectionUtils.makeAccessible(ctor);
-			if (KotlinDetector.isKotlinReflectPresent() && KotlinDetector.isKotlinType(ctor.getDeclaringClass())) {
-				return KotlinDelegate.instantiateClass(ctor, args);
-			}
-			else {
-				Class<?>[] parameterTypes = ctor.getParameterTypes();
-				Assert.isTrue(args.length <= parameterTypes.length, "Can't specify more arguments than constructor parameters");
-				Object[] argsWithDefaultValues = new Object[args.length];
-				for (int i = 0 ; i < args.length; i++) {
-					if (args[i] == null) {
-						Class<?> parameterType = parameterTypes[i];
-						argsWithDefaultValues[i] = (parameterType.isPrimitive() ? DEFAULT_TYPE_VALUES.get(parameterType) : null);
-					}
-					else {
-						argsWithDefaultValues[i] = args[i];
-					}
-				}
-				return ctor.newInstance(argsWithDefaultValues);
-			}
+			return ctor.newInstance(args);
 		}
 		catch (InstantiationException ex) {
 			throw new BeanInstantiationException(ctor, "Is it an abstract class?", ex);
@@ -221,66 +156,6 @@ public abstract class BeanUtils {
 	}
 
 	/**
-	 * Return a resolvable constructor for the provided class, either a primary or single
-	 * public constructor with arguments, or a single non-public constructor with arguments,
-	 * or simply a default constructor. Callers have to be prepared to resolve arguments
-	 * for the returned constructor's parameters, if any.
-	 * @param clazz the class to check
-	 * @throws IllegalStateException in case of no unique constructor found at all
-	 * @since 5.3
-	 * @see #findPrimaryConstructor
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T> Constructor<T> getResolvableConstructor(Class<T> clazz) {
-		Constructor<T> ctor = findPrimaryConstructor(clazz);
-		if (ctor != null) {
-			return ctor;
-		}
-
-		Constructor<?>[] ctors = clazz.getConstructors();
-		if (ctors.length == 1) {
-			// A single public constructor
-			return (Constructor<T>) ctors[0];
-		}
-		else if (ctors.length == 0){
-			ctors = clazz.getDeclaredConstructors();
-			if (ctors.length == 1) {
-				// A single non-public constructor, e.g. from a non-public record type
-				return (Constructor<T>) ctors[0];
-			}
-		}
-
-		// Several constructors -> let's try to take the default constructor
-		try {
-			return clazz.getDeclaredConstructor();
-		}
-		catch (NoSuchMethodException ex) {
-			// Giving up...
-		}
-
-		// No unique constructor at all
-		throw new IllegalStateException("No primary or single unique constructor found for " + clazz);
-	}
-
-	/**
-	 * Return the primary constructor of the provided class. For Kotlin classes, this
-	 * returns the Java constructor corresponding to the Kotlin primary constructor
-	 * (as defined in the Kotlin specification). Otherwise, in particular for non-Kotlin
-	 * classes, this simply returns {@code null}.
-	 * @param clazz the class to check
-	 * @since 5.0
-	 * @see <a href="https://kotlinlang.org/docs/reference/classes.html#constructors">Kotlin docs</a>
-	 */
-	@Nullable
-	public static <T> Constructor<T> findPrimaryConstructor(Class<T> clazz) {
-		Assert.notNull(clazz, "Class must not be null");
-		if (KotlinDetector.isKotlinReflectPresent() && KotlinDetector.isKotlinType(clazz)) {
-			return KotlinDelegate.findPrimaryConstructor(clazz);
-		}
-		return null;
-	}
-
-	/**
 	 * Find a method with the given method name and the given parameter types,
 	 * declared on the given class or one of its superclasses. Prefers public methods,
 	 * but will return a protected, package access, or private method too.
@@ -294,7 +169,6 @@ public abstract class BeanUtils {
 	 * @see Class#getMethod
 	 * @see #findDeclaredMethod
 	 */
-	@Nullable
 	public static Method findMethod(Class<?> clazz, String methodName, Class<?>... paramTypes) {
 		try {
 			return clazz.getMethod(methodName, paramTypes);
@@ -315,7 +189,6 @@ public abstract class BeanUtils {
 	 * @return the Method object, or {@code null} if not found
 	 * @see Class#getDeclaredMethod
 	 */
-	@Nullable
 	public static Method findDeclaredMethod(Class<?> clazz, String methodName, Class<?>... paramTypes) {
 		try {
 			return clazz.getDeclaredMethod(methodName, paramTypes);
@@ -343,7 +216,6 @@ public abstract class BeanUtils {
 	 * @see Class#getMethods
 	 * @see #findDeclaredMethodWithMinimalParameters
 	 */
-	@Nullable
 	public static Method findMethodWithMinimalParameters(Class<?> clazz, String methodName)
 			throws IllegalArgumentException {
 
@@ -366,7 +238,6 @@ public abstract class BeanUtils {
 	 * could not be resolved to a unique method with minimal parameters
 	 * @see Class#getDeclaredMethods
 	 */
-	@Nullable
 	public static Method findDeclaredMethodWithMinimalParameters(Class<?> clazz, String methodName)
 			throws IllegalArgumentException {
 
@@ -386,7 +257,6 @@ public abstract class BeanUtils {
 	 * @throws IllegalArgumentException if methods of the given name were found but
 	 * could not be resolved to a unique method with minimal parameters
 	 */
-	@Nullable
 	public static Method findMethodWithMinimalParameters(Method[] methods, String methodName)
 			throws IllegalArgumentException {
 
@@ -394,12 +264,12 @@ public abstract class BeanUtils {
 		int numMethodsFoundWithCurrentMinimumArgs = 0;
 		for (Method method : methods) {
 			if (method.getName().equals(methodName)) {
-				int numParams = method.getParameterCount();
-				if (targetMethod == null || numParams < targetMethod.getParameterCount()) {
+				int numParams = method.getParameterTypes().length;
+				if (targetMethod == null || numParams < targetMethod.getParameterTypes().length) {
 					targetMethod = method;
 					numMethodsFoundWithCurrentMinimumArgs = 1;
 				}
-				else if (!method.isBridge() && targetMethod.getParameterCount() == numParams) {
+				else if (!method.isBridge() && targetMethod.getParameterTypes().length == numParams) {
 					if (targetMethod.isBridge()) {
 						// Prefer regular method over bridge...
 						targetMethod = method;
@@ -438,7 +308,6 @@ public abstract class BeanUtils {
 	 * @see #findMethod
 	 * @see #findMethodWithMinimalParameters
 	 */
-	@Nullable
 	public static Method resolveSignature(String signature, Class<?> clazz) {
 		Assert.hasText(signature, "'signature' must not be empty");
 		Assert.notNull(clazz, "Class must not be null");
@@ -452,7 +321,7 @@ public abstract class BeanUtils {
 			throw new IllegalArgumentException("Invalid method signature '" + signature +
 					"': expected opening '(' for args list");
 		}
-		else if (startParen == -1) {
+		else if (startParen == -1 && endParen == -1) {
 			return findMethodWithMinimalParameters(clazz, signature);
 		}
 		else {
@@ -482,7 +351,8 @@ public abstract class BeanUtils {
 	 * @throws BeansException if PropertyDescriptor look fails
 	 */
 	public static PropertyDescriptor[] getPropertyDescriptors(Class<?> clazz) throws BeansException {
-		return CachedIntrospectionResults.forClass(clazz).getPropertyDescriptors();
+		CachedIntrospectionResults cr = CachedIntrospectionResults.forClass(clazz);
+		return cr.getPropertyDescriptors();
 	}
 
 	/**
@@ -492,9 +362,11 @@ public abstract class BeanUtils {
 	 * @return the corresponding PropertyDescriptor, or {@code null} if none
 	 * @throws BeansException if PropertyDescriptor lookup fails
 	 */
-	@Nullable
-	public static PropertyDescriptor getPropertyDescriptor(Class<?> clazz, String propertyName) throws BeansException {
-		return CachedIntrospectionResults.forClass(clazz).getPropertyDescriptor(propertyName);
+	public static PropertyDescriptor getPropertyDescriptor(Class<?> clazz, String propertyName)
+			throws BeansException {
+
+		CachedIntrospectionResults cr = CachedIntrospectionResults.forClass(clazz);
+		return cr.getPropertyDescriptor(propertyName);
 	}
 
 	/**
@@ -506,7 +378,6 @@ public abstract class BeanUtils {
 	 * @return the corresponding PropertyDescriptor, or {@code null} if none
 	 * @throws BeansException if PropertyDescriptor lookup fails
 	 */
-	@Nullable
 	public static PropertyDescriptor findPropertyForMethod(Method method) throws BeansException {
 		return findPropertyForMethod(method, method.getDeclaringClass());
 	}
@@ -521,7 +392,6 @@ public abstract class BeanUtils {
 	 * @throws BeansException if PropertyDescriptor lookup fails
 	 * @since 3.2.13
 	 */
-	@Nullable
 	public static PropertyDescriptor findPropertyForMethod(Method method, Class<?> clazz) throws BeansException {
 		Assert.notNull(method, "Method must not be null");
 		PropertyDescriptor[] pds = getPropertyDescriptors(clazz);
@@ -535,19 +405,17 @@ public abstract class BeanUtils {
 
 	/**
 	 * Find a JavaBeans PropertyEditor following the 'Editor' suffix convention
-	 * (e.g. "mypackage.MyDomainClass" &rarr; "mypackage.MyDomainClassEditor").
+	 * (e.g. "mypackage.MyDomainClass" -> "mypackage.MyDomainClassEditor").
 	 * <p>Compatible to the standard JavaBeans convention as implemented by
 	 * {@link java.beans.PropertyEditorManager} but isolated from the latter's
 	 * registered default editors for primitive types.
 	 * @param targetType the type to find an editor for
 	 * @return the corresponding editor, or {@code null} if none found
 	 */
-	@Nullable
-	public static PropertyEditor findEditorByConvention(@Nullable Class<?> targetType) {
+	public static PropertyEditor findEditorByConvention(Class<?> targetType) {
 		if (targetType == null || targetType.isArray() || unknownEditorTypes.contains(targetType)) {
 			return null;
 		}
-
 		ClassLoader cl = targetType.getClassLoader();
 		if (cl == null) {
 			try {
@@ -558,29 +426,33 @@ public abstract class BeanUtils {
 			}
 			catch (Throwable ex) {
 				// e.g. AccessControlException on Google App Engine
+				if (logger.isDebugEnabled()) {
+					logger.debug("Could not access system ClassLoader: " + ex);
+				}
 				return null;
 			}
 		}
-
-		String targetTypeName = targetType.getName();
-		String editorName = targetTypeName + "Editor";
+		String editorName = targetType.getName() + "Editor";
 		try {
 			Class<?> editorClass = cl.loadClass(editorName);
-			if (editorClass != null) {
-				if (!PropertyEditor.class.isAssignableFrom(editorClass)) {
-					unknownEditorTypes.add(targetType);
-					return null;
+			if (!PropertyEditor.class.isAssignableFrom(editorClass)) {
+				if (logger.isWarnEnabled()) {
+					logger.warn("Editor class [" + editorName +
+							"] does not implement [java.beans.PropertyEditor] interface");
 				}
-				return (PropertyEditor) instantiateClass(editorClass);
+				unknownEditorTypes.add(targetType);
+				return null;
 			}
-			// Misbehaving ClassLoader returned null instead of ClassNotFoundException
-			// - fall back to unknown editor type registration below
+			return (PropertyEditor) instantiateClass(editorClass);
 		}
 		catch (ClassNotFoundException ex) {
-			// Ignore - fall back to unknown editor type registration below
+			if (logger.isDebugEnabled()) {
+				logger.debug("No property editor [" + editorName + "] found for type " +
+						targetType.getName() + " according to 'Editor' suffix convention");
+			}
+			unknownEditorTypes.add(targetType);
+			return null;
 		}
-		unknownEditorTypes.add(targetType);
-		return null;
 	}
 
 	/**
@@ -590,7 +462,7 @@ public abstract class BeanUtils {
 	 * @param beanClasses the classes to check against
 	 * @return the property type, or {@code Object.class} as fallback
 	 */
-	public static Class<?> findPropertyType(String propertyName, @Nullable Class<?>... beanClasses) {
+	public static Class<?> findPropertyType(String propertyName, Class<?>... beanClasses) {
 		if (beanClasses != null) {
 			for (Class<?> beanClass : beanClasses) {
 				PropertyDescriptor pd = getPropertyDescriptor(beanClass, propertyName);
@@ -613,70 +485,40 @@ public abstract class BeanUtils {
 			return new MethodParameter(((GenericTypeAwarePropertyDescriptor) pd).getWriteMethodParameter());
 		}
 		else {
-			Method writeMethod = pd.getWriteMethod();
-			Assert.state(writeMethod != null, "No write method available");
-			return new MethodParameter(writeMethod, 0);
+			return new MethodParameter(pd.getWriteMethod(), 0);
 		}
 	}
 
 	/**
-	 * Determine required parameter names for the given constructor,
-	 * considering the JavaBeans {@link ConstructorProperties} annotation
-	 * as well as Spring's {@link DefaultParameterNameDiscoverer}.
-	 * @param ctor the constructor to find parameter names for
-	 * @return the parameter names (matching the constructor's parameter count)
-	 * @throws IllegalStateException if the parameter names are not resolvable
-	 * @since 5.3
-	 * @see ConstructorProperties
-	 * @see DefaultParameterNameDiscoverer
-	 */
-	public static String[] getParameterNames(Constructor<?> ctor) {
-		ConstructorProperties cp = ctor.getAnnotation(ConstructorProperties.class);
-		String[] paramNames = (cp != null ? cp.value() : parameterNameDiscoverer.getParameterNames(ctor));
-		Assert.state(paramNames != null, () -> "Cannot resolve parameter names for constructor " + ctor);
-		Assert.state(paramNames.length == ctor.getParameterCount(),
-				() -> "Invalid number of parameter names: " + paramNames.length + " for constructor " + ctor);
-		return paramNames;
-	}
-
-	/**
-	 * Check if the given type represents a "simple" property: a simple value
-	 * type or an array of simple value types.
-	 * <p>See {@link #isSimpleValueType(Class)} for the definition of <em>simple
-	 * value type</em>.
+	 * Check if the given type represents a "simple" property:
+	 * a primitive, a String or other CharSequence, a Number, a Date,
+	 * a URI, a URL, a Locale, a Class, or a corresponding array.
 	 * <p>Used to determine properties to check for a "simple" dependency-check.
-	 * @param type the type to check
+	 * @param clazz the type to check
 	 * @return whether the given type represents a "simple" property
 	 * @see org.springframework.beans.factory.support.RootBeanDefinition#DEPENDENCY_CHECK_SIMPLE
 	 * @see org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory#checkDependencies
-	 * @see #isSimpleValueType(Class)
 	 */
-	public static boolean isSimpleProperty(Class<?> type) {
-		Assert.notNull(type, "'type' must not be null");
-		return isSimpleValueType(type) || (type.isArray() && isSimpleValueType(type.getComponentType()));
+	public static boolean isSimpleProperty(Class<?> clazz) {
+		Assert.notNull(clazz, "Class must not be null");
+		return isSimpleValueType(clazz) || (clazz.isArray() && isSimpleValueType(clazz.getComponentType()));
 	}
 
 	/**
-	 * Check if the given type represents a "simple" value type: a primitive or
-	 * primitive wrapper, an enum, a String or other CharSequence, a Number, a
-	 * Date, a Temporal, a URI, a URL, a Locale, or a Class.
-	 * <p>{@code Void} and {@code void} are not considered simple value types.
-	 * @param type the type to check
+	 * Check if the given type represents a "simple" value type:
+	 * a primitive, an enum, a String or other CharSequence, a Number, a Date,
+	 * a URI, a URL, a Locale or a Class.
+	 * @param clazz the type to check
 	 * @return whether the given type represents a "simple" value type
-	 * @see #isSimpleProperty(Class)
 	 */
-	public static boolean isSimpleValueType(Class<?> type) {
-		return (Void.class != type && void.class != type &&
-				(ClassUtils.isPrimitiveOrWrapper(type) ||
-				Enum.class.isAssignableFrom(type) ||
-				CharSequence.class.isAssignableFrom(type) ||
-				Number.class.isAssignableFrom(type) ||
-				Date.class.isAssignableFrom(type) ||
-				Temporal.class.isAssignableFrom(type) ||
-				URI.class == type ||
-				URL.class == type ||
-				Locale.class == type ||
-				Class.class == type));
+	public static boolean isSimpleValueType(Class<?> clazz) {
+		return (ClassUtils.isPrimitiveOrWrapper(clazz) ||
+				Enum.class.isAssignableFrom(clazz) ||
+				CharSequence.class.isAssignableFrom(clazz) ||
+				Number.class.isAssignableFrom(clazz) ||
+				Date.class.isAssignableFrom(clazz) ||
+				URI.class == clazz || URL.class == clazz ||
+				Locale.class == clazz || Class.class == clazz);
 	}
 
 
@@ -686,25 +528,7 @@ public abstract class BeanUtils {
 	 * from each other, as long as the properties match. Any bean properties that the
 	 * source bean exposes but the target bean does not will silently be ignored.
 	 * <p>This is just a convenience method. For more complex transfer needs,
-	 * consider using a full {@link BeanWrapper}.
-	 * <p>As of Spring Framework 5.3, this method honors generic type information
-	 * when matching properties in the source and target objects.
-	 * <p>The following table provides a non-exhaustive set of examples of source
-	 * and target property types that can be copied as well as source and target
-	 * property types that cannot be copied.
-	 * <table border="1">
-	 * <tr><th>source property type</th><th>target property type</th><th>copy supported</th></tr>
-	 * <tr><td>{@code Integer}</td><td>{@code Integer}</td><td>yes</td></tr>
-	 * <tr><td>{@code Integer}</td><td>{@code Number}</td><td>yes</td></tr>
-	 * <tr><td>{@code List<Integer>}</td><td>{@code List<Integer>}</td><td>yes</td></tr>
-	 * <tr><td>{@code List<?>}</td><td>{@code List<?>}</td><td>yes</td></tr>
-	 * <tr><td>{@code List<Integer>}</td><td>{@code List<?>}</td><td>yes</td></tr>
-	 * <tr><td>{@code List<Integer>}</td><td>{@code List<? extends Number>}</td><td>yes</td></tr>
-	 * <tr><td>{@code String}</td><td>{@code Integer}</td><td>no</td></tr>
-	 * <tr><td>{@code Number}</td><td>{@code Integer}</td><td>no</td></tr>
-	 * <tr><td>{@code List<Integer>}</td><td>{@code List<Long>}</td><td>no</td></tr>
-	 * <tr><td>{@code List<Integer>}</td><td>{@code List<Number>}</td><td>no</td></tr>
-	 * </table>
+	 * consider using a full BeanWrapper.
 	 * @param source the source bean
 	 * @param target the target bean
 	 * @throws BeansException if the copying failed
@@ -721,10 +545,7 @@ public abstract class BeanUtils {
 	 * from each other, as long as the properties match. Any bean properties that the
 	 * source bean exposes but the target bean does not will silently be ignored.
 	 * <p>This is just a convenience method. For more complex transfer needs,
-	 * consider using a full {@link BeanWrapper}.
-	 * <p>As of Spring Framework 5.3, this method honors generic type information
-	 * when matching properties in the source and target objects. See the
-	 * documentation for {@link #copyProperties(Object, Object)} for details.
+	 * consider using a full BeanWrapper.
 	 * @param source the source bean
 	 * @param target the target bean
 	 * @param editable the class (or interface) to restrict property setting to
@@ -742,10 +563,7 @@ public abstract class BeanUtils {
 	 * from each other, as long as the properties match. Any bean properties that the
 	 * source bean exposes but the target bean does not will silently be ignored.
 	 * <p>This is just a convenience method. For more complex transfer needs,
-	 * consider using a full {@link BeanWrapper}.
-	 * <p>As of Spring Framework 5.3, this method honors generic type information
-	 * when matching properties in the source and target objects. See the
-	 * documentation for {@link #copyProperties(Object, Object)} for details.
+	 * consider using a full BeanWrapper.
 	 * @param source the source bean
 	 * @param target the target bean
 	 * @param ignoreProperties array of property names to ignore
@@ -761,9 +579,6 @@ public abstract class BeanUtils {
 	 * <p>Note: The source and target classes do not have to match or even be derived
 	 * from each other, as long as the properties match. Any bean properties that the
 	 * source bean exposes but the target bean does not will silently be ignored.
-	 * <p>As of Spring Framework 5.3, this method honors generic type information
-	 * when matching properties in the source and target objects. See the
-	 * documentation for {@link #copyProperties(Object, Object)} for details.
 	 * @param source the source bean
 	 * @param target the target bean
 	 * @param editable the class (or interface) to restrict property setting to
@@ -771,8 +586,8 @@ public abstract class BeanUtils {
 	 * @throws BeansException if the copying failed
 	 * @see BeanWrapper
 	 */
-	private static void copyProperties(Object source, Object target, @Nullable Class<?> editable,
-			@Nullable String... ignoreProperties) throws BeansException {
+	private static void copyProperties(Object source, Object target, Class<?> editable, String... ignoreProperties)
+			throws BeansException {
 
 		Assert.notNull(source, "Source must not be null");
 		Assert.notNull(target, "Target must not be null");
@@ -794,99 +609,26 @@ public abstract class BeanUtils {
 				PropertyDescriptor sourcePd = getPropertyDescriptor(source.getClass(), targetPd.getName());
 				if (sourcePd != null) {
 					Method readMethod = sourcePd.getReadMethod();
-					if (readMethod != null) {
-						ResolvableType sourceResolvableType = ResolvableType.forMethodReturnType(readMethod);
-						ResolvableType targetResolvableType = ResolvableType.forMethodParameter(writeMethod, 0);
-
-						// Ignore generic types in assignable check if either ResolvableType has unresolvable generics.
-						boolean isAssignable =
-								(sourceResolvableType.hasUnresolvableGenerics() || targetResolvableType.hasUnresolvableGenerics() ?
-										ClassUtils.isAssignable(writeMethod.getParameterTypes()[0], readMethod.getReturnType()) :
-										targetResolvableType.isAssignableFrom(sourceResolvableType));
-
-						if (isAssignable) {
-							try {
-								if (!Modifier.isPublic(readMethod.getDeclaringClass().getModifiers())) {
-									readMethod.setAccessible(true);
-								}
-								Object value = readMethod.invoke(source);
-								if (!Modifier.isPublic(writeMethod.getDeclaringClass().getModifiers())) {
-									writeMethod.setAccessible(true);
-								}
-								writeMethod.invoke(target, value);
+					if (readMethod != null &&
+							ClassUtils.isAssignable(writeMethod.getParameterTypes()[0], readMethod.getReturnType())) {
+						try {
+							if (!Modifier.isPublic(readMethod.getDeclaringClass().getModifiers())) {
+								readMethod.setAccessible(true);
 							}
-							catch (Throwable ex) {
-								throw new FatalBeanException(
-										"Could not copy property '" + targetPd.getName() + "' from source to target", ex);
+							Object value = readMethod.invoke(source);
+							if (!Modifier.isPublic(writeMethod.getDeclaringClass().getModifiers())) {
+								writeMethod.setAccessible(true);
 							}
+							writeMethod.invoke(target, value);
+						}
+						catch (Throwable ex) {
+							throw new FatalBeanException(
+									"Could not copy property '" + targetPd.getName() + "' from source to target", ex);
 						}
 					}
 				}
 			}
 		}
-	}
-
-
-	/**
-	 * Inner class to avoid a hard dependency on Kotlin at runtime.
-	 */
-	private static class KotlinDelegate {
-
-		/**
-		 * Retrieve the Java constructor corresponding to the Kotlin primary constructor, if any.
-		 * @param clazz the {@link Class} of the Kotlin class
-		 * @see <a href="https://kotlinlang.org/docs/reference/classes.html#constructors">
-		 * https://kotlinlang.org/docs/reference/classes.html#constructors</a>
-		 */
-		@Nullable
-		public static <T> Constructor<T> findPrimaryConstructor(Class<T> clazz) {
-			try {
-				KFunction<T> primaryCtor = KClasses.getPrimaryConstructor(JvmClassMappingKt.getKotlinClass(clazz));
-				if (primaryCtor == null) {
-					return null;
-				}
-				Constructor<T> constructor = ReflectJvmMapping.getJavaConstructor(primaryCtor);
-				if (constructor == null) {
-					throw new IllegalStateException(
-							"Failed to find Java constructor for Kotlin primary constructor: " + clazz.getName());
-				}
-				return constructor;
-			}
-			catch (UnsupportedOperationException ex) {
-				return null;
-			}
-		}
-
-		/**
-		 * Instantiate a Kotlin class using the provided constructor.
-		 * @param ctor the constructor of the Kotlin class to instantiate
-		 * @param args the constructor arguments to apply
-		 * (use {@code null} for unspecified parameter if needed)
-		 */
-		public static <T> T instantiateClass(Constructor<T> ctor, Object... args)
-				throws IllegalAccessException, InvocationTargetException, InstantiationException {
-
-			KFunction<T> kotlinConstructor = ReflectJvmMapping.getKotlinFunction(ctor);
-			if (kotlinConstructor == null) {
-				return ctor.newInstance(args);
-			}
-
-			if ((!Modifier.isPublic(ctor.getModifiers()) || !Modifier.isPublic(ctor.getDeclaringClass().getModifiers()))) {
-				KCallablesJvm.setAccessible(kotlinConstructor, true);
-			}
-
-			List<KParameter> parameters = kotlinConstructor.getParameters();
-			Map<KParameter, Object> argParameters = CollectionUtils.newHashMap(parameters.size());
-			Assert.isTrue(args.length <= parameters.size(),
-					"Number of provided arguments should be less of equals than number of constructor parameters");
-			for (int i = 0 ; i < args.length ; i++) {
-				if (!(parameters.get(i).isOptional() && args[i] == null)) {
-					argParameters.put(parameters.get(i), args[i]);
-				}
-			}
-			return kotlinConstructor.callBy(argParameters);
-		}
-
 	}
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,9 +19,9 @@ package org.springframework.test.web.servlet.request;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,11 +29,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpSession;
+import java.util.Map.Entry;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletRequest;
+import javax.servlet.http.Cookie;
 
 import org.springframework.beans.Mergeable;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -42,7 +41,6 @@ import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.FormHttpMessageConverter;
-import org.springframework.lang.Nullable;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockHttpSession;
@@ -51,7 +49,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
@@ -84,6 +81,11 @@ import org.springframework.web.util.UrlPathHelper;
 public class MockHttpServletRequestBuilder
 		implements ConfigurableSmartRequestBuilder<MockHttpServletRequestBuilder>, Mergeable {
 
+	private static final Charset UTF8_CHARSET = Charset.forName("UTF-8");
+
+	private static final UrlPathHelper urlPathHelper = new UrlPathHelper();
+
+
 	private final String method;
 
 	private final URI url;
@@ -92,44 +94,35 @@ public class MockHttpServletRequestBuilder
 
 	private String servletPath = "";
 
-	@Nullable
 	private String pathInfo = "";
 
-	@Nullable
 	private Boolean secure;
 
-	@Nullable
 	private Principal principal;
 
-	@Nullable
 	private MockHttpSession session;
 
-	@Nullable
 	private String characterEncoding;
 
-	@Nullable
 	private byte[] content;
 
-	@Nullable
 	private String contentType;
 
-	private final MultiValueMap<String, Object> headers = new LinkedMultiValueMap<>();
+	private final MultiValueMap<String, Object> headers = new LinkedMultiValueMap<String, Object>();
 
-	private final MultiValueMap<String, String> parameters = new LinkedMultiValueMap<>();
+	private final MultiValueMap<String, String> parameters = new LinkedMultiValueMap<String, String>();
 
-	private final MultiValueMap<String, String> queryParams = new LinkedMultiValueMap<>();
+	private final List<Cookie> cookies = new ArrayList<Cookie>();
 
-	private final List<Cookie> cookies = new ArrayList<>();
+	private final List<Locale> locales = new ArrayList<Locale>();
 
-	private final List<Locale> locales = new ArrayList<>();
+	private final Map<String, Object> requestAttributes = new LinkedHashMap<String, Object>();
 
-	private final Map<String, Object> requestAttributes = new LinkedHashMap<>();
+	private final Map<String, Object> sessionAttributes = new LinkedHashMap<String, Object>();
 
-	private final Map<String, Object> sessionAttributes = new LinkedHashMap<>();
+	private final Map<String, Object> flashAttributes = new LinkedHashMap<String, Object>();
 
-	private final Map<String, Object> flashAttributes = new LinkedHashMap<>();
-
-	private final List<RequestPostProcessor> postProcessors = new ArrayList<>();
+	private final List<RequestPostProcessor> postProcessors = new ArrayList<RequestPostProcessor>();
 
 
 	/**
@@ -143,14 +136,7 @@ public class MockHttpServletRequestBuilder
 	 * @param vars zero or more URI variables
 	 */
 	MockHttpServletRequestBuilder(HttpMethod httpMethod, String url, Object... vars) {
-		this(httpMethod.name(), initUri(url, vars));
-	}
-
-	private static URI initUri(String url, Object[] vars) {
-		Assert.notNull(url, "'url' must not be null");
-		Assert.isTrue(url.startsWith("/") || url.startsWith("http://") || url.startsWith("https://"), "" +
-				"'url' should start with a path or be a complete HTTP URL: " + url);
-		return UriComponentsBuilder.fromUriString(url).buildAndExpand(vars).encode().toUri();
+		this(httpMethod.name(), UriComponentsBuilder.fromUriString(url).buildAndExpand(vars).encode().toUri());
 	}
 
 	/**
@@ -185,14 +171,14 @@ public class MockHttpServletRequestBuilder
 	 * the requestURI. This is because most applications don't actually depend
 	 * on the name under which they're deployed. If specified here, the context
 	 * path must start with a "/" and must not end with a "/".
-	 * @see jakarta.servlet.http.HttpServletRequest#getContextPath()
+	 * @see javax.servlet.http.HttpServletRequest#getContextPath()
 	 */
 	public MockHttpServletRequestBuilder contextPath(String contextPath) {
 		if (StringUtils.hasText(contextPath)) {
 			Assert.isTrue(contextPath.startsWith("/"), "Context path must start with a '/'");
 			Assert.isTrue(!contextPath.endsWith("/"), "Context path must not end with a '/'");
 		}
-		this.contextPath = contextPath;
+		this.contextPath = (contextPath != null ? contextPath : "");
 		return this;
 	}
 
@@ -207,14 +193,14 @@ public class MockHttpServletRequestBuilder
 	 * {@code "/accounts/1"} as opposed to {@code "/main/accounts/1"}.
 	 * If specified here, the servletPath must start with a "/" and must not
 	 * end with a "/".
-	 * @see jakarta.servlet.http.HttpServletRequest#getServletPath()
+	 * @see javax.servlet.http.HttpServletRequest#getServletPath()
 	 */
 	public MockHttpServletRequestBuilder servletPath(String servletPath) {
 		if (StringUtils.hasText(servletPath)) {
 			Assert.isTrue(servletPath.startsWith("/"), "Servlet path must start with a '/'");
 			Assert.isTrue(!servletPath.endsWith("/"), "Servlet path must not end with a '/'");
 		}
-		this.servletPath = servletPath;
+		this.servletPath = (servletPath != null ? servletPath : "");
 		return this;
 	}
 
@@ -224,9 +210,9 @@ public class MockHttpServletRequestBuilder
 	 * by removing the contextPath and the servletPath from the requestURI and using any
 	 * remaining part. If specified here, the pathInfo must start with a "/".
 	 * <p>If specified, the pathInfo will be used as-is.
-	 * @see jakarta.servlet.http.HttpServletRequest#getPathInfo()
+	 * @see javax.servlet.http.HttpServletRequest#getPathInfo()
 	 */
-	public MockHttpServletRequestBuilder pathInfo(@Nullable String pathInfo) {
+	public MockHttpServletRequestBuilder pathInfo(String pathInfo) {
 		if (StringUtils.hasText(pathInfo)) {
 			Assert.isTrue(pathInfo.startsWith("/"), "Path info must start with a '/'");
 		}
@@ -247,17 +233,6 @@ public class MockHttpServletRequestBuilder
 	/**
 	 * Set the character encoding of the request.
 	 * @param encoding the character encoding
-	 * @since 5.3.10
-	 * @see StandardCharsets
-	 * @see #characterEncoding(String)
-	 */
-	public MockHttpServletRequestBuilder characterEncoding(Charset encoding) {
-		return this.characterEncoding(encoding.name());
-	}
-
-	/**
-	 * Set the character encoding of the request.
-	 * @param encoding the character encoding
 	 */
 	public MockHttpServletRequestBuilder characterEncoding(String encoding) {
 		this.characterEncoding = encoding;
@@ -266,10 +241,6 @@ public class MockHttpServletRequestBuilder
 
 	/**
 	 * Set the request body.
-	 * <p>If content is provided and {@link #contentType(MediaType)} is set to
-	 * {@code application/x-www-form-urlencoded}, the content will be parsed
-	 * and used to populate the {@link #param(String, String...) request
-	 * parameters} map.
 	 * @param content the body content
 	 */
 	public MockHttpServletRequestBuilder content(byte[] content) {
@@ -279,23 +250,15 @@ public class MockHttpServletRequestBuilder
 
 	/**
 	 * Set the request body as a UTF-8 String.
-	 * <p>If content is provided and {@link #contentType(MediaType)} is set to
-	 * {@code application/x-www-form-urlencoded}, the content will be parsed
-	 * and used to populate the {@link #param(String, String...) request
-	 * parameters} map.
 	 * @param content the body content
 	 */
 	public MockHttpServletRequestBuilder content(String content) {
-		this.content = content.getBytes(StandardCharsets.UTF_8);
+		this.content = content.getBytes(UTF8_CHARSET);
 		return this;
 	}
 
 	/**
 	 * Set the 'Content-Type' header of the request.
-	 * <p>If content is provided and {@code contentType} is set to
-	 * {@code application/x-www-form-urlencoded}, the content will be parsed
-	 * and used to populate the {@link #param(String, String...) request
-	 * parameters} map.
 	 * @param contentType the content type
 	 */
 	public MockHttpServletRequestBuilder contentType(MediaType contentType) {
@@ -305,14 +268,12 @@ public class MockHttpServletRequestBuilder
 	}
 
 	/**
-	 * Set the 'Content-Type' header of the request as a raw String value,
-	 * possibly not even well formed (for testing purposes).
+	 * Set the 'Content-Type' header of the request.
 	 * @param contentType the content type
 	 * @since 4.1.2
 	 */
 	public MockHttpServletRequestBuilder contentType(String contentType) {
-		Assert.notNull(contentType, "'contentType' must not be null");
-		this.contentType = contentType;
+		this.contentType = MediaType.parseMediaType(contentType).toString();
 		return this;
 	}
 
@@ -327,14 +288,16 @@ public class MockHttpServletRequestBuilder
 	}
 
 	/**
-	 * Set the 'Accept' header using raw String values, possibly not even well
-	 * formed (for testing purposes).
-	 * @param mediaTypes one or more media types; internally joined as
-	 * comma-separated String
+	 * Set the 'Accept' header to the given media type(s).
+	 * @param mediaTypes one or more media types
 	 */
 	public MockHttpServletRequestBuilder accept(String... mediaTypes) {
 		Assert.notEmpty(mediaTypes, "'mediaTypes' must not be empty");
-		this.headers.set("Accept", String.join(", ", mediaTypes));
+		List<MediaType> result = new ArrayList<MediaType>(mediaTypes.length);
+		for (String mediaType : mediaTypes) {
+			result.add(MediaType.parseMediaType(mediaType));
+		}
+		this.headers.set("Accept", MediaType.toString(result));
 		return this;
 	}
 
@@ -353,23 +316,16 @@ public class MockHttpServletRequestBuilder
 	 * @param httpHeaders the headers and values to add
 	 */
 	public MockHttpServletRequestBuilder headers(HttpHeaders httpHeaders) {
-		httpHeaders.forEach(this.headers::addAll);
+		for (String name : httpHeaders.keySet()) {
+			Object[] values = ObjectUtils.toObjectArray(httpHeaders.get(name).toArray());
+			addToMultiValueMap(this.headers, name, values);
+		}
 		return this;
 	}
 
 	/**
-	 * Add a request parameter to {@link MockHttpServletRequest#getParameterMap()}.
-	 * <p>In the Servlet API, a request parameter may be parsed from the query
-	 * string and/or from the body of an {@code application/x-www-form-urlencoded}
-	 * request. This method simply adds to the request parameter map. You may
-	 * also use add Servlet request parameters by specifying the query or form
-	 * data through one of the following:
-	 * <ul>
-	 * <li>Supply a URL with a query to {@link MockMvcRequestBuilders}.
-	 * <li>Add query params via {@link #queryParam} or {@link #queryParams}.
-	 * <li>Provide {@link #content} with {@link #contentType}
-	 * {@code application/x-www-form-urlencoded}.
-	 * </ul>
+	 * Add a request parameter to the {@link MockHttpServletRequest}.
+	 * <p>If called more than once, new values get added to existing ones.
 	 * @param name the parameter name
 	 * @param values one or more values
 	 */
@@ -379,43 +335,18 @@ public class MockHttpServletRequestBuilder
 	}
 
 	/**
-	 * Variant of {@link #param(String, String...)} with a {@link MultiValueMap}.
+	 * Add a map of request parameters to the {@link MockHttpServletRequest},
+	 * for example when testing a form submission.
+	 * <p>If called more than once, new values get added to existing ones.
 	 * @param params the parameters to add
 	 * @since 4.2.4
 	 */
 	public MockHttpServletRequestBuilder params(MultiValueMap<String, String> params) {
-		params.forEach((name, values) -> {
-			for (String value : values) {
+		for (String name : params.keySet()) {
+			for (String value : params.get(name)) {
 				this.parameters.add(name, value);
 			}
-		});
-		return this;
-	}
-
-	/**
-	 * Append to the query string and also add to the
-	 * {@link #param(String, String...) request parameters} map. The parameter
-	 * name and value are encoded when they are added to the query string.
-	 * @param name the parameter name
-	 * @param values one or more values
-	 * @since 5.2.2
-	 */
-	public MockHttpServletRequestBuilder queryParam(String name, String... values) {
-		param(name, values);
-		this.queryParams.addAll(name, Arrays.asList(values));
-		return this;
-	}
-
-	/**
-	 * Append to the query string and also add to the
-	 * {@link #params(MultiValueMap)}  request parameters} map. The parameter
-	 * name and value are encoded when they are added to the query string.
-	 * @param params the parameters to add
-	 * @since 5.2.2
-	 */
-	public MockHttpServletRequestBuilder queryParams(MultiValueMap<String, String> params) {
-		params(params);
-		this.queryParams.addAll(params);
+		}
 		return this;
 	}
 
@@ -446,7 +377,7 @@ public class MockHttpServletRequestBuilder
 	 * @param locale the locale, or {@code null} to reset it
 	 * @see #locale(Locale...)
 	 */
-	public MockHttpServletRequestBuilder locale(@Nullable Locale locale) {
+	public MockHttpServletRequestBuilder locale(Locale locale) {
 		this.locales.clear();
 		if (locale != null) {
 			this.locales.add(locale);
@@ -480,7 +411,9 @@ public class MockHttpServletRequestBuilder
 	 */
 	public MockHttpServletRequestBuilder sessionAttrs(Map<String, Object> sessionAttributes) {
 		Assert.notEmpty(sessionAttributes, "'sessionAttributes' must not be empty");
-		sessionAttributes.forEach(this::sessionAttr);
+		for (String name : sessionAttributes.keySet()) {
+			sessionAttr(name, sessionAttributes.get(name));
+		}
 		return this;
 	}
 
@@ -500,7 +433,9 @@ public class MockHttpServletRequestBuilder
 	 */
 	public MockHttpServletRequestBuilder flashAttrs(Map<String, Object> flashAttributes) {
 		Assert.notEmpty(flashAttributes, "'flashAttributes' must not be empty");
-		flashAttributes.forEach(this::flashAttr);
+		for (String name : flashAttributes.keySet()) {
+			flashAttr(name, flashAttributes.get(name));
+		}
 		return this;
 	}
 
@@ -557,13 +492,15 @@ public class MockHttpServletRequestBuilder
 	 * @return the result of the merge
 	 */
 	@Override
-	public Object merge(@Nullable Object parent) {
+	public Object merge(Object parent) {
 		if (parent == null) {
 			return this;
 		}
-		if (!(parent instanceof MockHttpServletRequestBuilder parentBuilder)) {
+		if (!(parent instanceof MockHttpServletRequestBuilder)) {
 			throw new IllegalArgumentException("Cannot merge with [" + parent.getClass().getName() + "]");
 		}
+		MockHttpServletRequestBuilder parentBuilder = (MockHttpServletRequestBuilder) parent;
+
 		if (!StringUtils.hasText(this.contextPath)) {
 			this.contextPath = parentBuilder.contextPath;
 		}
@@ -594,22 +531,14 @@ public class MockHttpServletRequestBuilder
 			this.contentType = parentBuilder.contentType;
 		}
 
-		for (Map.Entry<String, List<Object>> entry : parentBuilder.headers.entrySet()) {
-			String headerName = entry.getKey();
+		for (String headerName : parentBuilder.headers.keySet()) {
 			if (!this.headers.containsKey(headerName)) {
-				this.headers.put(headerName, entry.getValue());
+				this.headers.put(headerName, parentBuilder.headers.get(headerName));
 			}
 		}
-		for (Map.Entry<String, List<String>> entry : parentBuilder.parameters.entrySet()) {
-			String paramName = entry.getKey();
+		for (String paramName : parentBuilder.parameters.keySet()) {
 			if (!this.parameters.containsKey(paramName)) {
-				this.parameters.put(paramName, entry.getValue());
-			}
-		}
-		for (Map.Entry<String, List<String>> entry : parentBuilder.queryParams.entrySet()) {
-			String paramName = entry.getKey();
-			if (!this.queryParams.containsKey(paramName)) {
-				this.queryParams.put(paramName, entry.getValue());
+				this.parameters.put(paramName, parentBuilder.parameters.get(paramName));
 			}
 		}
 		for (Cookie cookie : parentBuilder.cookies) {
@@ -623,22 +552,19 @@ public class MockHttpServletRequestBuilder
 			}
 		}
 
-		for (Map.Entry<String, Object> entry : parentBuilder.requestAttributes.entrySet()) {
-			String attributeName = entry.getKey();
+		for (String attributeName : parentBuilder.requestAttributes.keySet()) {
 			if (!this.requestAttributes.containsKey(attributeName)) {
-				this.requestAttributes.put(attributeName, entry.getValue());
+				this.requestAttributes.put(attributeName, parentBuilder.requestAttributes.get(attributeName));
 			}
 		}
-		for (Map.Entry<String, Object> entry : parentBuilder.sessionAttributes.entrySet()) {
-			String attributeName = entry.getKey();
+		for (String attributeName : parentBuilder.sessionAttributes.keySet()) {
 			if (!this.sessionAttributes.containsKey(attributeName)) {
-				this.sessionAttributes.put(attributeName, entry.getValue());
+				this.sessionAttributes.put(attributeName, parentBuilder.sessionAttributes.get(attributeName));
 			}
 		}
-		for (Map.Entry<String, Object> entry : parentBuilder.flashAttributes.entrySet()) {
-			String attributeName = entry.getKey();
+		for (String attributeName : parentBuilder.flashAttributes.keySet()) {
 			if (!this.flashAttributes.containsKey(attributeName)) {
-				this.flashAttributes.put(attributeName, entry.getValue());
+				this.flashAttributes.put(attributeName, parentBuilder.flashAttributes.get(attributeName));
 			}
 		}
 
@@ -695,63 +621,46 @@ public class MockHttpServletRequestBuilder
 		request.setContent(this.content);
 		request.setContentType(this.contentType);
 
-		this.headers.forEach((name, values) -> {
-			for (Object value : values) {
+		for (String name : this.headers.keySet()) {
+			for (Object value : this.headers.get(name)) {
 				request.addHeader(name, value);
 			}
-		});
-
-		if (!ObjectUtils.isEmpty(this.content) &&
-				!this.headers.containsKey(HttpHeaders.CONTENT_LENGTH) &&
-				!this.headers.containsKey(HttpHeaders.TRANSFER_ENCODING)) {
-
-			request.addHeader(HttpHeaders.CONTENT_LENGTH, this.content.length);
 		}
 
-		String query = this.url.getRawQuery();
-		if (!this.queryParams.isEmpty()) {
-			String str = UriComponentsBuilder.newInstance().queryParams(this.queryParams).build().encode().getQuery();
-			query = StringUtils.hasLength(query) ? (query + "&" + str) : str;
-		}
-		if (query != null) {
-			request.setQueryString(query);
+		if (this.url.getRawQuery() != null) {
+			request.setQueryString(this.url.getRawQuery());
 		}
 		addRequestParams(request, UriComponentsBuilder.fromUri(this.url).build().getQueryParams());
 
-		this.parameters.forEach((name, values) -> {
-			for (String value : values) {
+		for (String name : this.parameters.keySet()) {
+			for (String value : this.parameters.get(name)) {
 				request.addParameter(name, value);
 			}
-		});
+		}
 
 		if (this.content != null && this.content.length > 0) {
 			String requestContentType = request.getContentType();
 			if (requestContentType != null) {
-				try {
-					MediaType mediaType = MediaType.parseMediaType(requestContentType);
-					if (MediaType.APPLICATION_FORM_URLENCODED.includes(mediaType)) {
-						addRequestParams(request, parseFormData(mediaType));
-					}
-				}
-				catch (Exception ex) {
-					// Must be invalid, ignore..
+				MediaType mediaType = MediaType.parseMediaType(requestContentType);
+				if (MediaType.APPLICATION_FORM_URLENCODED.includes(mediaType)) {
+					addRequestParams(request, parseFormData(mediaType));
 				}
 			}
 		}
 
 		if (!ObjectUtils.isEmpty(this.cookies)) {
-			request.setCookies(this.cookies.toArray(new Cookie[0]));
+			request.setCookies(this.cookies.toArray(new Cookie[this.cookies.size()]));
 		}
 		if (!ObjectUtils.isEmpty(this.locales)) {
 			request.setPreferredLocales(this.locales);
 		}
 
-		this.requestAttributes.forEach(request::setAttribute);
-		this.sessionAttributes.forEach((name, attribute) -> {
-			HttpSession session = request.getSession();
-			Assert.state(session != null, "No HttpSession");
-			session.setAttribute(name, attribute);
-		});
+		for (String name : this.requestAttributes.keySet()) {
+			request.setAttribute(name, this.requestAttributes.get(name));
+		}
+		for (String name : this.sessionAttributes.keySet()) {
+			request.getSession().setAttribute(name, this.sessionAttributes.get(name));
+		}
 
 		FlashMap flashMap = new FlashMap();
 		flashMap.putAll(this.flashAttributes);
@@ -788,23 +697,30 @@ public class MockHttpServletRequestBuilder
 			}
 			String extraPath = requestUri.substring(this.contextPath.length() + this.servletPath.length());
 			this.pathInfo = (StringUtils.hasText(extraPath) ?
-					UrlPathHelper.defaultInstance.decodeRequestString(request, extraPath) : null);
+					urlPathHelper.decodeRequestString(request, extraPath) : null);
 		}
 		request.setPathInfo(this.pathInfo);
 	}
 
 	private void addRequestParams(MockHttpServletRequest request, MultiValueMap<String, String> map) {
-		map.forEach((key, values) -> values.forEach(value -> {
-			value = (value != null ? UriUtils.decode(value, StandardCharsets.UTF_8) : null);
-			request.addParameter(UriUtils.decode(key, StandardCharsets.UTF_8), value);
-		}));
+		try {
+			for (Entry<String, List<String>> entry : map.entrySet()) {
+				for (String value : entry.getValue()) {
+					value = (value != null) ? UriUtils.decode(value, "UTF-8") : null;
+					request.addParameter(UriUtils.decode(entry.getKey(), "UTF-8"), value);
+				}
+			}
+		}
+		catch (UnsupportedEncodingException ex) {
+			// shouldn't happen
+		}
 	}
 
-	private MultiValueMap<String, String> parseFormData(MediaType mediaType) {
+	private MultiValueMap<String, String> parseFormData(final MediaType mediaType) {
 		HttpInputMessage message = new HttpInputMessage() {
 			@Override
-			public InputStream getBody() {
-				return (content != null ? new ByteArrayInputStream(content) : StreamUtils.emptyInput());
+			public InputStream getBody() throws IOException {
+				return new ByteArrayInputStream(content);
 			}
 			@Override
 			public HttpHeaders getHeaders() {
@@ -829,7 +745,10 @@ public class MockHttpServletRequestBuilder
 			WebApplicationContext wac = WebApplicationContextUtils.getRequiredWebApplicationContext(servletContext);
 			flashMapManager = wac.getBean(DispatcherServlet.FLASH_MAP_MANAGER_BEAN_NAME, FlashMapManager.class);
 		}
-		catch (IllegalStateException | NoSuchBeanDefinitionException ex) {
+		catch (IllegalStateException ex) {
+			// ignore
+		}
+		catch (NoSuchBeanDefinitionException ex) {
 			// ignore
 		}
 		return (flashMapManager != null ? flashMapManager : new SessionFlashMapManager());
@@ -839,6 +758,10 @@ public class MockHttpServletRequestBuilder
 	public MockHttpServletRequest postProcessRequest(MockHttpServletRequest request) {
 		for (RequestPostProcessor postProcessor : this.postProcessors) {
 			request = postProcessor.postProcessRequest(request);
+			if (request == null) {
+				throw new IllegalStateException(
+						"Post-processor [" + postProcessor.getClass().getName() + "] returned null");
+			}
 		}
 		return request;
 	}

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.messaging.handler.annotation.support;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.messaging.Message;
-import org.springframework.messaging.handler.invocation.MethodArgumentResolutionException;
 
 /**
  * Exception that indicates that a method argument has not the expected type.
@@ -26,8 +25,8 @@ import org.springframework.messaging.handler.invocation.MethodArgumentResolution
  * @author Stephane Nicoll
  * @since 4.0.3
  */
-@SuppressWarnings("serial")
-public class MethodArgumentTypeMismatchException extends MethodArgumentResolutionException {
+@SuppressWarnings({"serial", "deprecation"})
+public class MethodArgumentTypeMismatchException extends AbstractMethodArgumentResolutionException {
 
 	public MethodArgumentTypeMismatchException(Message<?> message, MethodParameter parameter, String description) {
 		super(message, parameter, description);

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,13 +16,12 @@
 
 package org.springframework.web.util;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.ObjectUtils;
@@ -33,37 +32,33 @@ import org.springframework.util.ObjectUtils;
  * @author Arjen Poutsma
  * @author Phillip Webb
  * @since 3.2
- * @see <a href="https://tools.ietf.org/html/rfc3986#section-1.2.3">Hierarchical vs Opaque URIs</a>
+ * @see <a href="http://tools.ietf.org/html/rfc3986#section-1.2.3">Hierarchical vs Opaque URIs</a>
  */
 @SuppressWarnings("serial")
 final class OpaqueUriComponents extends UriComponents {
 
-	private static final MultiValueMap<String, String> QUERY_PARAMS_NONE = new LinkedMultiValueMap<>();
+	private static final MultiValueMap<String, String> QUERY_PARAMS_NONE = new LinkedMultiValueMap<String, String>(0);
 
-	@Nullable
 	private final String ssp;
 
 
-	OpaqueUriComponents(@Nullable String scheme, @Nullable String schemeSpecificPart, @Nullable String fragment) {
+	OpaqueUriComponents(String scheme, String schemeSpecificPart, String fragment) {
 		super(scheme, fragment);
 		this.ssp = schemeSpecificPart;
 	}
 
 
 	@Override
-	@Nullable
 	public String getSchemeSpecificPart() {
 		return this.ssp;
 	}
 
 	@Override
-	@Nullable
 	public String getUserInfo() {
 		return null;
 	}
 
 	@Override
-	@Nullable
 	public String getHost() {
 		return null;
 	}
@@ -74,7 +69,6 @@ final class OpaqueUriComponents extends UriComponents {
 	}
 
 	@Override
-	@Nullable
 	public String getPath() {
 		return null;
 	}
@@ -85,7 +79,6 @@ final class OpaqueUriComponents extends UriComponents {
 	}
 
 	@Override
-	@Nullable
 	public String getQuery() {
 		return null;
 	}
@@ -96,7 +89,7 @@ final class OpaqueUriComponents extends UriComponents {
 	}
 
 	@Override
-	public UriComponents encode(Charset charset) {
+	public UriComponents encode(String encoding) throws UnsupportedEncodingException {
 		return this;
 	}
 
@@ -144,29 +137,26 @@ final class OpaqueUriComponents extends UriComponents {
 
 	@Override
 	protected void copyToUriComponentsBuilder(UriComponentsBuilder builder) {
-		if (getScheme() != null) {
-			builder.scheme(getScheme());
-		}
-		if (getSchemeSpecificPart() != null) {
-			builder.schemeSpecificPart(getSchemeSpecificPart());
-		}
-		if (getFragment() != null) {
-			builder.fragment(getFragment());
-		}
+		builder.scheme(getScheme());
+		builder.schemeSpecificPart(getSchemeSpecificPart());
+		builder.fragment(getFragment());
 	}
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
-		if (this == other) {
+	public boolean equals(Object obj) {
+		if (this == obj) {
 			return true;
 		}
-		if (!(other instanceof OpaqueUriComponents otherComp)) {
+		if (!(obj instanceof OpaqueUriComponents)) {
 			return false;
 		}
-		return (ObjectUtils.nullSafeEquals(getScheme(), otherComp.getScheme()) &&
-				ObjectUtils.nullSafeEquals(this.ssp, otherComp.ssp) &&
-				ObjectUtils.nullSafeEquals(getFragment(), otherComp.getFragment()));
+
+		OpaqueUriComponents other = (OpaqueUriComponents) obj;
+		return ObjectUtils.nullSafeEquals(getScheme(), other.getScheme()) &&
+				ObjectUtils.nullSafeEquals(this.ssp, other.ssp) &&
+				ObjectUtils.nullSafeEquals(getFragment(), other.getFragment());
+
 	}
 
 	@Override

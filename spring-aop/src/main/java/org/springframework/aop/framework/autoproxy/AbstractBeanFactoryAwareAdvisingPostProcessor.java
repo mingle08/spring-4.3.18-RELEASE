@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,6 @@ import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
-import org.springframework.lang.Nullable;
 
 /**
  * Extension of {@link AbstractAutoProxyCreator} which implements {@link BeanFactoryAware},
@@ -40,7 +39,6 @@ import org.springframework.lang.Nullable;
 public abstract class AbstractBeanFactoryAwareAdvisingPostProcessor extends AbstractAdvisingBeanPostProcessor
 		implements BeanFactoryAware {
 
-	@Nullable
 	private ConfigurableListableBeanFactory beanFactory;
 
 
@@ -62,12 +60,6 @@ public abstract class AbstractBeanFactoryAwareAdvisingPostProcessor extends Abst
 			proxyFactory.setProxyTargetClass(true);
 		}
 		return proxyFactory;
-	}
-
-	@Override
-	protected boolean isEligible(Object bean, String beanName) {
-		return (!AutoProxyUtils.isOriginalInstance(beanName, bean.getClass()) &&
-				super.isEligible(bean, beanName));
 	}
 
 }

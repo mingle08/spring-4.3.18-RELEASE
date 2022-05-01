@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,23 +16,22 @@
 
 package org.springframework.transaction;
 
-import jakarta.transaction.Status;
-import jakarta.transaction.TransactionManager;
-import jakarta.transaction.UserTransaction;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import javax.transaction.Status;
+import javax.transaction.TransactionManager;
+import javax.transaction.UserTransaction;
 
-import org.springframework.context.testfixture.jndi.ExpectedLookupTemplate;
+import org.junit.After;
+import org.junit.Test;
+
+import org.springframework.tests.mock.jndi.ExpectedLookupTemplate;
 import org.springframework.transaction.jta.JtaTransactionManager;
 import org.springframework.transaction.jta.UserTransactionAdapter;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Juergen Hoeller
@@ -82,37 +81,34 @@ public class JndiJtaTransactionManagerTests {
 		ptm.afterPropertiesSet();
 
 		if (tmFound) {
-			assertThat(ptm.getTransactionManager()).isEqualTo(tm);
+			assertEquals(tm, ptm.getTransactionManager());
 		}
 		else {
-			assertThat(ptm.getTransactionManager()).isNull();
+			assertNull(ptm.getTransactionManager());
 		}
 
 		if (defaultUt) {
-			assertThat(ptm.getUserTransaction()).isEqualTo(ut);
+			assertEquals(ut, ptm.getUserTransaction());
 		}
 		else {
-			boolean condition = ptm.getUserTransaction() instanceof UserTransactionAdapter;
-			assertThat(condition).isTrue();
+			assertTrue(ptm.getUserTransaction() instanceof UserTransactionAdapter);
 			UserTransactionAdapter uta = (UserTransactionAdapter) ptm.getUserTransaction();
-			assertThat(uta.getTransactionManager()).isEqualTo(tm);
+			assertEquals(tm, uta.getTransactionManager());
 		}
 
 		TransactionTemplate tt = new TransactionTemplate(ptm);
-		boolean condition1 = !TransactionSynchronizationManager.isSynchronizationActive();
-		assertThat(condition1).isTrue();
-		assertThat(TransactionSynchronizationManager.isCurrentTransactionReadOnly()).isFalse();
+		assertTrue(!TransactionSynchronizationManager.isSynchronizationActive());
+		assertFalse(TransactionSynchronizationManager.isCurrentTransactionReadOnly());
 		tt.execute(new TransactionCallbackWithoutResult() {
 			@Override
 			protected void doInTransactionWithoutResult(TransactionStatus status) {
 				// something transactional
-				assertThat(TransactionSynchronizationManager.isSynchronizationActive()).isTrue();
-				assertThat(TransactionSynchronizationManager.isCurrentTransactionReadOnly()).isFalse();
+				assertTrue(TransactionSynchronizationManager.isSynchronizationActive());
+				assertFalse(TransactionSynchronizationManager.isCurrentTransactionReadOnly());
 			}
 		});
-		boolean condition = !TransactionSynchronizationManager.isSynchronizationActive();
-		assertThat(condition).isTrue();
-		assertThat(TransactionSynchronizationManager.isCurrentTransactionReadOnly()).isFalse();
+		assertTrue(!TransactionSynchronizationManager.isSynchronizationActive());
+		assertFalse(TransactionSynchronizationManager.isCurrentTransactionReadOnly());
 
 
 		if (defaultUt) {
@@ -142,24 +138,22 @@ public class JndiJtaTransactionManagerTests {
 		ptm.setJndiTemplate(jndiTemplate);
 		ptm.afterPropertiesSet();
 
-		assertThat(ptm.getUserTransaction()).isEqualTo(ut);
-		assertThat(ptm.getTransactionManager()).isEqualTo(tm);
+		assertEquals(ut, ptm.getUserTransaction());
+		assertEquals(tm, ptm.getTransactionManager());
 
 		TransactionTemplate tt = new TransactionTemplate(ptm);
-		boolean condition1 = !TransactionSynchronizationManager.isSynchronizationActive();
-		assertThat(condition1).isTrue();
-		assertThat(TransactionSynchronizationManager.isCurrentTransactionReadOnly()).isFalse();
+		assertTrue(!TransactionSynchronizationManager.isSynchronizationActive());
+		assertFalse(TransactionSynchronizationManager.isCurrentTransactionReadOnly());
 		tt.execute(new TransactionCallbackWithoutResult() {
 			@Override
 			protected void doInTransactionWithoutResult(TransactionStatus status) {
 				// something transactional
-				assertThat(TransactionSynchronizationManager.isSynchronizationActive()).isTrue();
-				assertThat(TransactionSynchronizationManager.isCurrentTransactionReadOnly()).isFalse();
+				assertTrue(TransactionSynchronizationManager.isSynchronizationActive());
+				assertFalse(TransactionSynchronizationManager.isCurrentTransactionReadOnly());
 			}
 		});
-		boolean condition = !TransactionSynchronizationManager.isSynchronizationActive();
-		assertThat(condition).isTrue();
-		assertThat(TransactionSynchronizationManager.isCurrentTransactionReadOnly()).isFalse();
+		assertTrue(!TransactionSynchronizationManager.isSynchronizationActive());
+		assertFalse(TransactionSynchronizationManager.isCurrentTransactionReadOnly());
 
 		verify(ut).begin();
 		verify(ut).commit();
@@ -178,19 +172,18 @@ public class JndiJtaTransactionManagerTests {
 		ptm.setCacheUserTransaction(false);
 		ptm.afterPropertiesSet();
 
-		assertThat(ptm.getUserTransaction()).isEqualTo(ut);
+		assertEquals(ut, ptm.getUserTransaction());
 
 		TransactionTemplate tt = new TransactionTemplate(ptm);
-		assertThat(ptm.getTransactionSynchronization()).isEqualTo(JtaTransactionManager.SYNCHRONIZATION_ALWAYS);
-		boolean condition1 = !TransactionSynchronizationManager.isSynchronizationActive();
-		assertThat(condition1).isTrue();
-		assertThat(TransactionSynchronizationManager.isCurrentTransactionReadOnly()).isFalse();
+		assertEquals(JtaTransactionManager.SYNCHRONIZATION_ALWAYS, ptm.getTransactionSynchronization());
+		assertTrue(!TransactionSynchronizationManager.isSynchronizationActive());
+		assertFalse(TransactionSynchronizationManager.isCurrentTransactionReadOnly());
 		tt.execute(new TransactionCallbackWithoutResult() {
 			@Override
 			protected void doInTransactionWithoutResult(TransactionStatus status) {
 				// something transactional
-				assertThat(TransactionSynchronizationManager.isSynchronizationActive()).isTrue();
-				assertThat(TransactionSynchronizationManager.isCurrentTransactionReadOnly()).isFalse();
+				assertTrue(TransactionSynchronizationManager.isSynchronizationActive());
+				assertFalse(TransactionSynchronizationManager.isCurrentTransactionReadOnly());
 			}
 		});
 
@@ -199,13 +192,12 @@ public class JndiJtaTransactionManagerTests {
 			@Override
 			protected void doInTransactionWithoutResult(TransactionStatus status) {
 				// something transactional
-				assertThat(TransactionSynchronizationManager.isSynchronizationActive()).isTrue();
-				assertThat(TransactionSynchronizationManager.isCurrentTransactionReadOnly()).isFalse();
+				assertTrue(TransactionSynchronizationManager.isSynchronizationActive());
+				assertFalse(TransactionSynchronizationManager.isCurrentTransactionReadOnly());
 			}
 		});
-		boolean condition = !TransactionSynchronizationManager.isSynchronizationActive();
-		assertThat(condition).isTrue();
-		assertThat(TransactionSynchronizationManager.isCurrentTransactionReadOnly()).isFalse();
+		assertTrue(!TransactionSynchronizationManager.isSynchronizationActive());
+		assertFalse(TransactionSynchronizationManager.isCurrentTransactionReadOnly());
 
 		verify(ut).begin();
 		verify(ut).commit();
@@ -217,13 +209,13 @@ public class JndiJtaTransactionManagerTests {
 	 * Prevent any side-effects due to this test modifying ThreadLocals that might
 	 * affect subsequent tests when all tests are run in the same JVM, as with Eclipse.
 	 */
-	@AfterEach
+	@After
 	public void tearDown() {
-		assertThat(TransactionSynchronizationManager.getResourceMap().isEmpty()).isTrue();
-		assertThat(TransactionSynchronizationManager.isSynchronizationActive()).isFalse();
-		assertThat(TransactionSynchronizationManager.getCurrentTransactionName()).isNull();
-		assertThat(TransactionSynchronizationManager.isCurrentTransactionReadOnly()).isFalse();
-		assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+		assertTrue(TransactionSynchronizationManager.getResourceMap().isEmpty());
+		assertFalse(TransactionSynchronizationManager.isSynchronizationActive());
+		assertNull(TransactionSynchronizationManager.getCurrentTransactionName());
+		assertFalse(TransactionSynchronizationManager.isCurrentTransactionReadOnly());
+		assertFalse(TransactionSynchronizationManager.isActualTransactionActive());
 	}
 
 }

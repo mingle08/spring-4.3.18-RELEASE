@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,12 +17,11 @@
 package org.springframework.web.context.support;
 
 import java.util.Map;
+import javax.servlet.ServletContext;
 
-import jakarta.servlet.ServletContext;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.lang.Nullable;
 import org.springframework.web.context.ServletContextAware;
 
 /**
@@ -42,14 +41,13 @@ import org.springframework.web.context.ServletContextAware;
  *
  * @author Juergen Hoeller
  * @since 1.1.4
- * @see jakarta.servlet.ServletContext#getAttribute
+ * @see javax.servlet.ServletContext#getAttribute
  * @see WebApplicationContextUtils#getWebApplicationContext
  */
 public class ServletContextAttributeExporter implements ServletContextAware {
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	@Nullable
 	private Map<String, Object> attributes;
 
 
@@ -70,14 +68,14 @@ public class ServletContextAttributeExporter implements ServletContextAware {
 		if (this.attributes != null) {
 			for (Map.Entry<String, Object> entry : this.attributes.entrySet()) {
 				String attributeName = entry.getKey();
-				if (logger.isDebugEnabled()) {
+				if (logger.isWarnEnabled()) {
 					if (servletContext.getAttribute(attributeName) != null) {
-						logger.debug("Replacing existing ServletContext attribute with name '" + attributeName + "'");
+						logger.warn("Replacing existing ServletContext attribute with name '" + attributeName + "'");
 					}
 				}
 				servletContext.setAttribute(attributeName, entry.getValue());
-				if (logger.isTraceEnabled()) {
-					logger.trace("Exported ServletContext attribute with name '" + attributeName + "'");
+				if (logger.isInfoEnabled()) {
+					logger.info("Exported ServletContext attribute with name '" + attributeName + "'");
 				}
 			}
 		}

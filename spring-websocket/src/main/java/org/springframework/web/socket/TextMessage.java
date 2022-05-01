@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,9 +16,7 @@
 
 package org.springframework.web.socket;
 
-import java.nio.charset.StandardCharsets;
-
-import org.springframework.lang.Nullable;
+import java.nio.charset.Charset;
 
 /**
  * A text WebSocket message.
@@ -28,7 +26,8 @@ import org.springframework.lang.Nullable;
  */
 public final class TextMessage extends AbstractWebSocketMessage<String> {
 
-	@Nullable
+	private static final Charset UTF8_CHARSET = Charset.forName("UTF-8");
+
 	private final byte[] bytes;
 
 
@@ -47,7 +46,7 @@ public final class TextMessage extends AbstractWebSocketMessage<String> {
 	 * @param payload the non-null payload
 	 */
 	public TextMessage(byte[] payload) {
-		super(new String(payload, StandardCharsets.UTF_8));
+		super(new String(payload, UTF8_CHARSET));
 		this.bytes = payload;
 	}
 
@@ -71,7 +70,7 @@ public final class TextMessage extends AbstractWebSocketMessage<String> {
 	}
 
 	public byte[] asBytes() {
-		return (this.bytes != null ? this.bytes : getPayload().getBytes(StandardCharsets.UTF_8));
+		return (this.bytes != null ? this.bytes : getPayload().getBytes(UTF8_CHARSET));
 	}
 
 	@Override

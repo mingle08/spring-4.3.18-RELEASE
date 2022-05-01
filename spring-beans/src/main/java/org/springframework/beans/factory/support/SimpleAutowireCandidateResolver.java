@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.beans.factory.support;
 
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.config.DependencyDescriptor;
-import org.springframework.lang.Nullable;
 
 /**
  * {@link AutowireCandidateResolver} implementation to use when no annotation
@@ -30,47 +29,32 @@ import org.springframework.lang.Nullable;
  */
 public class SimpleAutowireCandidateResolver implements AutowireCandidateResolver {
 
-	/**
-	 * Shared instance of {@code SimpleAutowireCandidateResolver}.
-	 * @since 5.2.7
-	 */
-	public static final SimpleAutowireCandidateResolver INSTANCE = new SimpleAutowireCandidateResolver();
-
-
 	@Override
 	public boolean isAutowireCandidate(BeanDefinitionHolder bdHolder, DependencyDescriptor descriptor) {
 		return bdHolder.getBeanDefinition().isAutowireCandidate();
 	}
 
-	@Override
+	/**
+	 * Determine whether the given descriptor is effectively required.
+	 * <p>The default implementation checks {@link DependencyDescriptor#isRequired()}.
+	 * @param descriptor the descriptor for the target method parameter or field
+	 * @return whether the descriptor is marked as required or possibly indicating
+	 * non-required status some other way (e.g. through a parameter annotation)
+	 * @since 4.3.9
+	 * @see DependencyDescriptor#isRequired()
+	 */
 	public boolean isRequired(DependencyDescriptor descriptor) {
 		return descriptor.isRequired();
 	}
 
 	@Override
-	public boolean hasQualifier(DependencyDescriptor descriptor) {
-		return false;
-	}
-
-	@Override
-	@Nullable
 	public Object getSuggestedValue(DependencyDescriptor descriptor) {
 		return null;
 	}
 
 	@Override
-	@Nullable
-	public Object getLazyResolutionProxyIfNecessary(DependencyDescriptor descriptor, @Nullable String beanName) {
+	public Object getLazyResolutionProxyIfNecessary(DependencyDescriptor descriptor, String beanName) {
 		return null;
-	}
-
-	/**
-	 * This implementation returns {@code this} as-is.
-	 * @see #INSTANCE
-	 */
-	@Override
-	public AutowireCandidateResolver cloneIfNecessary() {
-		return this;
 	}
 
 }

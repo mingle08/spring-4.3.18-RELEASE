@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,19 +26,16 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.junit.jupiter.api.Test;
-
+import org.junit.Test;
 import org.springframework.http.HttpMethod;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.withSettings;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Stephane Nicoll
  */
-public class HttpComponentsClientHttpRequestFactoryTests extends AbstractHttpRequestFactoryTests {
+public class HttpComponentsClientHttpRequestFactoryTests extends AbstractHttpRequestFactoryTestCase {
 
 	@Override
 	protected ClientHttpRequestFactory createRequestFactory() {
@@ -50,6 +47,20 @@ public class HttpComponentsClientHttpRequestFactoryTests extends AbstractHttpReq
 	public void httpMethods() throws Exception {
 		super.httpMethods();
 		assertHttpMethod("patch", HttpMethod.PATCH);
+	}
+
+	@SuppressWarnings("deprecation")
+	@Test
+	public void assertLegacyCustomConfig() {
+		HttpClient httpClient = new org.apache.http.impl.client.DefaultHttpClient(); // Does not support RequestConfig
+		HttpComponentsClientHttpRequestFactory hrf = new HttpComponentsClientHttpRequestFactory(httpClient);
+		hrf.setConnectTimeout(1234);
+		assertEquals(1234, httpClient.getParams().getIntParameter(
+				org.apache.http.params.CoreConnectionPNames.CONNECTION_TIMEOUT, 0));
+
+		hrf.setReadTimeout(4567);
+		assertEquals(4567, httpClient.getParams().getIntParameter(
+				org.apache.http.params.CoreConnectionPNames.SO_TIMEOUT, 0));
 	}
 
 	@Test
@@ -65,12 +76,13 @@ public class HttpComponentsClientHttpRequestFactoryTests extends AbstractHttpReq
 				hrf.createRequest(uri, HttpMethod.GET);
 
 		Object config = request.getHttpContext().getAttribute(HttpClientContext.REQUEST_CONFIG);
-		assertThat(config).as("Request config should be set").isNotNull();
-		assertThat(config).as("Wrong request config type " + config.getClass().getName()).isInstanceOf(RequestConfig.class);
+		assertNotNull("Request config should be set", config);
+		assertTrue("Wrong request config type" + config.getClass().getName(),
+				RequestConfig.class.isInstance(config));
 		RequestConfig requestConfig = (RequestConfig) config;
-		assertThat(requestConfig.getConnectTimeout()).as("Wrong custom connection timeout").isEqualTo(1234);
-		assertThat(requestConfig.getConnectionRequestTimeout()).as("Wrong custom connection request timeout").isEqualTo(4321);
-		assertThat(requestConfig.getSocketTimeout()).as("Wrong custom socket timeout").isEqualTo(4567);
+		assertEquals("Wrong custom connection timeout", 1234, requestConfig.getConnectTimeout());
+		assertEquals("Wrong custom connection request timeout", 4321, requestConfig.getConnectionRequestTimeout());
+		assertEquals("Wrong custom socket timeout", 4567, requestConfig.getSocketTimeout());
 	}
 
 	@Test
@@ -79,17 +91,17 @@ public class HttpComponentsClientHttpRequestFactoryTests extends AbstractHttpReq
 		CloseableHttpClient client = mock(CloseableHttpClient.class,
 				withSettings().extraInterfaces(Configurable.class));
 		Configurable configurable = (Configurable) client;
-		given(configurable.getConfig()).willReturn(defaultConfig);
+		when(configurable.getConfig()).thenReturn(defaultConfig);
 
 		HttpComponentsClientHttpRequestFactory hrf = new HttpComponentsClientHttpRequestFactory(client);
-		assertThat(retrieveRequestConfig(hrf)).as("Default client configuration is expected").isSameAs(defaultConfig);
+		assertSame("Default client configuration is expected", defaultConfig, retrieveRequestConfig(hrf));
 
 		hrf.setConnectionRequestTimeout(4567);
 		RequestConfig requestConfig = retrieveRequestConfig(hrf);
-		assertThat(requestConfig).isNotNull();
-		assertThat(requestConfig.getConnectionRequestTimeout()).isEqualTo(4567);
+		assertNotNull(requestConfig);
+		assertEquals(4567, requestConfig.getConnectionRequestTimeout());
 		// Default connection timeout merged
-		assertThat(requestConfig.getConnectTimeout()).isEqualTo(1234);
+		assertEquals(1234, requestConfig.getConnectTimeout());
 	}
 
 	@Test
@@ -99,15 +111,15 @@ public class HttpComponentsClientHttpRequestFactoryTests extends AbstractHttpReq
 		CloseableHttpClient client = mock(CloseableHttpClient.class,
 				withSettings().extraInterfaces(Configurable.class));
 		Configurable configurable = (Configurable) client;
-		given(configurable.getConfig()).willReturn(defaultConfig);
+		when(configurable.getConfig()).thenReturn(defaultConfig);
 
 		HttpComponentsClientHttpRequestFactory hrf = new HttpComponentsClientHttpRequestFactory(client);
 		hrf.setConnectTimeout(5000);
 
 		RequestConfig requestConfig = retrieveRequestConfig(hrf);
-		assertThat(requestConfig.getConnectTimeout()).isEqualTo(5000);
-		assertThat(requestConfig.getConnectionRequestTimeout()).isEqualTo(6789);
-		assertThat(requestConfig.getSocketTimeout()).isEqualTo(-1);
+		assertEquals(5000, requestConfig.getConnectTimeout());
+		assertEquals(6789, requestConfig.getConnectionRequestTimeout());
+		assertEquals(-1, requestConfig.getSocketTimeout());
 	}
 
 	@Test
@@ -117,7 +129,7 @@ public class HttpComponentsClientHttpRequestFactoryTests extends AbstractHttpReq
 		final CloseableHttpClient client = mock(CloseableHttpClient.class,
 				withSettings().extraInterfaces(Configurable.class));
 		Configurable configurable = (Configurable) client;
-		given(configurable.getConfig()).willReturn(defaultConfig);
+		when(configurable.getConfig()).thenReturn(defaultConfig);
 
 		HttpComponentsClientHttpRequestFactory hrf = new HttpComponentsClientHttpRequestFactory() {
 			@Override
@@ -128,19 +140,19 @@ public class HttpComponentsClientHttpRequestFactoryTests extends AbstractHttpReq
 		hrf.setReadTimeout(5000);
 
 		RequestConfig requestConfig = retrieveRequestConfig(hrf);
-		assertThat(requestConfig.getConnectTimeout()).isEqualTo(-1);
-		assertThat(requestConfig.getConnectionRequestTimeout()).isEqualTo(-1);
-		assertThat(requestConfig.getSocketTimeout()).isEqualTo(5000);
+		assertEquals(-1, requestConfig.getConnectTimeout());
+		assertEquals(-1, requestConfig.getConnectionRequestTimeout());
+		assertEquals(5000, requestConfig.getSocketTimeout());
 
-		// Update the Http client so that it returns an updated config
+		// Update the Http client so that it returns an updated  config
 		RequestConfig updatedDefaultConfig = RequestConfig.custom()
 				.setConnectTimeout(1234).build();
-		given(configurable.getConfig()).willReturn(updatedDefaultConfig);
+		when(configurable.getConfig()).thenReturn(updatedDefaultConfig);
 		hrf.setReadTimeout(7000);
 		RequestConfig requestConfig2 = retrieveRequestConfig(hrf);
-		assertThat(requestConfig2.getConnectTimeout()).isEqualTo(1234);
-		assertThat(requestConfig2.getConnectionRequestTimeout()).isEqualTo(-1);
-		assertThat(requestConfig2.getSocketTimeout()).isEqualTo(7000);
+		assertEquals(1234, requestConfig2.getConnectTimeout());
+		assertEquals(-1, requestConfig2.getConnectionRequestTimeout());
+		assertEquals(7000, requestConfig2.getSocketTimeout());
 	}
 
 	private RequestConfig retrieveRequestConfig(HttpComponentsClientHttpRequestFactory factory) throws Exception {
@@ -152,7 +164,7 @@ public class HttpComponentsClientHttpRequestFactoryTests extends AbstractHttpReq
 
 	@Test
 	public void createHttpUriRequest() throws Exception {
-		URI uri = new URI("https://example.com");
+		URI uri = new URI("http://example.com");
 		testRequestBodyAllowed(uri, HttpMethod.GET, false);
 		testRequestBodyAllowed(uri, HttpMethod.HEAD, false);
 		testRequestBodyAllowed(uri, HttpMethod.OPTIONS, false);
@@ -166,8 +178,7 @@ public class HttpComponentsClientHttpRequestFactoryTests extends AbstractHttpReq
 
 	private void testRequestBodyAllowed(URI uri, HttpMethod method, boolean allowed) {
 		HttpUriRequest request = ((HttpComponentsClientHttpRequestFactory) this.factory).createHttpUriRequest(method, uri);
-		Object actual = request instanceof HttpEntityEnclosingRequest;
-		assertThat(actual).isEqualTo(allowed);
+		assertEquals(allowed, request instanceof HttpEntityEnclosingRequest);
 	}
 
 }

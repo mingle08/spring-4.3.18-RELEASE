@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,8 @@
 
 package org.springframework.scripting.support;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.beans.FatalBeanException;
 import org.springframework.beans.factory.BeanFactory;
@@ -24,24 +25,21 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.core.testfixture.EnabledForTestGroups;
 import org.springframework.scripting.Messenger;
 import org.springframework.scripting.ScriptCompilationException;
 import org.springframework.scripting.groovy.GroovyScriptFactory;
+import org.springframework.tests.Assume;
+import org.springframework.tests.TestGroup;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static org.mockito.Mockito.mock;
-import static org.springframework.core.testfixture.TestGroup.LONG_RUNNING;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Rick Evans
  * @author Juergen Hoeller
  * @author Chris Beams
  */
-@EnabledForTestGroups(LONG_RUNNING)
-class ScriptFactoryPostProcessorTests {
+public class ScriptFactoryPostProcessorTests {
 
 	private static final String MESSAGE_TEXT = "Bingo";
 
@@ -77,20 +75,28 @@ class ScriptFactoryPostProcessorTests {
 			"  }\n" +
 			"}";
 
-
-	@Test
-	void testDoesNothingWhenPostProcessingNonScriptFactoryTypeBeforeInstantiation() {
-		assertThat(new ScriptFactoryPostProcessor().postProcessBeforeInstantiation(getClass(), "a.bean")).isNull();
+	@Before
+	public void setUp() {
+		Assume.group(TestGroup.PERFORMANCE);
 	}
 
 	@Test
-	void testThrowsExceptionIfGivenNonAbstractBeanFactoryImplementation() {
-		assertThatIllegalStateException().isThrownBy(() ->
-				new ScriptFactoryPostProcessor().setBeanFactory(mock(BeanFactory.class)));
+	public void testDoesNothingWhenPostProcessingNonScriptFactoryTypeBeforeInstantiation() throws Exception {
+		assertNull(new ScriptFactoryPostProcessor().postProcessBeforeInstantiation(getClass(), "a.bean"));
 	}
 
 	@Test
-	void testChangeScriptWithRefreshableBeanFunctionality() throws Exception {
+	public void testThrowsExceptionIfGivenNonAbstractBeanFactoryImplementation() throws Exception {
+		try {
+			new ScriptFactoryPostProcessor().setBeanFactory(mock(BeanFactory.class));
+			fail("Must have thrown exception by this point.");
+		}
+		catch (IllegalStateException expected) {
+		}
+	}
+
+	@Test
+	public void testChangeScriptWithRefreshableBeanFunctionality() throws Exception {
 		BeanDefinition processorBeanDefinition = createScriptFactoryPostProcessor(true);
 		BeanDefinition scriptedBeanDefinition = createScriptedGroovyBean();
 
@@ -100,18 +106,18 @@ class ScriptFactoryPostProcessorTests {
 		ctx.refresh();
 
 		Messenger messenger = (Messenger) ctx.getBean(MESSENGER_BEAN_NAME);
-		assertThat(messenger.getMessage()).isEqualTo(MESSAGE_TEXT);
+		assertEquals(MESSAGE_TEXT, messenger.getMessage());
 		// cool; now let's change the script and check the refresh behaviour...
 		pauseToLetRefreshDelayKickIn(DEFAULT_SECONDS_TO_PAUSE);
 		StaticScriptSource source = getScriptSource(ctx);
 		source.setScript(CHANGED_SCRIPT);
 		Messenger refreshedMessenger = (Messenger) ctx.getBean(MESSENGER_BEAN_NAME);
 		// the updated script surrounds the message in quotes before returning...
-		assertThat(refreshedMessenger.getMessage()).isEqualTo(EXPECTED_CHANGED_MESSAGE_TEXT);
+		assertEquals(EXPECTED_CHANGED_MESSAGE_TEXT, refreshedMessenger.getMessage());
 	}
 
 	@Test
-	void testChangeScriptWithNoRefreshableBeanFunctionality() throws Exception {
+	public void testChangeScriptWithNoRefreshableBeanFunctionality() throws Exception {
 		BeanDefinition processorBeanDefinition = createScriptFactoryPostProcessor(false);
 		BeanDefinition scriptedBeanDefinition = createScriptedGroovyBean();
 
@@ -121,17 +127,18 @@ class ScriptFactoryPostProcessorTests {
 		ctx.refresh();
 
 		Messenger messenger = (Messenger) ctx.getBean(MESSENGER_BEAN_NAME);
-		assertThat(messenger.getMessage()).isEqualTo(MESSAGE_TEXT);
+		assertEquals(MESSAGE_TEXT, messenger.getMessage());
 		// cool; now let's change the script and check the refresh behaviour...
 		pauseToLetRefreshDelayKickIn(DEFAULT_SECONDS_TO_PAUSE);
 		StaticScriptSource source = getScriptSource(ctx);
 		source.setScript(CHANGED_SCRIPT);
 		Messenger refreshedMessenger = (Messenger) ctx.getBean(MESSENGER_BEAN_NAME);
-		assertThat(refreshedMessenger.getMessage()).as("Script seems to have been refreshed (must not be as no refreshCheckDelay set on ScriptFactoryPostProcessor)").isEqualTo(MESSAGE_TEXT);
+		assertEquals("Script seems to have been refreshed (must not be as no refreshCheckDelay set on ScriptFactoryPostProcessor)",
+				MESSAGE_TEXT, refreshedMessenger.getMessage());
 	}
 
 	@Test
-	void testRefreshedScriptReferencePropagatesToCollaborators() throws Exception {
+	public void testRefreshedScriptReferencePropagatesToCollaborators() throws Exception {
 		BeanDefinition processorBeanDefinition = createScriptFactoryPostProcessor(true);
 		BeanDefinition scriptedBeanDefinition = createScriptedGroovyBean();
 		BeanDefinitionBuilder collaboratorBuilder = BeanDefinitionBuilder.rootBeanDefinition(DefaultMessengerService.class);
@@ -145,22 +152,21 @@ class ScriptFactoryPostProcessorTests {
 		ctx.refresh();
 
 		Messenger messenger = (Messenger) ctx.getBean(MESSENGER_BEAN_NAME);
-		assertThat(messenger.getMessage()).isEqualTo(MESSAGE_TEXT);
+		assertEquals(MESSAGE_TEXT, messenger.getMessage());
 		// cool; now let's change the script and check the refresh behaviour...
 		pauseToLetRefreshDelayKickIn(DEFAULT_SECONDS_TO_PAUSE);
 		StaticScriptSource source = getScriptSource(ctx);
 		source.setScript(CHANGED_SCRIPT);
 		Messenger refreshedMessenger = (Messenger) ctx.getBean(MESSENGER_BEAN_NAME);
 		// the updated script surrounds the message in quotes before returning...
-		assertThat(refreshedMessenger.getMessage()).isEqualTo(EXPECTED_CHANGED_MESSAGE_TEXT);
+		assertEquals(EXPECTED_CHANGED_MESSAGE_TEXT, refreshedMessenger.getMessage());
 		// ok, is this change reflected in the reference that the collaborator has?
 		DefaultMessengerService collaborator = (DefaultMessengerService) ctx.getBean(collaboratorBeanName);
-		assertThat(collaborator.getMessage()).isEqualTo(EXPECTED_CHANGED_MESSAGE_TEXT);
+		assertEquals(EXPECTED_CHANGED_MESSAGE_TEXT, collaborator.getMessage());
 	}
 
 	@Test
-	@SuppressWarnings("resource")
-	void testReferencesAcrossAContainerHierarchy() throws Exception {
+	public void testReferencesAcrossAContainerHierarchy() throws Exception {
 		GenericApplicationContext businessContext = new GenericApplicationContext();
 		businessContext.registerBeanDefinition("messenger", BeanDefinitionBuilder.rootBeanDefinition(StubMessenger.class).getBeanDefinition());
 		businessContext.refresh();
@@ -176,14 +182,13 @@ class ScriptFactoryPostProcessorTests {
 	}
 
 	@Test
-	@SuppressWarnings("resource")
-	void testScriptHavingAReferenceToAnotherBean() throws Exception {
+	public void testScriptHavingAReferenceToAnotherBean() throws Exception {
 		// just tests that the (singleton) script-backed bean is able to be instantiated with references to its collaborators
 		new ClassPathXmlApplicationContext("org/springframework/scripting/support/groovyReferences.xml");
 	}
 
 	@Test
-	void testForRefreshedScriptHavingErrorPickedUpOnFirstCall() throws Exception {
+	public void testForRefreshedScriptHavingErrorPickedUpOnFirstCall() throws Exception {
 		BeanDefinition processorBeanDefinition = createScriptFactoryPostProcessor(true);
 		BeanDefinition scriptedBeanDefinition = createScriptedGroovyBean();
 		BeanDefinitionBuilder collaboratorBuilder = BeanDefinitionBuilder.rootBeanDefinition(DefaultMessengerService.class);
@@ -197,20 +202,24 @@ class ScriptFactoryPostProcessorTests {
 		ctx.refresh();
 
 		Messenger messenger = (Messenger) ctx.getBean(MESSENGER_BEAN_NAME);
-		assertThat(messenger.getMessage()).isEqualTo(MESSAGE_TEXT);
+		assertEquals(MESSAGE_TEXT, messenger.getMessage());
 		// cool; now let's change the script and check the refresh behaviour...
 		pauseToLetRefreshDelayKickIn(DEFAULT_SECONDS_TO_PAUSE);
 		StaticScriptSource source = getScriptSource(ctx);
 		// needs The Sundays compiler; must NOT throw any exception here...
 		source.setScript("I keep hoping you are the same as me, and I'll send you letters and come to your house for tea");
 		Messenger refreshedMessenger = (Messenger) ctx.getBean(MESSENGER_BEAN_NAME);
-		assertThatExceptionOfType(FatalBeanException.class).isThrownBy(refreshedMessenger::getMessage)
-			.matches(ex -> ex.contains(ScriptCompilationException.class));
+		try {
+			refreshedMessenger.getMessage();
+			fail("Must have thrown an Exception (invalid script)");
+		}
+		catch (FatalBeanException expected) {
+			assertTrue(expected.contains(ScriptCompilationException.class));
+		}
 	}
 
 	@Test
-	@SuppressWarnings("resource")
-	void testPrototypeScriptedBean() throws Exception {
+	public void testPrototypeScriptedBean() throws Exception {
 		GenericApplicationContext ctx = new GenericApplicationContext();
 		ctx.registerBeanDefinition("messenger", BeanDefinitionBuilder.rootBeanDefinition(StubMessenger.class).getBeanDefinition());
 
@@ -226,7 +235,7 @@ class ScriptFactoryPostProcessorTests {
 
 		Messenger messenger1 = (Messenger) ctx.getBean(BEAN_WITH_DEPENDENCY_NAME);
 		Messenger messenger2 = (Messenger) ctx.getBean(BEAN_WITH_DEPENDENCY_NAME);
-		assertThat(messenger2).isNotSameAs(messenger1);
+		assertNotSame(messenger1, messenger2);
 	}
 
 	private static StaticScriptSource getScriptSource(GenericApplicationContext ctx) throws Exception {
@@ -238,7 +247,7 @@ class ScriptFactoryPostProcessorTests {
 	private static BeanDefinition createScriptFactoryPostProcessor(boolean isRefreshable) {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.rootBeanDefinition(ScriptFactoryPostProcessor.class);
 		if (isRefreshable) {
-			builder.addPropertyValue("defaultRefreshCheckDelay", 1L);
+			builder.addPropertyValue("defaultRefreshCheckDelay", new Long(1));
 		}
 		return builder.getBeanDefinition();
 	}

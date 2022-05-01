@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,24 +17,31 @@
 package org.springframework.test.web.servlet.htmlunit.webdriver;
 
 import java.io.IOException;
+import javax.servlet.http.HttpServletRequest;
 
 import com.gargoylesoftware.htmlunit.util.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.openqa.selenium.htmlunit.HtmlUnitDriver;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.test.context.junit.jupiter.web.SpringJUnitWebConfig;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.tests.Assume;
+import org.springframework.tests.TestGroup;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
 
 /**
  * Integration tests for {@link MockMvcHtmlUnitDriverBuilder}.
@@ -43,72 +50,86 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  * @author Sam Brannen
  * @since 4.2
  */
-@SpringJUnitWebConfig
-class MockMvcHtmlUnitDriverBuilderTests {
+@RunWith(SpringRunner.class)
+@ContextConfiguration
+@WebAppConfiguration
+public class MockMvcHtmlUnitDriverBuilderTests {
 
 	private static final String EXPECTED_BODY = "MockMvcHtmlUnitDriverBuilderTests mvc";
+
+	@Autowired
+	private WebApplicationContext wac;
 
 	private MockMvc mockMvc;
 
 	private HtmlUnitDriver driver;
 
-	MockMvcHtmlUnitDriverBuilderTests(WebApplicationContext wac) {
-		this.mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();
+
+	@Before
+	public void setup() {
+		this.mockMvc = MockMvcBuilders.webAppContextSetup(this.wac).build();
 	}
 
 
-	@Test
-	void webAppContextSetupNull() {
-		assertThatIllegalArgumentException().isThrownBy(() -> MockMvcHtmlUnitDriverBuilder.webAppContextSetup(null));
+	@Test(expected = IllegalArgumentException.class)
+	public void webAppContextSetupNull() {
+		MockMvcHtmlUnitDriverBuilder.webAppContextSetup(null);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void mockMvcSetupNull() {
+		MockMvcHtmlUnitDriverBuilder.mockMvcSetup(null);
 	}
 
 	@Test
-	void mockMvcSetupNull() {
-		assertThatIllegalArgumentException().isThrownBy(() -> MockMvcHtmlUnitDriverBuilder.mockMvcSetup(null));
-	}
-
-	@Test
-	void mockMvcSetupWithCustomDriverDelegate() throws Exception {
+	public void mockMvcSetupWithCustomDriverDelegate() throws Exception {
 		WebConnectionHtmlUnitDriver otherDriver = new WebConnectionHtmlUnitDriver();
 		this.driver = MockMvcHtmlUnitDriverBuilder.mockMvcSetup(this.mockMvc).withDelegate(otherDriver).build();
 
 		assertMockMvcUsed("http://localhost/test");
+		Assume.group(TestGroup.PERFORMANCE, () -> assertMockMvcNotUsed("http://example.com/"));
 	}
 
 	@Test
-	void mockMvcSetupWithDefaultDriverDelegate() throws Exception {
+	public void mockMvcSetupWithDefaultDriverDelegate() throws Exception {
 		this.driver = MockMvcHtmlUnitDriverBuilder.mockMvcSetup(this.mockMvc).build();
 
 		assertMockMvcUsed("http://localhost/test");
+		Assume.group(TestGroup.PERFORMANCE, () -> assertMockMvcNotUsed("http://example.com/"));
 	}
 
 	@Test
-	void javaScriptEnabledByDefault() {
+	public void javaScriptEnabledByDefault() {
 		this.driver = MockMvcHtmlUnitDriverBuilder.mockMvcSetup(this.mockMvc).build();
-		assertThat(this.driver.isJavascriptEnabled()).isTrue();
+		assertTrue(this.driver.isJavascriptEnabled());
 	}
 
 	@Test
-	void javaScriptDisabled() {
+	public void javaScriptDisabled() {
 		this.driver = MockMvcHtmlUnitDriverBuilder.mockMvcSetup(this.mockMvc).javascriptEnabled(false).build();
-		assertThat(this.driver.isJavascriptEnabled()).isFalse();
+		assertFalse(this.driver.isJavascriptEnabled());
 	}
 
 	@Test // SPR-14066
-	void cookieManagerShared() throws Exception {
+	public void cookieManagerShared() throws Exception {
 		WebConnectionHtmlUnitDriver otherDriver = new WebConnectionHtmlUnitDriver();
 		this.mockMvc = MockMvcBuilders.standaloneSetup(new CookieController()).build();
-		this.driver = MockMvcHtmlUnitDriverBuilder.mockMvcSetup(this.mockMvc).withDelegate(otherDriver).build();
+		this.driver = MockMvcHtmlUnitDriverBuilder.mockMvcSetup(this.mockMvc)
+				.withDelegate(otherDriver).build();
 
-		assertThat(get("http://localhost/")).isEqualTo("");
+		assertThat(get("http://localhost/"), equalTo(""));
 		Cookie cookie = new Cookie("localhost", "cookie", "cookieManagerShared");
 		otherDriver.getWebClient().getCookieManager().addCookie(cookie);
-		assertThat(get("http://localhost/")).isEqualTo("cookieManagerShared");
+		assertThat(get("http://localhost/"), equalTo("cookieManagerShared"));
 	}
 
 
 	private void assertMockMvcUsed(String url) throws Exception {
-		assertThat(get(url)).contains(EXPECTED_BODY);
+		assertThat(get(url), containsString(EXPECTED_BODY));
+	}
+
+	private void assertMockMvcNotUsed(String url) throws Exception {
+		assertThat(get(url), not(containsString(EXPECTED_BODY)));
 	}
 
 	private String get(String url) throws IOException {
@@ -124,8 +145,8 @@ class MockMvcHtmlUnitDriverBuilderTests {
 		@RestController
 		static class ContextPathController {
 
-			@RequestMapping("/test")
-			String contextPath(HttpServletRequest request) {
+			@RequestMapping
+			public String contextPath(HttpServletRequest request) {
 				return EXPECTED_BODY;
 			}
 		}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,7 +23,6 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.task.TaskExecutor;
-import org.springframework.lang.Nullable;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.StringUtils;
 
@@ -38,22 +37,16 @@ import org.springframework.util.StringUtils;
 public class TaskExecutorFactoryBean implements
 		FactoryBean<TaskExecutor>, BeanNameAware, InitializingBean, DisposableBean {
 
-	@Nullable
 	private String poolSize;
 
-	@Nullable
 	private Integer queueCapacity;
 
-	@Nullable
 	private RejectedExecutionHandler rejectedExecutionHandler;
 
-	@Nullable
 	private Integer keepAliveSeconds;
 
-	@Nullable
 	private String beanName;
 
-	@Nullable
 	private ThreadPoolTaskExecutor target;
 
 
@@ -81,33 +74,32 @@ public class TaskExecutorFactoryBean implements
 
 	@Override
 	public void afterPropertiesSet() {
-		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-		determinePoolSizeRange(executor);
+		this.target = new ThreadPoolTaskExecutor();
+		determinePoolSizeRange();
 		if (this.queueCapacity != null) {
-			executor.setQueueCapacity(this.queueCapacity);
+			this.target.setQueueCapacity(this.queueCapacity);
 		}
 		if (this.keepAliveSeconds != null) {
-			executor.setKeepAliveSeconds(this.keepAliveSeconds);
+			this.target.setKeepAliveSeconds(this.keepAliveSeconds);
 		}
 		if (this.rejectedExecutionHandler != null) {
-			executor.setRejectedExecutionHandler(this.rejectedExecutionHandler);
+			this.target.setRejectedExecutionHandler(this.rejectedExecutionHandler);
 		}
 		if (this.beanName != null) {
-			executor.setThreadNamePrefix(this.beanName + "-");
+			this.target.setThreadNamePrefix(this.beanName + "-");
 		}
-		executor.afterPropertiesSet();
-		this.target = executor;
+		this.target.afterPropertiesSet();
 	}
 
-	private void determinePoolSizeRange(ThreadPoolTaskExecutor executor) {
+	private void determinePoolSizeRange() {
 		if (StringUtils.hasText(this.poolSize)) {
 			try {
 				int corePoolSize;
 				int maxPoolSize;
 				int separatorIndex = this.poolSize.indexOf('-');
 				if (separatorIndex != -1) {
-					corePoolSize = Integer.parseInt(this.poolSize, 0, separatorIndex, 10);
-					maxPoolSize = Integer.parseInt(this.poolSize, separatorIndex + 1, this.poolSize.length(), 10);
+					corePoolSize = Integer.valueOf(this.poolSize.substring(0, separatorIndex));
+					maxPoolSize = Integer.valueOf(this.poolSize.substring(separatorIndex + 1, this.poolSize.length()));
 					if (corePoolSize > maxPoolSize) {
 						throw new IllegalArgumentException(
 								"Lower bound of pool-size range must not exceed the upper bound");
@@ -117,7 +109,7 @@ public class TaskExecutorFactoryBean implements
 						if (corePoolSize == 0) {
 							// Actually set 'corePoolSize' to the upper bound of the range
 							// but allow core threads to timeout...
-							executor.setAllowCoreThreadTimeOut(true);
+							this.target.setAllowCoreThreadTimeOut(true);
 							corePoolSize = maxPoolSize;
 						}
 						else {
@@ -128,12 +120,12 @@ public class TaskExecutorFactoryBean implements
 					}
 				}
 				else {
-					int value = Integer.parseInt(this.poolSize);
+					Integer value = Integer.valueOf(this.poolSize);
 					corePoolSize = value;
 					maxPoolSize = value;
 				}
-				executor.setCorePoolSize(corePoolSize);
-				executor.setMaxPoolSize(maxPoolSize);
+				this.target.setCorePoolSize(corePoolSize);
+				this.target.setMaxPoolSize(maxPoolSize);
 			}
 			catch (NumberFormatException ex) {
 				throw new IllegalArgumentException("Invalid pool-size value [" + this.poolSize + "]: only single " +
@@ -144,7 +136,6 @@ public class TaskExecutorFactoryBean implements
 
 
 	@Override
-	@Nullable
 	public TaskExecutor getObject() {
 		return this.target;
 	}
@@ -162,9 +153,7 @@ public class TaskExecutorFactoryBean implements
 
 	@Override
 	public void destroy() {
-		if (this.target != null) {
-			this.target.destroy();
-		}
+		this.target.destroy();
 	}
 
 }

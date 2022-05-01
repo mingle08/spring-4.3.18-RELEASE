@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,18 +16,21 @@
 
 package org.springframework.context.annotation;
 
-import example.scannable.FooService;
-import example.scannable.ScopedProxyTestBean;
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.parsing.BeanDefinitionParsingException;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.springframework.context.testfixture.SimpleMapScope;
-import org.springframework.core.testfixture.io.SerializationTestUtils;
+import org.springframework.tests.context.SimpleMapScope;
+import org.springframework.util.SerializationTestUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import example.scannable.FooService;
+import example.scannable.ScopedProxyTestBean;
+
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
 
 /**
  * @author Mark Fisher
@@ -35,6 +38,10 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  * @author Sam Brannen
  */
 public class ComponentScanParserScopedProxyTests {
+
+	@Rule
+	public final ExpectedException exception = ExpectedException.none();
+
 
 	@Test
 	public void testDefaultScopedProxy() {
@@ -44,7 +51,7 @@ public class ComponentScanParserScopedProxyTests {
 
 		ScopedProxyTestBean bean = (ScopedProxyTestBean) context.getBean("scopedProxyTestBean");
 		// should not be a proxy
-		assertThat(AopUtils.isAopProxy(bean)).isFalse();
+		assertFalse(AopUtils.isAopProxy(bean));
 		context.close();
 	}
 
@@ -56,7 +63,7 @@ public class ComponentScanParserScopedProxyTests {
 
 		ScopedProxyTestBean bean = (ScopedProxyTestBean) context.getBean("scopedProxyTestBean");
 		// should not be a proxy
-		assertThat(AopUtils.isAopProxy(bean)).isFalse();
+		assertFalse(AopUtils.isAopProxy(bean));
 		context.close();
 	}
 
@@ -69,12 +76,12 @@ public class ComponentScanParserScopedProxyTests {
 		// should cast to the interface
 		FooService bean = (FooService) context.getBean("scopedProxyTestBean");
 		// should be dynamic proxy
-		assertThat(AopUtils.isJdkDynamicProxy(bean)).isTrue();
+		assertTrue(AopUtils.isJdkDynamicProxy(bean));
 		// test serializability
-		assertThat(bean.foo(1)).isEqualTo("bar");
-		FooService deserialized = SerializationTestUtils.serializeAndDeserialize(bean);
-		assertThat(deserialized).isNotNull();
-		assertThat(deserialized.foo(1)).isEqualTo("bar");
+		assertEquals("bar", bean.foo(1));
+		FooService deserialized = (FooService) SerializationTestUtils.serializeAndDeserialize(bean);
+		assertNotNull(deserialized);
+		assertEquals("bar", deserialized.foo(1));
 		context.close();
 	}
 
@@ -86,22 +93,23 @@ public class ComponentScanParserScopedProxyTests {
 
 		ScopedProxyTestBean bean = (ScopedProxyTestBean) context.getBean("scopedProxyTestBean");
 		// should be a class-based proxy
-		assertThat(AopUtils.isCglibProxy(bean)).isTrue();
+		assertTrue(AopUtils.isCglibProxy(bean));
 		// test serializability
-		assertThat(bean.foo(1)).isEqualTo("bar");
-		ScopedProxyTestBean deserialized = SerializationTestUtils.serializeAndDeserialize(bean);
-		assertThat(deserialized).isNotNull();
-		assertThat(deserialized.foo(1)).isEqualTo("bar");
+		assertEquals("bar", bean.foo(1));
+		ScopedProxyTestBean deserialized = (ScopedProxyTestBean) SerializationTestUtils.serializeAndDeserialize(bean);
+		assertNotNull(deserialized);
+		assertEquals("bar", deserialized.foo(1));
 		context.close();
 	}
 
 	@Test
 	@SuppressWarnings("resource")
 	public void testInvalidConfigScopedProxy() throws Exception {
-		assertThatExceptionOfType(BeanDefinitionParsingException.class).isThrownBy(() ->
-				new ClassPathXmlApplicationContext("org/springframework/context/annotation/scopedProxyInvalidConfigTests.xml"))
-			.withMessageContaining("Cannot define both 'scope-resolver' and 'scoped-proxy' on <component-scan> tag")
-			.withMessageContaining("Offending resource: class path resource [org/springframework/context/annotation/scopedProxyInvalidConfigTests.xml]");
+		exception.expect(BeanDefinitionParsingException.class);
+		exception.expectMessage(containsString("Cannot define both 'scope-resolver' and 'scoped-proxy' on <component-scan> tag"));
+		exception.expectMessage(containsString("Offending resource: class path resource [org/springframework/context/annotation/scopedProxyInvalidConfigTests.xml]"));
+
+		new ClassPathXmlApplicationContext("org/springframework/context/annotation/scopedProxyInvalidConfigTests.xml");
 	}
 
 }

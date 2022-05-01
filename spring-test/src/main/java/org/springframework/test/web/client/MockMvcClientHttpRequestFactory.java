@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +16,14 @@
 
 package org.springframework.test.web.client;
 
+import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.List;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpResponse;
@@ -31,10 +31,11 @@ import org.springframework.mock.http.client.MockClientHttpRequest;
 import org.springframework.mock.http.client.MockClientHttpResponse;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.util.Assert;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
-
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 /**
  * A {@link ClientHttpRequestFactory} for requests executed via {@link MockMvc}.
@@ -43,6 +44,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  * @since 3.2
  */
 public class MockMvcClientHttpRequestFactory implements ClientHttpRequestFactory {
+
+	private static final Charset UTF8_CHARSET = Charset.forName("UTF-8");
 
 	private final MockMvc mockMvc;
 
@@ -54,34 +57,29 @@ public class MockMvcClientHttpRequestFactory implements ClientHttpRequestFactory
 
 
 	@Override
-	public ClientHttpRequest createRequest(URI uri, HttpMethod httpMethod) {
+	public ClientHttpRequest createRequest(final URI uri, final HttpMethod httpMethod) throws IOException {
 		return new MockClientHttpRequest(httpMethod, uri) {
 			@Override
-			public ClientHttpResponse executeInternal() {
-				return getClientHttpResponse(httpMethod, uri, getHeaders(), getBodyAsBytes());
+			public ClientHttpResponse executeInternal() throws IOException {
+				try {
+					MockHttpServletRequestBuilder requestBuilder = request(httpMethod, uri);
+					requestBuilder.content(getBodyAsBytes());
+					requestBuilder.headers(getHeaders());
+					MvcResult mvcResult = MockMvcClientHttpRequestFactory.this.mockMvc.perform(requestBuilder).andReturn();
+					MockHttpServletResponse servletResponse = mvcResult.getResponse();
+					HttpStatus status = HttpStatus.valueOf(servletResponse.getStatus());
+					byte[] body = servletResponse.getContentAsByteArray();
+					HttpHeaders headers = getResponseHeaders(servletResponse);
+					MockClientHttpResponse clientResponse = new MockClientHttpResponse(body, status);
+					clientResponse.getHeaders().putAll(headers);
+					return clientResponse;
+				}
+				catch (Exception ex) {
+					byte[] body = ex.toString().getBytes(UTF8_CHARSET);
+					return new MockClientHttpResponse(body, HttpStatus.INTERNAL_SERVER_ERROR);
+				}
 			}
 		};
-	}
-
-	private ClientHttpResponse getClientHttpResponse(
-			HttpMethod httpMethod, URI uri, HttpHeaders requestHeaders, byte[] requestBody) {
-
-		try {
-			MockHttpServletResponse servletResponse = this.mockMvc
-					.perform(request(httpMethod, uri).content(requestBody).headers(requestHeaders))
-					.andReturn()
-					.getResponse();
-
-			HttpStatusCode status = HttpStatusCode.valueOf(servletResponse.getStatus());
-			byte[] body = servletResponse.getContentAsByteArray();
-			MockClientHttpResponse clientResponse = new MockClientHttpResponse(body, status);
-			clientResponse.getHeaders().putAll(getResponseHeaders(servletResponse));
-			return clientResponse;
-		}
-		catch (Exception ex) {
-			byte[] body = ex.toString().getBytes(StandardCharsets.UTF_8);
-			return new MockClientHttpResponse(body, HttpStatus.INTERNAL_SERVER_ERROR);
-		}
 	}
 
 	private HttpHeaders getResponseHeaders(MockHttpServletResponse response) {

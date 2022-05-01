@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,38 +16,46 @@
 
 package org.springframework.aop.config;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.BeanDefinitionStoreException;
 import org.springframework.beans.factory.parsing.BeanDefinitionParsingException;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.springframework.core.testfixture.io.ResourceTestUtils.qualifiedResource;
+import static org.junit.Assert.*;
+import static org.springframework.tests.TestResourceUtils.*;
 
 /**
  * @author Mark Fisher
  * @author Chris Beams
  */
-class AopNamespaceHandlerPointcutErrorTests {
+public final class AopNamespaceHandlerPointcutErrorTests {
 
 	@Test
-	void duplicatePointcutConfig() {
-		DefaultListableBeanFactory bf = new DefaultListableBeanFactory();
-		assertThatExceptionOfType(BeanDefinitionStoreException.class).isThrownBy(() ->
-				new XmlBeanDefinitionReader(bf).loadBeanDefinitions(
-						qualifiedResource(getClass(), "pointcutDuplication.xml")))
-			.satisfies(ex -> ex.contains(BeanDefinitionParsingException.class));
+	public void testDuplicatePointcutConfig() {
+		try {
+			DefaultListableBeanFactory bf = new DefaultListableBeanFactory();
+			new XmlBeanDefinitionReader(bf).loadBeanDefinitions(
+					qualifiedResource(getClass(), "pointcutDuplication.xml"));
+			fail("parsing should have caused a BeanDefinitionStoreException");
+		}
+		catch (BeanDefinitionStoreException ex) {
+			assertTrue(ex.contains(BeanDefinitionParsingException.class));
+		}
 	}
 
 	@Test
-	void missingPointcutConfig() {
-		DefaultListableBeanFactory bf = new DefaultListableBeanFactory();
-		assertThatExceptionOfType(BeanDefinitionStoreException.class).isThrownBy(() ->
-				new XmlBeanDefinitionReader(bf).loadBeanDefinitions(
-						qualifiedResource(getClass(), "pointcutMissing.xml")))
-			.satisfies(ex -> ex.contains(BeanDefinitionParsingException.class));
+	public void testMissingPointcutConfig() {
+		try {
+			DefaultListableBeanFactory bf = new DefaultListableBeanFactory();
+			new XmlBeanDefinitionReader(bf).loadBeanDefinitions(
+					qualifiedResource(getClass(), "pointcutMissing.xml"));
+			fail("parsing should have caused a BeanDefinitionStoreException");
+		}
+		catch (BeanDefinitionStoreException ex) {
+			assertTrue(ex.contains(BeanDefinitionParsingException.class));
+		}
 	}
 
 }

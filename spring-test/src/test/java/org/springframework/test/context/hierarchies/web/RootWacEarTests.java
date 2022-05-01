@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,8 @@
 
 package org.springframework.test.context.hierarchies.web;
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -28,7 +28,7 @@ import org.springframework.test.context.ContextHierarchy;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.web.context.WebApplicationContext;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Sam Brannen
@@ -36,13 +36,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @WebAppConfiguration
 @ContextHierarchy(@ContextConfiguration)
-class RootWacEarTests extends EarTests {
+public class RootWacEarTests extends EarTests {
 
 	@Configuration
 	static class RootWacConfig {
 
 		@Bean
-		String root() {
+		public String root() {
 			return "root";
 		}
 	}
@@ -60,21 +60,20 @@ class RootWacEarTests extends EarTests {
 	private String root;
 
 
-	@Disabled("Superseded by verifyRootWacConfig()")
+	@Ignore("Superseded by verifyRootWacConfig()")
 	@Test
 	@Override
-	void verifyEarConfig() {
+	public void verifyEarConfig() {
 		/* no-op */
 	}
 
 	@Test
-	void verifyRootWacConfig() {
+	public void verifyRootWacConfig() {
 		ApplicationContext parent = wac.getParent();
-		assertThat(parent).isNotNull();
-		boolean condition = parent instanceof WebApplicationContext;
-		assertThat(condition).isFalse();
-		assertThat(ear).isEqualTo("ear");
-		assertThat(root).isEqualTo("root");
+		assertNotNull(parent);
+		assertFalse(parent instanceof WebApplicationContext);
+		assertEquals("ear", ear);
+		assertEquals("root", root);
 	}
 
 }

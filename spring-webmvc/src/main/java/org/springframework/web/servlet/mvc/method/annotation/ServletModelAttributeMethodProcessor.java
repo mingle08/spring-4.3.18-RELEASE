@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,15 +18,12 @@ package org.springframework.web.servlet.mvc.method.annotation;
 
 import java.util.Collections;
 import java.util.Map;
-
-import jakarta.servlet.ServletRequest;
+import javax.servlet.ServletRequest;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.DataBinder;
 import org.springframework.web.bind.ServletRequestDataBinder;
@@ -94,7 +91,6 @@ public class ServletModelAttributeMethodProcessor extends ModelAttributeMethodPr
 	 * @param request the current request
 	 * @return the request value to try to convert, or {@code null} if none
 	 */
-	@Nullable
 	protected String getRequestValueForAttribute(String attributeName, NativeWebRequest request) {
 		Map<String, String> variables = getUriTemplateVariables(request);
 		String variableValue = variables.get(attributeName);
@@ -108,11 +104,11 @@ public class ServletModelAttributeMethodProcessor extends ModelAttributeMethodPr
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
 	protected final Map<String, String> getUriTemplateVariables(NativeWebRequest request) {
-		@SuppressWarnings("unchecked")
 		Map<String, String> variables = (Map<String, String>) request.getAttribute(
 				HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST);
-		return (variables != null ? variables : Collections.emptyMap());
+		return (variables != null ? variables : Collections.<String, String>emptyMap());
 	}
 
 	/**
@@ -128,7 +124,6 @@ public class ServletModelAttributeMethodProcessor extends ModelAttributeMethodPr
 	 * @return the created model attribute, or {@code null} if no suitable
 	 * conversion found
 	 */
-	@Nullable
 	protected Object createAttributeFromRequestValue(String sourceValue, String attributeName,
 			MethodParameter parameter, WebDataBinderFactory binderFactory, NativeWebRequest request)
 			throws Exception {
@@ -153,28 +148,8 @@ public class ServletModelAttributeMethodProcessor extends ModelAttributeMethodPr
 	@Override
 	protected void bindRequestParameters(WebDataBinder binder, NativeWebRequest request) {
 		ServletRequest servletRequest = request.getNativeRequest(ServletRequest.class);
-		Assert.state(servletRequest != null, "No ServletRequest");
 		ServletRequestDataBinder servletBinder = (ServletRequestDataBinder) binder;
 		servletBinder.bind(servletRequest);
-	}
-
-	@Override
-	@Nullable
-	public Object resolveConstructorArgument(String paramName, Class<?> paramType, NativeWebRequest request)
-			throws Exception {
-
-		Object value = super.resolveConstructorArgument(paramName, paramType, request);
-		if (value != null) {
-			return value;
-		}
-		ServletRequest servletRequest = request.getNativeRequest(ServletRequest.class);
-		if (servletRequest != null) {
-			String attr = HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE;
-			@SuppressWarnings("unchecked")
-			Map<String, String> uriVars = (Map<String, String>) servletRequest.getAttribute(attr);
-			return uriVars.get(paramName);
-		}
-		return null;
 	}
 
 }

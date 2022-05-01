@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,8 +23,8 @@ import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.springframework.core.GenericTypeResolver;
 import org.springframework.core.MethodParameter;
-import org.springframework.lang.Nullable;
 import org.springframework.util.ConcurrentReferenceHashMap;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
@@ -47,31 +47,27 @@ import org.springframework.util.StringUtils;
  */
 public final class Property {
 
-	private static final Map<Property, Annotation[]> annotationCache = new ConcurrentReferenceHashMap<>();
+	private static Map<Property, Annotation[]> annotationCache =
+			new ConcurrentReferenceHashMap<Property, Annotation[]>();
 
 	private final Class<?> objectType;
 
-	@Nullable
 	private final Method readMethod;
 
-	@Nullable
 	private final Method writeMethod;
 
 	private final String name;
 
 	private final MethodParameter methodParameter;
 
-	@Nullable
 	private Annotation[] annotations;
 
 
-	public Property(Class<?> objectType, @Nullable Method readMethod, @Nullable Method writeMethod) {
+	public Property(Class<?> objectType, Method readMethod, Method writeMethod) {
 		this(objectType, readMethod, writeMethod, null);
 	}
 
-	public Property(
-			Class<?> objectType, @Nullable Method readMethod, @Nullable Method writeMethod, @Nullable String name) {
-
+	public Property(Class<?> objectType, Method readMethod, Method writeMethod, String name) {
 		this.objectType = objectType;
 		this.readMethod = readMethod;
 		this.writeMethod = writeMethod;
@@ -104,7 +100,6 @@ public final class Property {
 	/**
 	 * The property getter method: e.g. {@code getFoo()}
 	 */
-	@Nullable
 	public Method getReadMethod() {
 		return this.readMethod;
 	}
@@ -112,13 +107,12 @@ public final class Property {
 	/**
 	 * The property setter method: e.g. {@code setFoo(String)}
 	 */
-	@Nullable
 	public Method getWriteMethod() {
 		return this.writeMethod;
 	}
 
 
-	// Package private
+	// package private
 
 	MethodParameter getMethodParameter() {
 		return this.methodParameter;
@@ -132,7 +126,7 @@ public final class Property {
 	}
 
 
-	// Internal helpers
+	// internal helpers
 
 	private String resolveName() {
 		if (this.readMethod != null) {
@@ -142,26 +136,20 @@ public final class Property {
 			}
 			else {
 				index = this.readMethod.getName().indexOf("is");
-				if (index != -1) {
-					index += 2;
+				if (index == -1) {
+					throw new IllegalArgumentException("Not a getter method");
 				}
-				else {
-					// Record-style plain accessor method, e.g. name()
-					index = 0;
-				}
+				index += 2;
 			}
 			return StringUtils.uncapitalize(this.readMethod.getName().substring(index));
 		}
-		else if (this.writeMethod != null) {
+		else {
 			int index = this.writeMethod.getName().indexOf("set");
 			if (index == -1) {
 				throw new IllegalArgumentException("Not a setter method");
 			}
 			index += 3;
 			return StringUtils.uncapitalize(this.writeMethod.getName().substring(index));
-		}
-		else {
-			throw new IllegalStateException("Property is neither readable nor writeable");
 		}
 	}
 
@@ -184,37 +172,42 @@ public final class Property {
 		return write;
 	}
 
-	@Nullable
 	private MethodParameter resolveReadMethodParameter() {
 		if (getReadMethod() == null) {
 			return null;
 		}
-		return new MethodParameter(getReadMethod(), -1).withContainingClass(getObjectType());
+		return resolveParameterType(new MethodParameter(getReadMethod(), -1));
 	}
 
-	@Nullable
 	private MethodParameter resolveWriteMethodParameter() {
 		if (getWriteMethod() == null) {
 			return null;
 		}
-		return new MethodParameter(getWriteMethod(), 0).withContainingClass(getObjectType());
+		return resolveParameterType(new MethodParameter(getWriteMethod(), 0));
+	}
+
+	private MethodParameter resolveParameterType(MethodParameter parameter) {
+		// needed to resolve generic property types that parameterized by sub-classes e.g. T getFoo();
+		GenericTypeResolver.resolveParameterType(parameter, getObjectType());
+		return parameter;
 	}
 
 	private Annotation[] resolveAnnotations() {
 		Annotation[] annotations = annotationCache.get(this);
 		if (annotations == null) {
-			Map<Class<? extends Annotation>, Annotation> annotationMap = new LinkedHashMap<>();
+			Map<Class<? extends Annotation>, Annotation> annotationMap =
+					new LinkedHashMap<Class<? extends Annotation>, Annotation>();
 			addAnnotationsToMap(annotationMap, getReadMethod());
 			addAnnotationsToMap(annotationMap, getWriteMethod());
 			addAnnotationsToMap(annotationMap, getField());
-			annotations = annotationMap.values().toArray(new Annotation[0]);
+			annotations = annotationMap.values().toArray(new Annotation[annotationMap.size()]);
 			annotationCache.put(this, annotations);
 		}
 		return annotations;
 	}
 
 	private void addAnnotationsToMap(
-			Map<Class<? extends Annotation>, Annotation> annotationMap, @Nullable AnnotatedElement object) {
+			Map<Class<? extends Annotation>, Annotation> annotationMap, AnnotatedElement object) {
 
 		if (object != null) {
 			for (Annotation annotation : object.getAnnotations()) {
@@ -223,49 +216,42 @@ public final class Property {
 		}
 	}
 
-	@Nullable
 	private Field getField() {
 		String name = getName();
 		if (!StringUtils.hasLength(name)) {
 			return null;
 		}
-		Field field = null;
 		Class<?> declaringClass = declaringClass();
-		if (declaringClass != null) {
-			field = ReflectionUtils.findField(declaringClass, name);
+		Field field = ReflectionUtils.findField(declaringClass, name);
+		if (field == null) {
+			// Same lenient fallback checking as in CachedIntrospectionResults...
+			field = ReflectionUtils.findField(declaringClass, StringUtils.uncapitalize(name));
 			if (field == null) {
-				// Same lenient fallback checking as in CachedIntrospectionResults...
-				field = ReflectionUtils.findField(declaringClass, StringUtils.uncapitalize(name));
-				if (field == null) {
-					field = ReflectionUtils.findField(declaringClass, StringUtils.capitalize(name));
-				}
+				field = ReflectionUtils.findField(declaringClass, StringUtils.capitalize(name));
 			}
 		}
 		return field;
 	}
 
-	@Nullable
 	private Class<?> declaringClass() {
 		if (getReadMethod() != null) {
 			return getReadMethod().getDeclaringClass();
 		}
-		else if (getWriteMethod() != null) {
-			return getWriteMethod().getDeclaringClass();
-		}
 		else {
-			return null;
+			return getWriteMethod().getDeclaringClass();
 		}
 	}
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}
-		if (!(other instanceof Property otherProperty)) {
+		if (!(other instanceof Property)) {
 			return false;
 		}
+		Property otherProperty = (Property) other;
 		return (ObjectUtils.nullSafeEquals(this.objectType, otherProperty.objectType) &&
 				ObjectUtils.nullSafeEquals(this.name, otherProperty.name) &&
 				ObjectUtils.nullSafeEquals(this.readMethod, otherProperty.readMethod) &&

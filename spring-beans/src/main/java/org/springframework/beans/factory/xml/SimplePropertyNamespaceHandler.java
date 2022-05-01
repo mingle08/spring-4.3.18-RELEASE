@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,7 +25,6 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.core.Conventions;
-import org.springframework.lang.Nullable;
 
 /**
  * Simple {@code NamespaceHandler} implementation that maps custom attributes
@@ -58,7 +57,6 @@ public class SimplePropertyNamespaceHandler implements NamespaceHandler {
 	}
 
 	@Override
-	@Nullable
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
 		parserContext.getReaderContext().error(
 				"Class [" + getClass().getName() + "] does not support custom elements.", element);
@@ -67,7 +65,8 @@ public class SimplePropertyNamespaceHandler implements NamespaceHandler {
 
 	@Override
 	public BeanDefinitionHolder decorate(Node node, BeanDefinitionHolder definition, ParserContext parserContext) {
-		if (node instanceof Attr attr) {
+		if (node instanceof Attr) {
+			Attr attr = (Attr) node;
 			String propertyName = parserContext.getDelegate().getLocalName(attr);
 			String propertyValue = attr.getValue();
 			MutablePropertyValues pvs = definition.getBeanDefinition().getPropertyValues();

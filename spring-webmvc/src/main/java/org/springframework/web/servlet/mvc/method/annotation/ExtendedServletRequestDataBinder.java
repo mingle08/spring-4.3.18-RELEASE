@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,11 +17,10 @@
 package org.springframework.web.servlet.mvc.method.annotation;
 
 import java.util.Map;
-
-import jakarta.servlet.ServletRequest;
+import java.util.Map.Entry;
+import javax.servlet.ServletRequest;
 
 import org.springframework.beans.MutablePropertyValues;
-import org.springframework.lang.Nullable;
 import org.springframework.web.bind.ServletRequestDataBinder;
 import org.springframework.web.servlet.HandlerMapping;
 
@@ -29,19 +28,8 @@ import org.springframework.web.servlet.HandlerMapping;
  * Subclass of {@link ServletRequestDataBinder} that adds URI template variables
  * to the values used for data binding.
  *
- * <p><strong>WARNING</strong>: Data binding can lead to security issues by exposing
- * parts of the object graph that are not meant to be accessed or modified by
- * external clients. Therefore the design and use of data binding should be considered
- * carefully with regard to security. For more details, please refer to the dedicated
- * sections on data binding for
- * <a href="https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-ann-initbinder-model-design">Spring Web MVC</a> and
- * <a href="https://docs.spring.io/spring-framework/docs/current/reference/html/web-reactive.html#webflux-ann-initbinder-model-design">Spring WebFlux</a>
- * in the reference manual.
- *
  * @author Rossen Stoyanchev
  * @since 3.1
- * @see ServletRequestDataBinder
- * @see HandlerMapping#URI_TEMPLATE_VARIABLES_ATTRIBUTE
  */
 public class ExtendedServletRequestDataBinder extends ServletRequestDataBinder {
 
@@ -51,7 +39,7 @@ public class ExtendedServletRequestDataBinder extends ServletRequestDataBinder {
 	 * if the binder is just used to convert a plain parameter value)
 	 * @see #DEFAULT_OBJECT_NAME
 	 */
-	public ExtendedServletRequestDataBinder(@Nullable Object target) {
+	public ExtendedServletRequestDataBinder(Object target) {
 		super(target);
 	}
 
@@ -62,7 +50,7 @@ public class ExtendedServletRequestDataBinder extends ServletRequestDataBinder {
 	 * @param objectName the name of the target object
 	 * @see #DEFAULT_OBJECT_NAME
 	 */
-	public ExtendedServletRequestDataBinder(@Nullable Object target, String objectName) {
+	public ExtendedServletRequestDataBinder(Object target, String objectName) {
 		super(target, objectName);
 	}
 
@@ -71,21 +59,22 @@ public class ExtendedServletRequestDataBinder extends ServletRequestDataBinder {
 	 * Merge URI variables into the property values to use for data binding.
 	 */
 	@Override
+	@SuppressWarnings("unchecked")
 	protected void addBindValues(MutablePropertyValues mpvs, ServletRequest request) {
 		String attr = HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE;
-		@SuppressWarnings("unchecked")
 		Map<String, String> uriVars = (Map<String, String>) request.getAttribute(attr);
 		if (uriVars != null) {
-			uriVars.forEach((name, value) -> {
-				if (mpvs.contains(name)) {
-					if (logger.isDebugEnabled()) {
-						logger.debug("URI variable '" + name + "' overridden by request bind value.");
+			for (Entry<String, String> entry : uriVars.entrySet()) {
+				if (mpvs.contains(entry.getKey())) {
+					if (logger.isWarnEnabled()) {
+						logger.warn("Skipping URI variable '" + entry.getKey() +
+								"' since the request contains a bind value with the same name.");
 					}
 				}
 				else {
-					mpvs.addPropertyValue(name, value);
+					mpvs.addPropertyValue(entry.getKey(), entry.getValue());
 				}
-			});
+			}
 		}
 	}
 

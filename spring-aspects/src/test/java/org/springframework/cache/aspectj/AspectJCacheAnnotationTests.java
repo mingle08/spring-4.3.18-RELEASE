@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +16,16 @@
 
 package org.springframework.cache.aspectj;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 import org.springframework.cache.Cache;
+import org.springframework.cache.config.AbstractCacheAnnotationTests;
 import org.springframework.cache.config.CacheableService;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.GenericXmlApplicationContext;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Costin Leau
@@ -37,14 +39,14 @@ public class AspectJCacheAnnotationTests extends AbstractCacheAnnotationTests {
 	}
 
 	@Test
-	public void testKeyStrategy() {
+	public void testKeyStrategy() throws Exception {
 		AnnotationCacheAspect aspect = ctx.getBean(
 				"org.springframework.cache.config.internalCacheAspect", AnnotationCacheAspect.class);
-		assertThat(aspect.getKeyGenerator()).isSameAs(ctx.getBean("keyGenerator"));
+		Assert.assertSame(ctx.getBean("keyGenerator"), aspect.getKeyGenerator());
 	}
 
 	@Override
-	protected void testMultiEvict(CacheableService<?> service) {
+	public void testMultiEvict(CacheableService<?> service) {
 		Object o1 = new Object();
 
 		Object r1 = service.multiCache(o1);
@@ -53,21 +55,21 @@ public class AspectJCacheAnnotationTests extends AbstractCacheAnnotationTests {
 		Cache primary = cm.getCache("primary");
 		Cache secondary = cm.getCache("secondary");
 
-		assertThat(r2).isSameAs(r1);
-		assertThat(primary.get(o1).get()).isSameAs(r1);
-		assertThat(secondary.get(o1).get()).isSameAs(r1);
+		assertSame(r1, r2);
+		assertSame(r1, primary.get(o1).get());
+		assertSame(r1, secondary.get(o1).get());
 
 		service.multiEvict(o1);
-		assertThat(primary.get(o1)).isNull();
-		assertThat(secondary.get(o1)).isNull();
+		assertNull(primary.get(o1));
+		assertNull(secondary.get(o1));
 
 		Object r3 = service.multiCache(o1);
 		Object r4 = service.multiCache(o1);
-		assertThat(r3).isNotSameAs(r1);
-		assertThat(r4).isSameAs(r3);
+		assertNotSame(r1, r3);
+		assertSame(r3, r4);
 
-		assertThat(primary.get(o1).get()).isSameAs(r3);
-		assertThat(secondary.get(o1).get()).isSameAs(r4);
+		assertSame(r3, primary.get(o1).get());
+		assertSame(r4, secondary.get(o1).get());
 	}
 
 }

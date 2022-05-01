@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,12 +18,10 @@ package org.springframework.jdbc.object;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
 import javax.sql.DataSource;
 
 import org.springframework.dao.TypeMismatchDataAccessException;
 import org.springframework.jdbc.core.SingleColumnRowMapper;
-import org.springframework.lang.Nullable;
 
 /**
  * SQL "function" wrapper for a query that returns a single row of results.
@@ -47,12 +45,11 @@ import org.springframework.lang.Nullable;
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @author Jean-Pierre Pawlak
- * @param <T> the result type
  * @see StoredProcedure
  */
 public class SqlFunction<T> extends MappingSqlQuery<T> {
 
-	private final SingleColumnRowMapper<T> rowMapper = new SingleColumnRowMapper<>();
+	private final SingleColumnRowMapper<T> rowMapper = new SingleColumnRowMapper<T>();
 
 
 	/**
@@ -70,8 +67,8 @@ public class SqlFunction<T> extends MappingSqlQuery<T> {
 	/**
 	 * Create a new SqlFunction object with SQL, but without parameters.
 	 * Must add parameters or settle with none.
-	 * @param ds the DataSource to obtain connections from
-	 * @param sql the SQL to execute
+	 * @param ds DataSource to obtain connections from
+	 * @param sql SQL to execute
 	 */
 	public SqlFunction(DataSource ds, String sql) {
 		setRowsExpected(1);
@@ -81,9 +78,9 @@ public class SqlFunction<T> extends MappingSqlQuery<T> {
 
 	/**
 	 * Create a new SqlFunction object with SQL and parameters.
-	 * @param ds the DataSource to obtain connections from
-	 * @param sql the SQL to execute
-	 * @param types the SQL types of the parameters, as defined in the
+	 * @param ds DataSource to obtain connections from
+	 * @param sql SQL to execute
+	 * @param types SQL types of the parameters, as defined in the
 	 * {@code java.sql.Types} class
 	 * @see java.sql.Types
 	 */
@@ -96,9 +93,9 @@ public class SqlFunction<T> extends MappingSqlQuery<T> {
 
 	/**
 	 * Create a new SqlFunction object with SQL, parameters and a result type.
-	 * @param ds the DataSource to obtain connections from
-	 * @param sql the SQL to execute
-	 * @param types the SQL types of the parameters, as defined in the
+	 * @param ds DataSource to obtain connections from
+	 * @param sql SQL to execute
+	 * @param types SQL types of the parameters, as defined in the
 	 * {@code java.sql.Types} class
 	 * @param resultType the type that the result object is required to match
 	 * @see #setResultType(Class)
@@ -129,7 +126,6 @@ public class SqlFunction<T> extends MappingSqlQuery<T> {
 	 * of rows returned, this is treated as an error.
 	 */
 	@Override
-	@Nullable
 	protected T mapRow(ResultSet rs, int rowNum) throws SQLException {
 		return this.rowMapper.mapRow(rs, rowNum);
 	}
@@ -162,7 +158,7 @@ public class SqlFunction<T> extends MappingSqlQuery<T> {
 	public int run(Object... parameters) {
 		Object obj = super.findObject(parameters);
 		if (!(obj instanceof Number)) {
-			throw new TypeMismatchDataAccessException("Could not convert result object [" + obj + "] to int");
+			throw new TypeMismatchDataAccessException("Couldn't convert result object [" + obj + "] to int");
 		}
 		return ((Number) obj).intValue();
 	}
@@ -172,9 +168,8 @@ public class SqlFunction<T> extends MappingSqlQuery<T> {
 	 * returning the value as an object.
 	 * @return the value of the function
 	 */
-	@Nullable
 	public Object runGeneric() {
-		return findObject((Object[]) null, null);
+		return findObject((Object[]) null);
 	}
 
 	/**
@@ -182,7 +177,6 @@ public class SqlFunction<T> extends MappingSqlQuery<T> {
 	 * @param parameter single int parameter
 	 * @return the value of the function as an Object
 	 */
-	@Nullable
 	public Object runGeneric(int parameter) {
 		return findObject(parameter);
 	}
@@ -195,7 +189,6 @@ public class SqlFunction<T> extends MappingSqlQuery<T> {
 	 * @return the value of the function, as an Object
 	 * @see #execute(Object[])
 	 */
-	@Nullable
 	public Object runGeneric(Object[] parameters) {
 		return findObject(parameters);
 	}

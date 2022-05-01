@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,8 +15,6 @@
  */
 
 package org.springframework.ui.context;
-
-import org.springframework.lang.Nullable;
 
 /**
  * Sub-interface of ThemeSource to be implemented by objects that
@@ -34,12 +32,11 @@ public interface HierarchicalThemeSource extends ThemeSource {
 	 * resolve messages that this object can't resolve.
 	 * May be {@code null}, in which case no further resolution is possible.
 	 */
-	void setParentThemeSource(@Nullable ThemeSource parent);
+	void setParentThemeSource(ThemeSource parent);
 
 	/**
 	 * Return the parent of this ThemeSource, or {@code null} if none.
 	 */
-	@Nullable
 	ThemeSource getParentThemeSource();
 
 }

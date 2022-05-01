@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,15 +16,17 @@
 
 package org.springframework.jms.listener.adapter;
 
-import jakarta.jms.Destination;
-import jakarta.jms.JMSException;
-import jakarta.jms.Session;
-import org.junit.jupiter.api.Test;
+import javax.jms.Destination;
+import javax.jms.JMSException;
+import javax.jms.Session;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.springframework.jms.support.destination.DestinationResolver;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -33,11 +35,14 @@ import static org.mockito.Mockito.mock;
  */
 public class JmsResponseTests {
 
+	@Rule
+	public final ExpectedException thrown = ExpectedException.none();
+
 	@Test
 	public void destinationDoesNotUseDestinationResolver() throws JMSException {
 		Destination destination = mock(Destination.class);
 		Destination actual = JmsResponse.forDestination("foo", destination).resolveDestination(null, null);
-		assertThat(actual).isSameAs(destination);
+		assertSame(destination, actual);
 	}
 
 	@Test
@@ -49,31 +54,31 @@ public class JmsResponseTests {
 		given(destinationResolver.resolveDestinationName(session, "myQueue", false)).willReturn(destination);
 		JmsResponse<String> jmsResponse = JmsResponse.forQueue("foo", "myQueue");
 		Destination actual = jmsResponse.resolveDestination(destinationResolver, session);
-		assertThat(actual).isSameAs(destination);
+		assertSame(destination, actual);
 	}
 
 	@Test
-	public void createWithNullResponse() {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				JmsResponse.forQueue(null, "myQueue"));
+	public void createWithNulResponse() {
+		thrown.expect(IllegalArgumentException.class);
+		JmsResponse.forQueue(null, "myQueue");
 	}
 
 	@Test
 	public void createWithNullQueueName() {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				JmsResponse.forQueue("foo", null));
+		thrown.expect(IllegalArgumentException.class);
+		JmsResponse.forQueue("foo", null);
 	}
 
 	@Test
 	public void createWithNullTopicName() {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				JmsResponse.forTopic("foo", null));
+		thrown.expect(IllegalArgumentException.class);
+		JmsResponse.forTopic("foo", null);
 	}
 
 	@Test
 	public void createWithNulDestination() {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				JmsResponse.forDestination("foo", null));
+		thrown.expect(IllegalArgumentException.class);
+		JmsResponse.forDestination("foo", null);
 	}
 
 }

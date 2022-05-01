@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,17 +18,17 @@ package org.springframework.web.servlet.handler;
 
 import java.util.Collections;
 import java.util.Properties;
+import javax.servlet.http.HttpServletResponse;
 
-import jakarta.servlet.http.HttpServletResponse;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.mock.web.test.MockHttpServletResponse;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
-import org.springframework.web.testfixture.servlet.MockHttpServletResponse;
 import org.springframework.web.util.WebUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Seth Ladd
@@ -44,7 +44,7 @@ public class SimpleMappingExceptionResolverTests {
 	private Object handler2;
 	private Exception genericException;
 
-	@BeforeEach
+	@Before
 	public void setUp() throws Exception {
 		exceptionResolver = new SimpleMappingExceptionResolver();
 		handler1 = new String();
@@ -58,15 +58,15 @@ public class SimpleMappingExceptionResolverTests {
 	@Test
 	public void setOrder() {
 		exceptionResolver.setOrder(2);
-		assertThat(exceptionResolver.getOrder()).isEqualTo(2);
+		assertEquals(2, exceptionResolver.getOrder());
 	}
 
 	@Test
 	public void defaultErrorView() {
 		exceptionResolver.setDefaultErrorView("default-view");
 		ModelAndView mav = exceptionResolver.resolveException(request, response, handler1, genericException);
-		assertThat(mav.getViewName()).isEqualTo("default-view");
-		assertThat(mav.getModel().get(SimpleMappingExceptionResolver.DEFAULT_EXCEPTION_ATTRIBUTE)).isEqualTo(genericException);
+		assertEquals("default-view", mav.getViewName());
+		assertEquals(genericException, mav.getModel().get(SimpleMappingExceptionResolver.DEFAULT_EXCEPTION_ATTRIBUTE));
 	}
 
 	@Test
@@ -74,7 +74,7 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setDefaultErrorView("default-view");
 		exceptionResolver.setMappedHandlers(Collections.singleton(handler1));
 		ModelAndView mav = exceptionResolver.resolveException(request, response, handler2, genericException);
-		assertThat(mav).isNull();
+		assertNull(mav);
 	}
 
 	@Test
@@ -82,7 +82,7 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setDefaultErrorView("default-view");
 		exceptionResolver.setMappedHandlerClasses(String.class);
 		ModelAndView mav = exceptionResolver.resolveException(request, response, handler2, genericException);
-		assertThat(mav).isNull();
+		assertNull(mav);
 	}
 
 	@Test
@@ -90,8 +90,8 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setDefaultErrorView("default-view");
 		exceptionResolver.setExceptionAttribute(null);
 		ModelAndView mav = exceptionResolver.resolveException(request, response, handler1, genericException);
-		assertThat(mav.getViewName()).isEqualTo("default-view");
-		assertThat(mav.getModel().get(SimpleMappingExceptionResolver.DEFAULT_EXCEPTION_ATTRIBUTE)).isNull();
+		assertEquals("default-view", mav.getViewName());
+		assertNull(mav.getModel().get(SimpleMappingExceptionResolver.DEFAULT_EXCEPTION_ATTRIBUTE));
 	}
 
 	@Test
@@ -99,14 +99,14 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setExceptionMappings(null);
 		exceptionResolver.setDefaultErrorView("default-view");
 		ModelAndView mav = exceptionResolver.resolveException(request, response, handler1, genericException);
-		assertThat(mav.getViewName()).isEqualTo("default-view");
+		assertEquals("default-view", mav.getViewName());
 	}
 
 	@Test
 	public void noDefaultStatusCode() {
 		exceptionResolver.setDefaultErrorView("default-view");
 		exceptionResolver.resolveException(request, response, handler1, genericException);
-		assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_OK);
+		assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 	}
 
 	@Test
@@ -114,7 +114,7 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setDefaultErrorView("default-view");
 		exceptionResolver.setDefaultStatusCode(HttpServletResponse.SC_BAD_REQUEST);
 		exceptionResolver.resolveException(request, response, handler1, genericException);
-		assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
+		assertEquals(HttpServletResponse.SC_BAD_REQUEST, response.getStatus());
 	}
 
 	@Test
@@ -123,7 +123,7 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setDefaultStatusCode(HttpServletResponse.SC_BAD_REQUEST);
 		request.setAttribute(WebUtils.INCLUDE_REQUEST_URI_ATTRIBUTE, "some path");
 		exceptionResolver.resolveException(request, response, handler1, genericException);
-		assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_OK);
+		assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 	}
 
 	@Test
@@ -134,7 +134,7 @@ public class SimpleMappingExceptionResolverTests {
 		statusCodes.setProperty("default-view", "406");
 		exceptionResolver.setStatusCodes(statusCodes);
 		exceptionResolver.resolveException(request, response, handler1, genericException);
-		assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_ACCEPTABLE);
+		assertEquals(HttpServletResponse.SC_NOT_ACCEPTABLE, response.getStatus());
 	}
 
 	@Test
@@ -144,7 +144,7 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setWarnLogCategory("HANDLER_EXCEPTION");
 		exceptionResolver.setExceptionMappings(props);
 		ModelAndView mav = exceptionResolver.resolveException(request, response, handler1, genericException);
-		assertThat(mav.getViewName()).isEqualTo("error");
+		assertEquals("error", mav.getViewName());
 	}
 
 	@Test
@@ -154,7 +154,7 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setMappedHandlers(Collections.singleton(handler1));
 		exceptionResolver.setExceptionMappings(props);
 		ModelAndView mav = exceptionResolver.resolveException(request, response, handler1, genericException);
-		assertThat(mav.getViewName()).isEqualTo("error");
+		assertEquals("error", mav.getViewName());
 	}
 
 	@Test
@@ -164,7 +164,7 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setMappedHandlerClasses(String.class);
 		exceptionResolver.setExceptionMappings(props);
 		ModelAndView mav = exceptionResolver.resolveException(request, response, handler1, genericException);
-		assertThat(mav.getViewName()).isEqualTo("error");
+		assertEquals("error", mav.getViewName());
 	}
 
 	@Test
@@ -174,7 +174,7 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setMappedHandlerClasses(Comparable.class);
 		exceptionResolver.setExceptionMappings(props);
 		ModelAndView mav = exceptionResolver.resolveException(request, response, handler1, genericException);
-		assertThat(mav.getViewName()).isEqualTo("error");
+		assertEquals("error", mav.getViewName());
 	}
 
 	@Test
@@ -184,7 +184,7 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setMappedHandlers(Collections.singleton(handler1));
 		exceptionResolver.setExceptionMappings(props);
 		ModelAndView mav = exceptionResolver.resolveException(request, response, handler2, genericException);
-		assertThat(mav).isNull();
+		assertNull(mav);
 	}
 
 	@Test
@@ -194,7 +194,7 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setMappedHandlerClasses(String.class);
 		exceptionResolver.setExceptionMappings(props);
 		ModelAndView mav = exceptionResolver.resolveException(request, response, handler2, genericException);
-		assertThat(mav).isNull();
+		assertNull(mav);
 	}
 
 	@Test
@@ -204,7 +204,7 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setExceptionMappings(props);
 		exceptionResolver.setExcludedExceptions(IllegalArgumentException.class);
 		ModelAndView mav = exceptionResolver.resolveException(request, response, handler1, new IllegalArgumentException());
-		assertThat(mav).isNull();
+		assertNull(mav);
 	}
 
 	@Test
@@ -214,7 +214,7 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setWarnLogCategory("HANDLER_EXCEPTION");
 		exceptionResolver.setExceptionMappings(props);
 		ModelAndView mav = exceptionResolver.resolveException(request, response, handler1, genericException);
-		assertThat(mav).isNull();
+		assertNull(mav);
 	}
 
 	@Test
@@ -225,7 +225,7 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setMappedHandlers(Collections.singleton(handler1));
 		exceptionResolver.setExceptionMappings(props);
 		ModelAndView mav = exceptionResolver.resolveException(request, response, handler1, genericException);
-		assertThat(mav.getViewName()).isEqualTo("error");
+		assertEquals("error", mav.getViewName());
 	}
 
 	@Test
@@ -236,7 +236,7 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setMappedHandlers(Collections.singleton(handler1));
 		exceptionResolver.setExceptionMappings(props);
 		ModelAndView mav = exceptionResolver.resolveException(request, response, handler1, genericException);
-		assertThat(mav.getViewName()).isEqualTo("error");
+		assertEquals("error", mav.getViewName());
 	}
 
 	@Test
@@ -248,7 +248,7 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setMappedHandlers(Collections.singleton(handler1));
 		exceptionResolver.setExceptionMappings(props);
 		ModelAndView mav = exceptionResolver.resolveException(request, response, handler1, oddException);
-		assertThat(mav.getViewName()).isEqualTo("another-error");
+		assertEquals("another-error", mav.getViewName());
 	}
 
 	@Test
@@ -260,7 +260,7 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setMappedHandlers(Collections.singleton(handler1));
 		exceptionResolver.setExceptionMappings(props);
 		ModelAndView mav = exceptionResolver.resolveException(request, response, handler1, oddException);
-		assertThat(mav.getViewName()).isEqualTo("another-error");
+		assertEquals("another-error", mav.getViewName());
 	}
 
 	@Test
@@ -273,7 +273,7 @@ public class SimpleMappingExceptionResolverTests {
 		exceptionResolver.setMappedHandlers(Collections.singleton(handler1));
 		exceptionResolver.setExceptionMappings(props);
 		ModelAndView mav = exceptionResolver.resolveException(request, response, handler1, oddException);
-		assertThat(mav.getViewName()).isEqualTo("another-some-error");
+		assertEquals("another-some-error", mav.getViewName());
 	}
 
 

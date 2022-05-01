@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,9 +17,7 @@
 package org.springframework.transaction.interceptor;
 
 import java.io.Serializable;
-import java.util.Collection;
 
-import org.springframework.lang.Nullable;
 import org.springframework.transaction.support.DelegatingTransactionDefinition;
 
 /**
@@ -29,7 +27,6 @@ import org.springframework.transaction.support.DelegatingTransactionDefinition;
  * to the target instance.
  *
  * @author Juergen Hoeller
- * @author Mark Paluch
  * @since 1.2
  */
 @SuppressWarnings("serial")
@@ -50,14 +47,8 @@ public abstract class DelegatingTransactionAttribute extends DelegatingTransacti
 
 
 	@Override
-	@Nullable
 	public String getQualifier() {
 		return this.targetAttribute.getQualifier();
-	}
-
-	@Override
-	public Collection<String> getLabels() {
-		return this.targetAttribute.getLabels();
 	}
 
 	@Override

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,17 +19,16 @@ package org.springframework.aop.aspectj;
 import java.lang.reflect.Method;
 import java.util.Map;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.aop.MethodBeforeAdvice;
 import org.springframework.aop.framework.Advised;
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.beans.testfixture.beans.ITestBean;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.springframework.lang.Nullable;
+import org.springframework.tests.sample.beans.ITestBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Test for correct application of the bean() PCD for XML-based AspectJ aspects.
@@ -38,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Juergen Hoeller
  * @author Chris Beams
  */
-public class BeanNamePointcutTests {
+public final class BeanNamePointcutTests {
 
 	private ITestBean testBean1;
 	private ITestBean testBean2;
@@ -54,8 +53,8 @@ public class BeanNamePointcutTests {
 	private ClassPathXmlApplicationContext ctx;
 
 
-	@BeforeEach
-	public void setup() {
+	@Before
+	public void setUp() {
 		ctx = new ClassPathXmlApplicationContext(getClass().getSimpleName() + ".xml", getClass());
 		testBean1 = (ITestBean) ctx.getBean("testBean1");
 		testBean2 = (ITestBean) ctx.getBean("testBean2");
@@ -70,67 +69,57 @@ public class BeanNamePointcutTests {
 		counterAspect.reset();
 	}
 
-
 	// We don't need to test all combination of pointcuts due to BeanNamePointcutMatchingTests
 
 	@Test
 	public void testMatchingBeanName() {
-		boolean condition = this.testBean1 instanceof Advised;
-		assertThat(condition).as("Matching bean must be advised (proxied)").isTrue();
+		assertTrue("Matching bean must be advised (proxied)", this.testBean1 instanceof Advised);
 		// Call two methods to test for SPR-3953-like condition
 		this.testBean1.setAge(20);
 		this.testBean1.setName("");
-		assertThat(this.counterAspect.getCount()).as("Advice not executed: must have been").isEqualTo(2);
+		assertEquals("Advice not executed: must have been", 2, this.counterAspect.getCount());
 	}
 
 	@Test
 	public void testNonMatchingBeanName() {
-		boolean condition = this.testBean2 instanceof Advised;
-		assertThat(condition).as("Non-matching bean must *not* be advised (proxied)").isFalse();
+		assertFalse("Non-matching bean must *not* be advised (proxied)", this.testBean2 instanceof Advised);
 		this.testBean2.setAge(20);
-		assertThat(this.counterAspect.getCount()).as("Advice must *not* have been executed").isEqualTo(0);
+		assertEquals("Advice must *not* have been executed", 0, this.counterAspect.getCount());
 	}
 
 	@Test
 	public void testNonMatchingNestedBeanName() {
-		boolean condition = this.testBeanContainingNestedBean.getDoctor() instanceof Advised;
-		assertThat(condition).as("Non-matching bean must *not* be advised (proxied)").isFalse();
+		assertFalse("Non-matching bean must *not* be advised (proxied)", this.testBeanContainingNestedBean.getDoctor() instanceof Advised);
 	}
 
 	@Test
 	public void testMatchingFactoryBeanObject() {
-		boolean condition1 = this.testFactoryBean1 instanceof Advised;
-		assertThat(condition1).as("Matching bean must be advised (proxied)").isTrue();
-		assertThat(this.testFactoryBean1.get("myKey")).isEqualTo("myValue");
-		assertThat(this.testFactoryBean1.get("myKey")).isEqualTo("myValue");
-		assertThat(this.counterAspect.getCount()).as("Advice not executed: must have been").isEqualTo(2);
+		assertTrue("Matching bean must be advised (proxied)", this.testFactoryBean1 instanceof Advised);
+		assertEquals("myValue", this.testFactoryBean1.get("myKey"));
+		assertEquals("myValue", this.testFactoryBean1.get("myKey"));
+		assertEquals("Advice not executed: must have been", 2, this.counterAspect.getCount());
 		FactoryBean<?> fb = (FactoryBean<?>) ctx.getBean("&testFactoryBean1");
-		boolean condition = !(fb instanceof Advised);
-		assertThat(condition).as("FactoryBean itself must *not* be advised").isTrue();
+		assertTrue("FactoryBean itself must *not* be advised", !(fb instanceof Advised));
 	}
 
 	@Test
 	public void testMatchingFactoryBeanItself() {
-		boolean condition1 = !(this.testFactoryBean2 instanceof Advised);
-		assertThat(condition1).as("Matching bean must *not* be advised (proxied)").isTrue();
+		assertTrue("Matching bean must *not* be advised (proxied)", !(this.testFactoryBean2 instanceof Advised));
 		FactoryBean<?> fb = (FactoryBean<?>) ctx.getBean("&testFactoryBean2");
-		boolean condition = fb instanceof Advised;
-		assertThat(condition).as("FactoryBean itself must be advised").isTrue();
-		assertThat(Map.class.isAssignableFrom(fb.getObjectType())).isTrue();
-		assertThat(Map.class.isAssignableFrom(fb.getObjectType())).isTrue();
-		assertThat(this.counterAspect.getCount()).as("Advice not executed: must have been").isEqualTo(2);
+		assertTrue("FactoryBean itself must be advised", fb instanceof Advised);
+		assertTrue(Map.class.isAssignableFrom(fb.getObjectType()));
+		assertTrue(Map.class.isAssignableFrom(fb.getObjectType()));
+		assertEquals("Advice not executed: must have been", 2, this.counterAspect.getCount());
 	}
 
 	@Test
 	public void testPointcutAdvisorCombination() {
-		boolean condition = this.interceptThis instanceof Advised;
-		assertThat(condition).as("Matching bean must be advised (proxied)").isTrue();
-		boolean condition1 = this.dontInterceptThis instanceof Advised;
-		assertThat(condition1).as("Non-matching bean must *not* be advised (proxied)").isFalse();
+		assertTrue("Matching bean must be advised (proxied)", this.interceptThis instanceof Advised);
+		assertFalse("Non-matching bean must *not* be advised (proxied)", this.dontInterceptThis instanceof Advised);
 		interceptThis.setAge(20);
-		assertThat(testInterceptor.interceptionCount).isEqualTo(1);
+		assertEquals(1, testInterceptor.interceptionCount);
 		dontInterceptThis.setAge(20);
-		assertThat(testInterceptor.interceptionCount).isEqualTo(1);
+		assertEquals(1, testInterceptor.interceptionCount);
 	}
 
 
@@ -139,7 +128,7 @@ public class BeanNamePointcutTests {
 		private int interceptionCount;
 
 		@Override
-		public void before(Method method, Object[] args, @Nullable Object target) throws Throwable {
+		public void before(Method method, Object[] args, Object target) throws Throwable {
 			interceptionCount++;
 		}
 	}

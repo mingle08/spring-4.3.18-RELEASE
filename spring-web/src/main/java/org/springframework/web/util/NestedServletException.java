@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,10 +16,9 @@
 
 package org.springframework.web.util;
 
-import jakarta.servlet.ServletException;
+import javax.servlet.ServletException;
 
 import org.springframework.core.NestedExceptionUtils;
-import org.springframework.lang.Nullable;
 
 /**
  * Subclass of {@link ServletException} that properly handles a root cause in terms
@@ -43,7 +42,7 @@ import org.springframework.lang.Nullable;
  */
 public class NestedServletException extends ServletException {
 
-	/** Use serialVersionUID from Spring 1.2 for interoperability. */
+	/** Use serialVersionUID from Spring 1.2 for interoperability */
 	private static final long serialVersionUID = -5292377985529381145L;
 
 	static {
@@ -67,8 +66,13 @@ public class NestedServletException extends ServletException {
 	 * @param msg the detail message
 	 * @param cause the nested exception
 	 */
-	public NestedServletException(@Nullable String msg, @Nullable Throwable cause) {
+	public NestedServletException(String msg, Throwable cause) {
 		super(msg, cause);
+		// Set JDK 1.4 exception chain cause if not done by ServletException class already
+		// (this differs between Servlet API versions).
+		if (getCause() == null && cause!=null) {
+			initCause(cause);
+		}
 	}
 
 
@@ -77,7 +81,6 @@ public class NestedServletException extends ServletException {
 	 * if there is one.
 	 */
 	@Override
-	@Nullable
 	public String getMessage() {
 		return NestedExceptionUtils.buildMessage(super.getMessage(), getCause());
 	}

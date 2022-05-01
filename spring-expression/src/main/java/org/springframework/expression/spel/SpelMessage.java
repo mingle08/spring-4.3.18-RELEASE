@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,11 +27,10 @@ import java.text.MessageFormat;
  * <p>When a message is formatted, it will have this kind of form, capturing the prefix
  * and the error kind:
  *
- * <pre class="code">EL1005E: Type cannot be found 'String'</pre>
+ * <pre class="code">EL1004E: Type cannot be found 'String'</pre>
  *
  * @author Andy Clement
  * @author Juergen Hoeller
- * @author Sam Brannen
  * @since 3.0
  */
 public enum SpelMessage {
@@ -256,15 +255,7 @@ public enum SpelMessage {
 
 	/** @since 4.3.17 */
 	FLAWED_PATTERN(Kind.ERROR, 1073,
-			"Failed to efficiently evaluate pattern ''{0}'': consider redesigning it"),
-
-	/** @since 5.3.17 */
-	EXCEPTION_COMPILING_EXPRESSION(Kind.ERROR, 1074,
-			"An exception occurred while compiling an expression"),
-
-	/** @since 5.3.17 */
-	MAX_ARRAY_ELEMENTS_THRESHOLD_EXCEEDED(Kind.ERROR, 1075,
-			"Array declares too many elements, exceeding the threshold of ''{0}''");
+			"Failed to efficiently evaluate pattern ''{0}'': consider redesigning it");
 
 
 	private final Kind kind;
@@ -291,18 +282,42 @@ public enum SpelMessage {
 	public String formatMessage(Object... inserts) {
 		StringBuilder formattedMessage = new StringBuilder();
 		formattedMessage.append("EL").append(this.code);
-		if (this.kind == Kind.ERROR) {
-			formattedMessage.append('E');
+		switch (this.kind) {
+			case ERROR:
+				formattedMessage.append("E");
+				break;
 		}
 		formattedMessage.append(": ");
 		formattedMessage.append(MessageFormat.format(this.message, inserts));
 		return formattedMessage.toString();
 	}
 
-
 	/**
-	 * Message kinds.
+	 * Produce a complete message including the prefix, the position (if known)
+	 * and with the inserts applied to the message.
+	 * @param pos the position (ignored and not included in the message if less than 0)
+	 * @param inserts the inserts to put into the formatted message
+	 * @return a formatted message
+	 * @deprecated as of Spring 4.3.5, in favor of {@link #formatMessage(Object...)}
 	 */
+	@Deprecated
+	public String formatMessage(int pos, Object... inserts) {
+		StringBuilder formattedMessage = new StringBuilder();
+		formattedMessage.append("EL").append(this.code);
+		switch (this.kind) {
+			case ERROR:
+				formattedMessage.append("E");
+				break;
+		}
+		formattedMessage.append(":");
+		if (pos >= 0) {
+			formattedMessage.append("(pos ").append(pos).append("): ");
+		}
+		formattedMessage.append(MessageFormat.format(this.message, inserts));
+		return formattedMessage.toString();
+	}
+
+
 	public enum Kind { INFO, WARNING, ERROR }
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,108 +17,112 @@
 package org.springframework.web.servlet.mvc.method.annotation;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.io.OutputStream;
+import java.util.HashMap;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.Map;
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.core.MethodParameter;
-import org.springframework.core.ReactiveAdapterRegistry;
 import org.springframework.core.ResolvableType;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.StringHttpMessageConverter;
-import org.springframework.http.server.DelegatingServerHttpResponse;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpResponse;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-import org.springframework.web.accept.ContentNegotiationManager;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.context.request.async.DeferredResult;
 import org.springframework.web.context.request.async.WebAsyncUtils;
 import org.springframework.web.filter.ShallowEtagHeaderFilter;
-import org.springframework.web.method.support.HandlerMethodReturnValueHandler;
+import org.springframework.web.method.support.AsyncHandlerMethodReturnValueHandler;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
 /**
- * Handler for return values of type {@link ResponseBodyEmitter} and sub-classes
- * such as {@link SseEmitter} including the same types wrapped with
- * {@link ResponseEntity}.
- *
- * <p>As of 5.0 also supports reactive return value types for any reactive
- * library with registered adapters in {@link ReactiveAdapterRegistry}.
+ * Handler for return values of type {@link ResponseBodyEmitter} (and the
+ * {@code ResponseEntity<ResponseBodyEmitter>} sub-class) as well as any other
+ * async type with a {@link #getAdapterMap() registered adapter}.
  *
  * @author Rossen Stoyanchev
  * @since 4.2
  */
-public class ResponseBodyEmitterReturnValueHandler implements HandlerMethodReturnValueHandler {
+@SuppressWarnings("deprecation")
+public class ResponseBodyEmitterReturnValueHandler implements AsyncHandlerMethodReturnValueHandler {
 
-	private final List<HttpMessageConverter<?>> sseMessageConverters;
-
-	private final ReactiveTypeHandler reactiveHandler;
+	private static final Log logger = LogFactory.getLog(ResponseBodyEmitterReturnValueHandler.class);
 
 
-	/**
-	 * Simple constructor with reactive type support based on a default instance of
-	 * {@link ReactiveAdapterRegistry},
-	 * {@link org.springframework.core.task.SyncTaskExecutor}, and
-	 * {@link ContentNegotiationManager} with an Accept header strategy.
-	 */
+	private final List<HttpMessageConverter<?>> messageConverters;
+
+	private final Map<Class<?>, ResponseBodyEmitterAdapter> adapterMap;
+
+
 	public ResponseBodyEmitterReturnValueHandler(List<HttpMessageConverter<?>> messageConverters) {
 		Assert.notEmpty(messageConverters, "HttpMessageConverter List must not be empty");
-		this.sseMessageConverters = initSseConverters(messageConverters);
-		this.reactiveHandler = new ReactiveTypeHandler();
+		this.messageConverters = messageConverters;
+		this.adapterMap = new HashMap<Class<?>, ResponseBodyEmitterAdapter>(4);
+		this.adapterMap.put(ResponseBodyEmitter.class, new SimpleResponseBodyEmitterAdapter());
 	}
+
 
 	/**
-	 * Complete constructor with pluggable "reactive" type support.
-	 * @param messageConverters converters to write emitted objects with
-	 * @param registry for reactive return value type support
-	 * @param executor for blocking I/O writes of items emitted from reactive types
-	 * @param manager for detecting streaming media types
-	 * @since 5.0
+	 * Return the map with {@code ResponseBodyEmitter} adapters.
+	 * By default the map contains a single adapter {@code ResponseBodyEmitter}
+	 * that simply downcasts the return value.
+	 * @return the map of adapters
+	 * @deprecated in 4.3.8, see comments on {@link ResponseBodyEmitterAdapter}
 	 */
-	public ResponseBodyEmitterReturnValueHandler(List<HttpMessageConverter<?>> messageConverters,
-			ReactiveAdapterRegistry registry, TaskExecutor executor, ContentNegotiationManager manager) {
-
-		Assert.notEmpty(messageConverters, "HttpMessageConverter List must not be empty");
-		this.sseMessageConverters = initSseConverters(messageConverters);
-		this.reactiveHandler = new ReactiveTypeHandler(registry, executor, manager);
+	@Deprecated
+	public Map<Class<?>, ResponseBodyEmitterAdapter> getAdapterMap() {
+		return this.adapterMap;
 	}
 
-	private static List<HttpMessageConverter<?>> initSseConverters(List<HttpMessageConverter<?>> converters) {
-		for (HttpMessageConverter<?> converter : converters) {
-			if (converter.canWrite(String.class, MediaType.TEXT_PLAIN)) {
-				return converters;
+	private ResponseBodyEmitterAdapter getAdapterFor(Class<?> type) {
+		if (type != null) {
+			for (Class<?> adapteeType : getAdapterMap().keySet()) {
+				if (adapteeType.isAssignableFrom(type)) {
+					return getAdapterMap().get(adapteeType);
+				}
 			}
 		}
-		List<HttpMessageConverter<?>> result = new ArrayList<>(converters.size() + 1);
-		result.add(new StringHttpMessageConverter(StandardCharsets.UTF_8));
-		result.addAll(converters);
-		return result;
+		return null;
 	}
 
 
 	@Override
 	public boolean supportsReturnType(MethodParameter returnType) {
-		Class<?> bodyType = ResponseEntity.class.isAssignableFrom(returnType.getParameterType()) ?
-				ResolvableType.forMethodParameter(returnType).getGeneric().resolve() :
-				returnType.getParameterType();
-
-		return (bodyType != null && (ResponseBodyEmitter.class.isAssignableFrom(bodyType) ||
-				this.reactiveHandler.isReactiveType(bodyType)));
+		Class<?> bodyType;
+		if (ResponseEntity.class.isAssignableFrom(returnType.getParameterType())) {
+			bodyType = ResolvableType.forMethodParameter(returnType).getGeneric(0).resolve();
+		}
+		else {
+			bodyType = returnType.getParameterType();
+		}
+		return (getAdapterFor(bodyType) != null);
 	}
 
 	@Override
-	@SuppressWarnings("resource")
-	public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
+	public boolean isAsyncReturnValue(Object returnValue, MethodParameter returnType) {
+		if (returnValue != null) {
+			Object adaptFrom = returnValue;
+			if (returnValue instanceof ResponseEntity) {
+				adaptFrom = ((ResponseEntity) returnValue).getBody();
+			}
+			if (adaptFrom != null) {
+				return (getAdapterFor(adaptFrom.getClass()) != null);
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public void handleReturnValue(Object returnValue, MethodParameter returnType,
 			ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception {
 
 		if (returnValue == null) {
@@ -127,14 +131,13 @@ public class ResponseBodyEmitterReturnValueHandler implements HandlerMethodRetur
 		}
 
 		HttpServletResponse response = webRequest.getNativeResponse(HttpServletResponse.class);
-		Assert.state(response != null, "No HttpServletResponse");
 		ServerHttpResponse outputMessage = new ServletServerHttpResponse(response);
 
-		if (returnValue instanceof ResponseEntity<?> responseEntity) {
-			response.setStatus(responseEntity.getStatusCode().value());
+		if (returnValue instanceof ResponseEntity) {
+			ResponseEntity<?> responseEntity = (ResponseEntity<?>) returnValue;
+			response.setStatus(responseEntity.getStatusCodeValue());
 			outputMessage.getHeaders().putAll(responseEntity.getHeaders());
 			returnValue = responseEntity.getBody();
-			returnType = returnType.nested();
 			if (returnValue == null) {
 				mavContainer.setRequestHandled(true);
 				outputMessage.flush();
@@ -143,47 +146,40 @@ public class ResponseBodyEmitterReturnValueHandler implements HandlerMethodRetur
 		}
 
 		ServletRequest request = webRequest.getNativeRequest(ServletRequest.class);
-		Assert.state(request != null, "No ServletRequest");
-
-		ResponseBodyEmitter emitter;
-		if (returnValue instanceof ResponseBodyEmitter) {
-			emitter = (ResponseBodyEmitter) returnValue;
-		}
-		else {
-			emitter = this.reactiveHandler.handleValue(returnValue, returnType, mavContainer, webRequest);
-			if (emitter == null) {
-				// Not streaming: write headers without committing response..
-				outputMessage.getHeaders().forEach((headerName, headerValues) -> {
-					for (String headerValue : headerValues) {
-						response.addHeader(headerName, headerValue);
-					}
-				});
-				return;
-			}
-		}
-		emitter.extendResponse(outputMessage);
-
-		// At this point we know we're streaming..
 		ShallowEtagHeaderFilter.disableContentCaching(request);
 
-		// Wrap the response to ignore further header changes
-		// Headers will be flushed at the first write
+		ResponseBodyEmitterAdapter adapter = getAdapterFor(returnValue.getClass());
+		if (adapter == null) {
+			throw new IllegalStateException(
+					"Could not find ResponseBodyEmitterAdapter for return value type: " + returnValue.getClass());
+		}
+		ResponseBodyEmitter emitter = adapter.adaptToEmitter(returnValue, outputMessage);
+		emitter.extendResponse(outputMessage);
+
+		// Commit the response and wrap to ignore further header changes
+		outputMessage.getBody();
+		outputMessage.flush();
 		outputMessage = new StreamingServletServerHttpResponse(outputMessage);
 
-		HttpMessageConvertingHandler handler;
-		try {
-			DeferredResult<?> deferredResult = new DeferredResult<>(emitter.getTimeout());
-			WebAsyncUtils.getAsyncManager(webRequest).startDeferredResultProcessing(deferredResult, mavContainer);
-			handler = new HttpMessageConvertingHandler(outputMessage, deferredResult);
-		}
-		catch (Throwable ex) {
-			emitter.initializeWithError(ex);
-			throw ex;
-		}
+		DeferredResult<?> deferredResult = new DeferredResult<Object>(emitter.getTimeout());
+		WebAsyncUtils.getAsyncManager(webRequest).startDeferredResultProcessing(deferredResult, mavContainer);
 
+		HttpMessageConvertingHandler handler = new HttpMessageConvertingHandler(outputMessage, deferredResult);
 		emitter.initialize(handler);
 	}
 
+
+	/**
+	 * Adapter for {@code ResponseBodyEmitter} return values.
+	 */
+	private static class SimpleResponseBodyEmitterAdapter implements ResponseBodyEmitterAdapter {
+
+		@Override
+		public ResponseBodyEmitter adaptToEmitter(Object returnValue, ServerHttpResponse response) {
+			Assert.isInstanceOf(ResponseBodyEmitter.class, returnValue, "ResponseBodyEmitter expected");
+			return (ResponseBodyEmitter) returnValue;
+		}
+	}
 
 	/**
 	 * ResponseBodyEmitter.Handler that writes with HttpMessageConverter's.
@@ -200,16 +196,19 @@ public class ResponseBodyEmitterReturnValueHandler implements HandlerMethodRetur
 		}
 
 		@Override
-		public void send(Object data, @Nullable MediaType mediaType) throws IOException {
+		public void send(Object data, MediaType mediaType) throws IOException {
 			sendInternal(data, mediaType);
 		}
 
 		@SuppressWarnings("unchecked")
-		private <T> void sendInternal(T data, @Nullable MediaType mediaType) throws IOException {
-			for (HttpMessageConverter<?> converter : ResponseBodyEmitterReturnValueHandler.this.sseMessageConverters) {
+		private <T> void sendInternal(T data, MediaType mediaType) throws IOException {
+			for (HttpMessageConverter<?> converter : ResponseBodyEmitterReturnValueHandler.this.messageConverters) {
 				if (converter.canWrite(data.getClass(), mediaType)) {
 					((HttpMessageConverter<T>) converter).write(data, mediaType, this.outputMessage);
 					this.outputMessage.flush();
+					if (logger.isDebugEnabled()) {
+						logger.debug("Written [" + data + "] using [" + converter + "]");
+					}
 					return;
 				}
 			}
@@ -218,13 +217,7 @@ public class ResponseBodyEmitterReturnValueHandler implements HandlerMethodRetur
 
 		@Override
 		public void complete() {
-			try {
-				this.outputMessage.flush();
-				this.deferredResult.setResult(null);
-			}
-			catch (IOException ex) {
-				this.deferredResult.setErrorResult(ex);
-			}
+			this.deferredResult.setResult(null);
 		}
 
 		@Override
@@ -238,11 +231,6 @@ public class ResponseBodyEmitterReturnValueHandler implements HandlerMethodRetur
 		}
 
 		@Override
-		public void onError(Consumer<Throwable> callback) {
-			this.deferredResult.onError(callback);
-		}
-
-		@Override
 		public void onCompletion(Runnable callback) {
 			this.deferredResult.onCompletion(callback);
 		}
@@ -253,13 +241,20 @@ public class ResponseBodyEmitterReturnValueHandler implements HandlerMethodRetur
 	 * Wrap to silently ignore header changes HttpMessageConverter's that would
 	 * otherwise cause HttpHeaders to raise exceptions.
 	 */
-	private static class StreamingServletServerHttpResponse extends DelegatingServerHttpResponse {
+	private static class StreamingServletServerHttpResponse implements ServerHttpResponse {
+
+		private final ServerHttpResponse delegate;
 
 		private final HttpHeaders mutableHeaders = new HttpHeaders();
 
 		public StreamingServletServerHttpResponse(ServerHttpResponse delegate) {
-			super(delegate);
+			this.delegate = delegate;
 			this.mutableHeaders.putAll(delegate.getHeaders());
+		}
+
+		@Override
+		public void setStatusCode(HttpStatus status) {
+			this.delegate.setStatusCode(status);
 		}
 
 		@Override
@@ -267,6 +262,20 @@ public class ResponseBodyEmitterReturnValueHandler implements HandlerMethodRetur
 			return this.mutableHeaders;
 		}
 
+		@Override
+		public OutputStream getBody() throws IOException {
+			return this.delegate.getBody();
+		}
+
+		@Override
+		public void flush() throws IOException {
+			this.delegate.flush();
+		}
+
+		@Override
+		public void close() {
+			this.delegate.close();
+		}
 	}
 
 }

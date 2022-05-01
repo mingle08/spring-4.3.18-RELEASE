@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,6 @@ package org.springframework.web.servlet.mvc.support;
 import java.util.Collection;
 import java.util.Map;
 
-import org.springframework.lang.Nullable;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.DataBinder;
 
@@ -35,7 +34,6 @@ import org.springframework.validation.DataBinder;
 @SuppressWarnings("serial")
 public class RedirectAttributesModelMap extends ModelMap implements RedirectAttributes {
 
-	@Nullable
 	private final DataBinder dataBinder;
 
 	private final ModelMap flashAttributes = new ModelMap();
@@ -53,7 +51,7 @@ public class RedirectAttributesModelMap extends ModelMap implements RedirectAttr
 	 * Constructor with a DataBinder.
 	 * @param dataBinder used to format attribute values as Strings
 	 */
-	public RedirectAttributesModelMap(@Nullable DataBinder dataBinder) {
+	public RedirectAttributesModelMap(DataBinder dataBinder) {
 		this.dataBinder = dataBinder;
 	}
 
@@ -71,13 +69,12 @@ public class RedirectAttributesModelMap extends ModelMap implements RedirectAttr
 	 * <p>Formats the attribute value as a String before adding it.
 	 */
 	@Override
-	public RedirectAttributesModelMap addAttribute(String attributeName, @Nullable Object attributeValue) {
+	public RedirectAttributesModelMap addAttribute(String attributeName, Object attributeValue) {
 		super.addAttribute(attributeName, formatValue(attributeValue));
 		return this;
 	}
 
-	@Nullable
-	private String formatValue(@Nullable Object value) {
+	private String formatValue(Object value) {
 		if (value == null) {
 			return null;
 		}
@@ -99,7 +96,7 @@ public class RedirectAttributesModelMap extends ModelMap implements RedirectAttr
 	 * <p>Each attribute value is formatted as a String before being added.
 	 */
 	@Override
-	public RedirectAttributesModelMap addAllAttributes(@Nullable Collection<?> attributeValues) {
+	public RedirectAttributesModelMap addAllAttributes(Collection<?> attributeValues) {
 		super.addAllAttributes(attributeValues);
 		return this;
 	}
@@ -109,9 +106,11 @@ public class RedirectAttributesModelMap extends ModelMap implements RedirectAttr
 	 * <p>Each attribute value is formatted as a String before being added.
 	 */
 	@Override
-	public RedirectAttributesModelMap addAllAttributes(@Nullable Map<String, ?> attributes) {
+	public RedirectAttributesModelMap addAllAttributes(Map<String, ?> attributes) {
 		if (attributes != null) {
-			attributes.forEach(this::addAttribute);
+			for (String key : attributes.keySet()) {
+				addAttribute(key, attributes.get(key));
+			}
 		}
 		return this;
 	}
@@ -121,13 +120,13 @@ public class RedirectAttributesModelMap extends ModelMap implements RedirectAttr
 	 * <p>Each attribute value is formatted as a String before being merged.
 	 */
 	@Override
-	public RedirectAttributesModelMap mergeAttributes(@Nullable Map<String, ?> attributes) {
+	public RedirectAttributesModelMap mergeAttributes(Map<String, ?> attributes) {
 		if (attributes != null) {
-			attributes.forEach((key, attribute) -> {
+			for (String key : attributes.keySet()) {
 				if (!containsKey(key)) {
-					addAttribute(key, attribute);
+					addAttribute(key, attributes.get(key));
 				}
-			});
+			}
 		}
 		return this;
 	}
@@ -142,7 +141,7 @@ public class RedirectAttributesModelMap extends ModelMap implements RedirectAttr
 	 * <p>The value is formatted as a String before being added.
 	 */
 	@Override
-	public Object put(String key, @Nullable Object value) {
+	public Object put(String key, Object value) {
 		return super.put(key, formatValue(value));
 	}
 
@@ -151,14 +150,16 @@ public class RedirectAttributesModelMap extends ModelMap implements RedirectAttr
 	 * <p>Each value is formatted as a String before being added.
 	 */
 	@Override
-	public void putAll(@Nullable Map<? extends String, ? extends Object> map) {
+	public void putAll(Map<? extends String, ? extends Object> map) {
 		if (map != null) {
-			map.forEach((key, value) -> put(key, formatValue(value)));
+			for (String key : map.keySet()) {
+				put(key, formatValue(map.get(key)));
+			}
 		}
 	}
 
 	@Override
-	public RedirectAttributes addFlashAttribute(String attributeName, @Nullable Object attributeValue) {
+	public RedirectAttributes addFlashAttribute(String attributeName, Object attributeValue) {
 		this.flashAttributes.addAttribute(attributeName, attributeValue);
 		return this;
 	}

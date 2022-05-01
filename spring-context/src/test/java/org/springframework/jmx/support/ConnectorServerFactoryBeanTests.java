@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.jmx.support;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerConnection;
@@ -28,33 +27,43 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Test;
 
-import org.springframework.core.testfixture.net.TestSocketUtils;
 import org.springframework.jmx.AbstractMBeanServerTests;
+import org.springframework.tests.Assume;
+import org.springframework.tests.TestGroup;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
- * Integration tests for {@link ConnectorServerFactoryBean}.
+ * To run the tests in the class, set the following Java system property:
+ * {@code -DtestGroups=jmxmp}.
  *
  * @author Rob Harrop
  * @author Chris Beams
  * @author Sam Brannen
  */
-class ConnectorServerFactoryBeanTests extends AbstractMBeanServerTests {
+public class ConnectorServerFactoryBeanTests extends AbstractMBeanServerTests {
 
 	private static final String OBJECT_NAME = "spring:type=connector,name=test";
 
-	@SuppressWarnings("deprecation")
-	private final String serviceUrl = "service:jmx:jmxmp://localhost:" + TestSocketUtils.findAvailableTcpPort();
+
+	@Override
+	protected void onSetUp() throws Exception {
+		Assume.group(TestGroup.JMXMP);
+	}
+
+	@After
+	@Override
+	public void tearDown() throws Exception {
+		Assume.group(TestGroup.JMXMP, () -> super.tearDown());
+	}
 
 
 	@Test
-	void startupWithLocatedServer() throws Exception {
+	public void startupWithLocatedServer() throws Exception {
 		ConnectorServerFactoryBean bean = new ConnectorServerFactoryBean();
-		bean.setServiceUrl(this.serviceUrl);
 		bean.afterPropertiesSet();
 
 		try {
@@ -66,9 +75,12 @@ class ConnectorServerFactoryBeanTests extends AbstractMBeanServerTests {
 	}
 
 	@Test
-	void startupWithSuppliedServer() throws Exception {
+	public void startupWithSuppliedServer() throws Exception {
+		//Added a brief snooze here - seems to fix occasional
+		//java.net.BindException: Address already in use errors
+		Thread.sleep(1);
+
 		ConnectorServerFactoryBean bean = new ConnectorServerFactoryBean();
-		bean.setServiceUrl(this.serviceUrl);
 		bean.setServer(getServer());
 		bean.afterPropertiesSet();
 
@@ -81,16 +93,18 @@ class ConnectorServerFactoryBeanTests extends AbstractMBeanServerTests {
 	}
 
 	@Test
-	void registerWithMBeanServer() throws Exception {
+	public void registerWithMBeanServer() throws Exception {
+		//Added a brief snooze here - seems to fix occasional
+		//java.net.BindException: Address already in use errors
+		Thread.sleep(1);
 		ConnectorServerFactoryBean bean = new ConnectorServerFactoryBean();
-		bean.setServiceUrl(this.serviceUrl);
 		bean.setObjectName(OBJECT_NAME);
 		bean.afterPropertiesSet();
 
 		try {
 			// Try to get the connector bean.
 			ObjectInstance instance = getServer().getObjectInstance(ObjectName.getInstance(OBJECT_NAME));
-			assertThat(instance).as("ObjectInstance should not be null").isNotNull();
+			assertNotNull("ObjectInstance should not be null", instance);
 		}
 		finally {
 			bean.destroy();
@@ -98,14 +112,17 @@ class ConnectorServerFactoryBeanTests extends AbstractMBeanServerTests {
 	}
 
 	@Test
-	void noRegisterWithMBeanServer() throws Exception {
+	public void noRegisterWithMBeanServer() throws Exception {
 		ConnectorServerFactoryBean bean = new ConnectorServerFactoryBean();
-		bean.setServiceUrl(this.serviceUrl);
 		bean.afterPropertiesSet();
+
 		try {
 			// Try to get the connector bean.
-			assertThatExceptionOfType(InstanceNotFoundException.class).isThrownBy(() ->
-				getServer().getObjectInstance(ObjectName.getInstance(OBJECT_NAME)));
+			getServer().getObjectInstance(ObjectName.getInstance(OBJECT_NAME));
+			fail("Instance should not be found");
+		}
+		catch (InstanceNotFoundException ex) {
+			// expected
 		}
 		finally {
 			bean.destroy();
@@ -114,17 +131,18 @@ class ConnectorServerFactoryBeanTests extends AbstractMBeanServerTests {
 
 	private void checkServerConnection(MBeanServer hostedServer) throws IOException, MalformedURLException {
 		// Try to connect using client.
-		JMXServiceURL serviceURL = new JMXServiceURL(this.serviceUrl);
+		JMXServiceURL serviceURL = new JMXServiceURL(ConnectorServerFactoryBean.DEFAULT_SERVICE_URL);
 		JMXConnector connector = JMXConnectorFactory.connect(serviceURL);
 
-		assertThat(connector).as("Client Connector should not be null").isNotNull();
+		assertNotNull("Client Connector should not be null", connector);
 
 		// Get the MBean server connection.
 		MBeanServerConnection connection = connector.getMBeanServerConnection();
-		assertThat(connection).as("MBeanServerConnection should not be null").isNotNull();
+		assertNotNull("MBeanServerConnection should not be null", connection);
 
 		// Test for MBean server equality.
-		assertThat(connection.getMBeanCount()).as("Registered MBean count should be the same").isEqualTo(hostedServer.getMBeanCount());
+		assertEquals("Registered MBean count should be the same", hostedServer.getMBeanCount(),
+				connection.getMBeanCount());
 	}
 
 }

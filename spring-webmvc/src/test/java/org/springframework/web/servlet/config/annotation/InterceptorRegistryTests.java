@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,12 +21,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.Mockito;
 
-import org.springframework.core.Ordered;
-import org.springframework.lang.Nullable;
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.mock.web.test.MockHttpServletResponse;
 import org.springframework.ui.ModelMap;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.PathMatcher;
@@ -37,18 +37,14 @@ import org.springframework.web.servlet.handler.MappedInterceptor;
 import org.springframework.web.servlet.handler.WebRequestHandlerInterceptorAdapter;
 import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 import org.springframework.web.servlet.theme.ThemeChangeInterceptor;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
-import org.springframework.web.testfixture.servlet.MockHttpServletResponse;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.junit.Assert.*;
 
 /**
  * Test fixture with a {@link InterceptorRegistry}, two {@link HandlerInterceptor}s and two
  * {@link WebRequestInterceptor}s.
  *
  * @author Rossen Stoyanchev
- * @author Eko Kurniawan Khannedy
  */
 public class InterceptorRegistryTests {
 
@@ -67,7 +63,7 @@ public class InterceptorRegistryTests {
 	private final MockHttpServletResponse response = new MockHttpServletResponse();
 
 
-	@BeforeEach
+	@Before
 	public void setUp() {
 		this.registry = new InterceptorRegistry();
 		this.webInterceptor1 = new TestWebRequestInterceptor();
@@ -78,7 +74,7 @@ public class InterceptorRegistryTests {
 	public void addInterceptor() {
 		this.registry.addInterceptor(this.interceptor1);
 		List<HandlerInterceptor> interceptors = getInterceptorsForPath(null);
-		assertThat(interceptors).isEqualTo(Arrays.asList(this.interceptor1));
+		assertEquals(Arrays.asList(this.interceptor1), interceptors);
 	}
 
 	@Test
@@ -86,7 +82,7 @@ public class InterceptorRegistryTests {
 		this.registry.addInterceptor(this.interceptor1);
 		this.registry.addInterceptor(this.interceptor2);
 		List<HandlerInterceptor> interceptors = getInterceptorsForPath(null);
-		assertThat(interceptors).isEqualTo(Arrays.asList(this.interceptor1, this.interceptor2));
+		assertEquals(Arrays.asList(this.interceptor1, this.interceptor2), interceptors);
 	}
 
 	@Test
@@ -94,9 +90,9 @@ public class InterceptorRegistryTests {
 		this.registry.addInterceptor(this.interceptor1).addPathPatterns("/path1/**").excludePathPatterns("/path1/secret");
 		this.registry.addInterceptor(this.interceptor2).addPathPatterns("/path2");
 
-		assertThat(getInterceptorsForPath("/path1/test")).isEqualTo(Arrays.asList(this.interceptor1));
-		assertThat(getInterceptorsForPath("/path2")).isEqualTo(Arrays.asList(this.interceptor2));
-		assertThat(getInterceptorsForPath("/path1/secret")).isEqualTo(Collections.emptyList());
+		assertEquals(Arrays.asList(this.interceptor1), getInterceptorsForPath("/path1/test"));
+		assertEquals(Arrays.asList(this.interceptor2), getInterceptorsForPath("/path2"));
+		assertEquals(Collections.emptyList(), getInterceptorsForPath("/path1/secret"));
 	}
 
 	@Test
@@ -104,7 +100,7 @@ public class InterceptorRegistryTests {
 		this.registry.addWebRequestInterceptor(this.webInterceptor1);
 		List<HandlerInterceptor> interceptors = getInterceptorsForPath(null);
 
-		assertThat(interceptors.size()).isEqualTo(1);
+		assertEquals(1, interceptors.size());
 		verifyWebInterceptor(interceptors.get(0), this.webInterceptor1);
 	}
 
@@ -114,7 +110,7 @@ public class InterceptorRegistryTests {
 		this.registry.addWebRequestInterceptor(this.webInterceptor2);
 		List<HandlerInterceptor> interceptors = getInterceptorsForPath(null);
 
-		assertThat(interceptors.size()).isEqualTo(2);
+		assertEquals(2, interceptors.size());
 		verifyWebInterceptor(interceptors.get(0), this.webInterceptor1);
 		verifyWebInterceptor(interceptors.get(1), this.webInterceptor2);
 	}
@@ -125,7 +121,7 @@ public class InterceptorRegistryTests {
 		this.registry.addInterceptor(interceptor1).addPathPatterns("/path1/**").pathMatcher(pathMatcher);
 
 		MappedInterceptor mappedInterceptor = (MappedInterceptor) this.registry.getInterceptors().get(0);
-		assertThat(mappedInterceptor.getPathMatcher()).isSameAs(pathMatcher);
+		assertSame(pathMatcher, mappedInterceptor.getPathMatcher());
 	}
 
 	@Test
@@ -134,55 +130,33 @@ public class InterceptorRegistryTests {
 		this.registry.addWebRequestInterceptor(this.webInterceptor2).addPathPatterns("/path2");
 
 		List<HandlerInterceptor> interceptors = getInterceptorsForPath("/path1");
-		assertThat(interceptors.size()).isEqualTo(1);
+		assertEquals(1, interceptors.size());
 		verifyWebInterceptor(interceptors.get(0), this.webInterceptor1);
 
 		interceptors = getInterceptorsForPath("/path2");
-		assertThat(interceptors.size()).isEqualTo(1);
+		assertEquals(1, interceptors.size());
 		verifyWebInterceptor(interceptors.get(0), this.webInterceptor2);
 	}
 
-	@Test  // SPR-11130
+	// SPR-11130
+
+	@Test
 	public void addInterceptorWithExcludePathPatternOnly() {
 		this.registry.addInterceptor(this.interceptor1).excludePathPatterns("/path1/secret");
 		this.registry.addInterceptor(this.interceptor2).addPathPatterns("/path2");
 
-		assertThat(getInterceptorsForPath("/path1")).isEqualTo(Collections.singletonList(this.interceptor1));
-		assertThat(getInterceptorsForPath("/path2")).isEqualTo(Arrays.asList(this.interceptor1, this.interceptor2));
-		assertThat(getInterceptorsForPath("/path1/secret")).isEqualTo(Collections.emptyList());
-	}
-
-	@Test
-	public void orderedInterceptors() {
-		this.registry.addInterceptor(this.interceptor1).order(Ordered.LOWEST_PRECEDENCE);
-		this.registry.addInterceptor(this.interceptor2).order(Ordered.HIGHEST_PRECEDENCE);
-
-		List<Object> interceptors = this.registry.getInterceptors();
-		assertThat(interceptors.size()).isEqualTo(2);
-
-		assertThat(interceptors.get(0)).isSameAs(this.interceptor2);
-		assertThat(interceptors.get(1)).isSameAs(this.interceptor1);
-	}
-
-	@Test
-	public void nonOrderedInterceptors() {
-		this.registry.addInterceptor(this.interceptor1).order(0);
-		this.registry.addInterceptor(this.interceptor2).order(0);
-
-		List<Object> interceptors = this.registry.getInterceptors();
-		assertThat(interceptors.size()).isEqualTo(2);
-
-		assertThat(interceptors.get(0)).isSameAs(this.interceptor1);
-		assertThat(interceptors.get(1)).isSameAs(this.interceptor2);
+		assertEquals(Arrays.asList(this.interceptor1), getInterceptorsForPath("/path1"));
+		assertEquals(Arrays.asList(this.interceptor1, this.interceptor2), getInterceptorsForPath("/path2"));
+		assertEquals(Collections.emptyList(), getInterceptorsForPath("/path1/secret"));
 	}
 
 
-	@SuppressWarnings("deprecation")
 	private List<HandlerInterceptor> getInterceptorsForPath(String lookupPath) {
 		PathMatcher pathMatcher = new AntPathMatcher();
-		List<HandlerInterceptor> result = new ArrayList<>();
+		List<HandlerInterceptor> result = new ArrayList<HandlerInterceptor>();
 		for (Object interceptor : this.registry.getInterceptors()) {
-			if (interceptor instanceof MappedInterceptor mappedInterceptor) {
+			if (interceptor instanceof MappedInterceptor) {
+				MappedInterceptor mappedInterceptor = (MappedInterceptor) interceptor;
 				if (mappedInterceptor.matches(lookupPath, pathMatcher)) {
 					result.add(mappedInterceptor.getInterceptor());
 				}
@@ -197,15 +171,11 @@ public class InterceptorRegistryTests {
 		return result;
 	}
 
-	private void verifyWebInterceptor(HandlerInterceptor interceptor,
-			TestWebRequestInterceptor webInterceptor) throws Exception {
-
-		boolean condition = interceptor instanceof WebRequestHandlerInterceptorAdapter;
-		assertThat(condition).isTrue();
+	private void verifyWebInterceptor(HandlerInterceptor interceptor, TestWebRequestInterceptor webInterceptor) throws Exception {
+		assertTrue(interceptor instanceof WebRequestHandlerInterceptorAdapter);
 		interceptor.preHandle(this.request, this.response, null);
-		assertThat(webInterceptor.preHandleInvoked).isTrue();
+		assertTrue(webInterceptor.preHandleInvoked);
 	}
-
 
 	private static class TestWebRequestInterceptor implements WebRequestInterceptor {
 
@@ -217,11 +187,11 @@ public class InterceptorRegistryTests {
 		}
 
 		@Override
-		public void postHandle(WebRequest request, @Nullable ModelMap model) throws Exception {
+		public void postHandle(WebRequest request, ModelMap model) throws Exception {
 		}
 
 		@Override
-		public void afterCompletion(WebRequest request, @Nullable Exception ex) throws Exception {
+		public void afterCompletion(WebRequest request, Exception ex) throws Exception {
 		}
 	}
 

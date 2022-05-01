@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,20 +23,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.Supplier;
 
-import jakarta.servlet.ServletContext;
-
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.format.support.DefaultFormattingConversionService;
 import org.springframework.format.support.FormattingConversionService;
 import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.lang.Nullable;
 import org.springframework.mock.web.MockServletContext;
 import org.springframework.util.PropertyPlaceholderHelper;
 import org.springframework.util.PropertyPlaceholderHelper.PlaceholderResolver;
@@ -63,12 +57,10 @@ import org.springframework.web.servlet.handler.MappedInterceptor;
 import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
-import org.springframework.web.servlet.resource.ResourceUrlProvider;
 import org.springframework.web.servlet.support.SessionFlashMapManager;
 import org.springframework.web.servlet.theme.FixedThemeResolver;
 import org.springframework.web.servlet.view.DefaultRequestToViewNameTranslator;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
-import org.springframework.web.util.pattern.PathPatternParser;
 
 /**
  * A {@code MockMvcBuilder} that accepts {@code @Controller} registrations
@@ -91,55 +83,41 @@ import org.springframework.web.util.pattern.PathPatternParser;
  */
 public class StandaloneMockMvcBuilder extends AbstractMockMvcBuilder<StandaloneMockMvcBuilder> {
 
-	private final List<Object> controllers;
+	private final Object[] controllers;
 
-	@Nullable
 	private List<Object> controllerAdvice;
 
-	private List<HttpMessageConverter<?>> messageConverters = new ArrayList<>();
+	private List<HttpMessageConverter<?>> messageConverters = new ArrayList<HttpMessageConverter<?>>();
 
-	private List<HandlerMethodArgumentResolver> customArgumentResolvers = new ArrayList<>();
+	private List<HandlerMethodArgumentResolver> customArgumentResolvers = new ArrayList<HandlerMethodArgumentResolver>();
 
-	private List<HandlerMethodReturnValueHandler> customReturnValueHandlers = new ArrayList<>();
+	private List<HandlerMethodReturnValueHandler> customReturnValueHandlers = new ArrayList<HandlerMethodReturnValueHandler>();
 
-	private final List<MappedInterceptor> mappedInterceptors = new ArrayList<>();
+	private final List<MappedInterceptor> mappedInterceptors = new ArrayList<MappedInterceptor>();
 
-	@Nullable
-	private Validator validator;
+	private Validator validator = null;
 
-	@Nullable
 	private ContentNegotiationManager contentNegotiationManager;
 
-	@Nullable
-	private FormattingConversionService conversionService;
+	private FormattingConversionService conversionService = null;
 
-	@Nullable
 	private List<HandlerExceptionResolver> handlerExceptionResolvers;
 
-	@Nullable
 	private Long asyncRequestTimeout;
 
-	@Nullable
 	private List<ViewResolver> viewResolvers;
 
 	private LocaleResolver localeResolver = new AcceptHeaderLocaleResolver();
 
-	@Nullable
-	private FlashMapManager flashMapManager;
+	private FlashMapManager flashMapManager = null;
 
-	@Nullable
-	private PathPatternParser patternParser;
-
-	private boolean useSuffixPatternMatch = false;
+	private boolean useSuffixPatternMatch = true;
 
 	private boolean useTrailingSlashPatternMatch = true;
 
-	@Nullable
 	private Boolean removeSemicolonContent;
 
-	private final Map<String, String> placeholderValues = new HashMap<>();
-
-	private Supplier<RequestMappingHandlerMapping> handlerMappingFactory = RequestMappingHandlerMapping::new;
+	private Map<String, String> placeholderValues = new HashMap<String, String>();
 
 
 	/**
@@ -147,28 +125,20 @@ public class StandaloneMockMvcBuilder extends AbstractMockMvcBuilder<StandaloneM
 	 * @see MockMvcBuilders#standaloneSetup(Object...)
 	 */
 	protected StandaloneMockMvcBuilder(Object... controllers) {
-		this.controllers = instantiateIfNecessary(controllers);
-	}
-
-	private static List<Object> instantiateIfNecessary(Object[] specified) {
-		List<Object> instances = new ArrayList<>(specified.length);
-		for (Object obj : specified) {
-			instances.add(obj instanceof Class ? BeanUtils.instantiateClass((Class<?>) obj) : obj);
-		}
-		return instances;
+		this.controllers = controllers;
 	}
 
 
 	/**
 	 * Register one or more {@link org.springframework.web.bind.annotation.ControllerAdvice}
-	 * instances to be used in tests (specified {@code Class} will be turned into instance).
+	 * instances to be used in tests.
 	 * <p>Normally {@code @ControllerAdvice} are auto-detected as long as they're declared
 	 * as Spring beans. However since the standalone setup does not load any Spring config,
 	 * they need to be registered explicitly here instead much like controllers.
 	 * @since 4.2
 	 */
 	public StandaloneMockMvcBuilder setControllerAdvice(Object... controllerAdvice) {
-		this.controllerAdvice = instantiateIfNecessary(controllerAdvice);
+		this.controllerAdvice = Arrays.asList(controllerAdvice);
 		return this;
 	}
 
@@ -213,11 +183,9 @@ public class StandaloneMockMvcBuilder extends AbstractMockMvcBuilder<StandaloneM
 	/**
 	 * Add interceptors mapped to a set of path patterns.
 	 */
-	public StandaloneMockMvcBuilder addMappedInterceptors(
-			@Nullable String[] pathPatterns, HandlerInterceptor... interceptors) {
-
+	public StandaloneMockMvcBuilder addMappedInterceptors(String[] pathPatterns, HandlerInterceptor... interceptors) {
 		for (HandlerInterceptor interceptor : interceptors) {
-			this.mappedInterceptors.add(new MappedInterceptor(pathPatterns, null, interceptor));
+			this.mappedInterceptors.add(new MappedInterceptor(pathPatterns, interceptor));
 		}
 		return this;
 	}
@@ -274,7 +242,7 @@ public class StandaloneMockMvcBuilder extends AbstractMockMvcBuilder<StandaloneM
 	}
 
 	/**
-	 * Set up view resolution with the given {@link ViewResolver ViewResolvers}.
+	 * Set up view resolution with the given {@link ViewResolver}s.
 	 * If not set, an {@link InternalResourceViewResolver} is used by default.
 	 */
 	public StandaloneMockMvcBuilder setViewResolvers(ViewResolver...resolvers) {
@@ -311,25 +279,10 @@ public class StandaloneMockMvcBuilder extends AbstractMockMvcBuilder<StandaloneM
 	}
 
 	/**
-	 * Enable URL path matching with parsed
-	 * {@link org.springframework.web.util.pattern.PathPattern PathPatterns}
-	 * instead of String pattern matching with a {@link org.springframework.util.PathMatcher}.
-	 * @param parser the parser to use
-	 * @since 5.3
-	 */
-	public void setPatternParser(PathPatternParser parser) {
-		this.patternParser = parser;
-	}
-
-	/**
 	 * Whether to use suffix pattern match (".*") when matching patterns to
 	 * requests. If enabled a method mapped to "/users" also matches to "/users.*".
-	 * <p>The default value is {@code false}.
-	 * @deprecated as of 5.2.4. See class-level note in
-	 * {@link RequestMappingHandlerMapping} on the deprecation of path extension
-	 * config options.
+	 * <p>The default value is {@code true}.
 	 */
-	@Deprecated
 	public StandaloneMockMvcBuilder setUseSuffixPatternMatch(boolean useSuffixPatternMatch) {
 		this.useSuffixPatternMatch = useSuffixPatternMatch;
 		return this;
@@ -368,12 +321,11 @@ public class StandaloneMockMvcBuilder extends AbstractMockMvcBuilder<StandaloneM
 	}
 
 	/**
-	 * Configure factory to create a custom {@link RequestMappingHandlerMapping}.
-	 * @param factory the factory
-	 * @since 5.0
+	 * @deprecated as of 4.2.8, in favor of {@link #addPlaceholderValue(String, String)}
 	 */
-	public StandaloneMockMvcBuilder setCustomHandlerMapping(Supplier<RequestMappingHandlerMapping> factory) {
-		this.handlerMappingFactory = factory;
+	@Deprecated
+	public StandaloneMockMvcBuilder addPlaceHolderValue(String name, String value) {
+		this.placeholderValues.put(name, value);
 		return this;
 	}
 
@@ -390,38 +342,23 @@ public class StandaloneMockMvcBuilder extends AbstractMockMvcBuilder<StandaloneM
 	private void registerMvcSingletons(StubWebApplicationContext wac) {
 		StandaloneConfiguration config = new StandaloneConfiguration();
 		config.setApplicationContext(wac);
-		ServletContext sc = wac.getServletContext();
 
-		wac.addBeans(this.controllers);
 		wac.addBeans(this.controllerAdvice);
 
-		FormattingConversionService mvcConversionService = config.mvcConversionService();
-		wac.addBean("mvcConversionService", mvcConversionService);
-		ResourceUrlProvider resourceUrlProvider = config.mvcResourceUrlProvider();
-		wac.addBean("mvcResourceUrlProvider", resourceUrlProvider);
-		ContentNegotiationManager mvcContentNegotiationManager = config.mvcContentNegotiationManager();
-		wac.addBean("mvcContentNegotiationManager", mvcContentNegotiationManager);
-		Validator mvcValidator = config.mvcValidator();
-		wac.addBean("mvcValidator", mvcValidator);
-
-		RequestMappingHandlerMapping hm = config.getHandlerMapping(mvcConversionService, resourceUrlProvider);
-		if (sc != null) {
-			hm.setServletContext(sc);
-		}
+		StaticRequestMappingHandlerMapping hm = config.getHandlerMapping();
+		hm.setServletContext(wac.getServletContext());
 		hm.setApplicationContext(wac);
 		hm.afterPropertiesSet();
+		hm.registerHandlers(this.controllers);
 		wac.addBean("requestMappingHandlerMapping", hm);
 
-		RequestMappingHandlerAdapter ha = config.requestMappingHandlerAdapter(mvcContentNegotiationManager,
-				mvcConversionService, mvcValidator);
-		if (sc != null) {
-			ha.setServletContext(sc);
-		}
-		ha.setApplicationContext(wac);
-		ha.afterPropertiesSet();
-		wac.addBean("requestMappingHandlerAdapter", ha);
+		RequestMappingHandlerAdapter handlerAdapter = config.requestMappingHandlerAdapter();
+		handlerAdapter.setServletContext(wac.getServletContext());
+		handlerAdapter.setApplicationContext(wac);
+		handlerAdapter.afterPropertiesSet();
+		wac.addBean("requestMappingHandlerAdapter", handlerAdapter);
 
-		wac.addBean("handlerExceptionResolver", config.handlerExceptionResolver(mvcContentNegotiationManager));
+		wac.addBean("handlerExceptionResolver", config.handlerExceptionResolver());
 
 		wac.addBeans(initViewResolvers(wac));
 		wac.addBean(DispatcherServlet.LOCALE_RESOLVER_BEAN_NAME, this.localeResolver);
@@ -430,13 +367,11 @@ public class StandaloneMockMvcBuilder extends AbstractMockMvcBuilder<StandaloneM
 
 		this.flashMapManager = new SessionFlashMapManager();
 		wac.addBean(DispatcherServlet.FLASH_MAP_MANAGER_BEAN_NAME, this.flashMapManager);
-
-		extendMvcSingletons(sc).forEach(wac::addBean);
 	}
 
 	private List<ViewResolver> initViewResolvers(WebApplicationContext wac) {
 		this.viewResolvers = (this.viewResolvers != null ? this.viewResolvers :
-				Collections.singletonList(new InternalResourceViewResolver()));
+				Collections.<ViewResolver>singletonList(new InternalResourceViewResolver()));
 		for (Object viewResolver : this.viewResolvers) {
 			if (viewResolver instanceof WebApplicationObjectSupport) {
 				((WebApplicationObjectSupport) viewResolver).setApplicationContext(wac);
@@ -445,41 +380,20 @@ public class StandaloneMockMvcBuilder extends AbstractMockMvcBuilder<StandaloneM
 		return this.viewResolvers;
 	}
 
-	/**
-	 * This method could be used from a sub-class to register additional Spring
-	 * MVC infrastructure such as additional {@code HandlerMapping},
-	 * {@code HandlerAdapter}, and others.
-	 * @param servletContext the ServletContext
-	 * @return a map with additional MVC infrastructure object instances
-	 * @since 5.1.4
-	 */
-	protected Map<String, Object> extendMvcSingletons(@Nullable ServletContext servletContext) {
-		return Collections.emptyMap();
-	}
 
-
-	/** Using the MVC Java configuration as the starting point for the "standalone" setup. */
+	/** Using the MVC Java configuration as the starting point for the "standalone" setup */
 	private class StandaloneConfiguration extends WebMvcConfigurationSupport {
 
-		@SuppressWarnings("deprecation")
-		public RequestMappingHandlerMapping getHandlerMapping(
-				FormattingConversionService mvcConversionService,
-				ResourceUrlProvider mvcResourceUrlProvider) {
-
-			RequestMappingHandlerMapping handlerMapping = handlerMappingFactory.get();
+		public StaticRequestMappingHandlerMapping getHandlerMapping() {
+			StaticRequestMappingHandlerMapping handlerMapping = new StaticRequestMappingHandlerMapping();
 			handlerMapping.setEmbeddedValueResolver(new StaticStringValueResolver(placeholderValues));
-			if (patternParser != null) {
-				handlerMapping.setPatternParser(patternParser);
-			}
-			else {
-				handlerMapping.setUseSuffixPatternMatch(useSuffixPatternMatch);
-				if (removeSemicolonContent != null) {
-					handlerMapping.setRemoveSemicolonContent(removeSemicolonContent);
-				}
-			}
+			handlerMapping.setUseSuffixPatternMatch(useSuffixPatternMatch);
 			handlerMapping.setUseTrailingSlashMatch(useTrailingSlashPatternMatch);
 			handlerMapping.setOrder(0);
-			handlerMapping.setInterceptors(getInterceptors(mvcConversionService, mvcResourceUrlProvider));
+			handlerMapping.setInterceptors(getInterceptors());
+			if (removeSemicolonContent != null) {
+				handlerMapping.setRemoveSemicolonContent(removeSemicolonContent);
+			}
 			return handlerMapping;
 		}
 
@@ -515,7 +429,7 @@ public class StandaloneMockMvcBuilder extends AbstractMockMvcBuilder<StandaloneM
 
 		@Override
 		public FormattingConversionService mvcConversionService() {
-			return (conversionService != null ? conversionService : super.mvcConversionService());
+			return (conversionService != null) ? conversionService : super.mvcConversionService();
 		}
 
 		@Override
@@ -546,10 +460,7 @@ public class StandaloneMockMvcBuilder extends AbstractMockMvcBuilder<StandaloneM
 			}
 			for (HandlerExceptionResolver resolver : handlerExceptionResolvers) {
 				if (resolver instanceof ApplicationContextAware) {
-					ApplicationContext applicationContext = getApplicationContext();
-					if (applicationContext != null) {
-						((ApplicationContextAware) resolver).setApplicationContext(applicationContext);
-					}
+					((ApplicationContextAware) resolver).setApplicationContext(getApplicationContext());
 				}
 				if (resolver instanceof InitializingBean) {
 					try {
@@ -564,6 +475,20 @@ public class StandaloneMockMvcBuilder extends AbstractMockMvcBuilder<StandaloneM
 		}
 	}
 
+
+	/**
+	 * A {@code RequestMappingHandlerMapping} that allows registration of controllers.
+	 */
+	private static class StaticRequestMappingHandlerMapping extends RequestMappingHandlerMapping {
+
+		public void registerHandlers(Object...handlers) {
+			for (Object handler : handlers) {
+				detectHandlerMethods(handler);
+			}
+		}
+	}
+
+
 	/**
 	 * A static resolver placeholder for values embedded in request mappings.
 	 */
@@ -573,9 +498,14 @@ public class StandaloneMockMvcBuilder extends AbstractMockMvcBuilder<StandaloneM
 
 		private final PlaceholderResolver resolver;
 
-		public StaticStringValueResolver(Map<String, String> values) {
+		public StaticStringValueResolver(final Map<String, String> values) {
 			this.helper = new PropertyPlaceholderHelper("${", "}", ":", false);
-			this.resolver = values::get;
+			this.resolver = new PlaceholderResolver() {
+				@Override
+				public String resolvePlaceholder(String placeholderName) {
+					return values.get(placeholderName);
+				}
+			};
 		}
 
 		@Override
@@ -597,7 +527,6 @@ public class StandaloneMockMvcBuilder extends AbstractMockMvcBuilder<StandaloneM
 		}
 
 		@Override
-		@Nullable
 		public View resolveViewName(String viewName, Locale locale) {
 			return this.view;
 		}

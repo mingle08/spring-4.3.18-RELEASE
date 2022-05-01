@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2009 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,13 +16,13 @@
 
 package org.springframework.scheduling.quartz;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.util.StopWatch;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Mark Fisher
@@ -30,30 +30,28 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class QuartzSchedulerLifecycleTests {
 
-	@Test  // SPR-6354
+	@Test // SPR-6354
 	public void destroyLazyInitSchedulerWithDefaultShutdownOrderDoesNotHang() {
-		ConfigurableApplicationContext context =
-				new ClassPathXmlApplicationContext("quartzSchedulerLifecycleTests.xml", getClass());
-		assertThat(context.getBean("lazyInitSchedulerWithDefaultShutdownOrder")).isNotNull();
+		AbstractApplicationContext context = new ClassPathXmlApplicationContext("quartzSchedulerLifecycleTests.xml", this.getClass());
+		assertNotNull(context.getBean("lazyInitSchedulerWithDefaultShutdownOrder"));
 		StopWatch sw = new StopWatch();
 		sw.start("lazyScheduler");
-		context.close();
+		context.destroy();
 		sw.stop();
-		assertThat(sw.getTotalTimeMillis() < 500).as("Quartz Scheduler with lazy-init is hanging on destruction: " +
-				sw.getTotalTimeMillis()).isTrue();
+		assertTrue("Quartz Scheduler with lazy-init is hanging on destruction: " +
+				sw.getTotalTimeMillis(), sw.getTotalTimeMillis() < 500);
 	}
 
-	@Test  // SPR-6354
+	@Test // SPR-6354
 	public void destroyLazyInitSchedulerWithCustomShutdownOrderDoesNotHang() {
-		ConfigurableApplicationContext context =
-				new ClassPathXmlApplicationContext("quartzSchedulerLifecycleTests.xml", getClass());
-		assertThat(context.getBean("lazyInitSchedulerWithCustomShutdownOrder")).isNotNull();
+		AbstractApplicationContext context = new ClassPathXmlApplicationContext("quartzSchedulerLifecycleTests.xml", this.getClass());
+		assertNotNull(context.getBean("lazyInitSchedulerWithCustomShutdownOrder"));
 		StopWatch sw = new StopWatch();
 		sw.start("lazyScheduler");
-		context.close();
+		context.destroy();
 		sw.stop();
-		assertThat(sw.getTotalTimeMillis() < 500).as("Quartz Scheduler with lazy-init is hanging on destruction: " +
-				sw.getTotalTimeMillis()).isTrue();
+		assertTrue("Quartz Scheduler with lazy-init is hanging on destruction: " +
+				sw.getTotalTimeMillis(), sw.getTotalTimeMillis() < 500);
 	}
 
 }

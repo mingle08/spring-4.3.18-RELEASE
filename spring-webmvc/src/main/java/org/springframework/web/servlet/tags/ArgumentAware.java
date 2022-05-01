@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,9 +16,7 @@
 
 package org.springframework.web.servlet.tags;
 
-import jakarta.servlet.jsp.JspTagException;
-
-import org.springframework.lang.Nullable;
+import javax.servlet.jsp.JspTagException;
 
 /**
  * Allows implementing tag to utilize nested {@code spring:argument} tags.
@@ -34,6 +32,6 @@ public interface ArgumentAware {
 	 * to the parent tag.
 	 * @param argument the result of the nested {@code spring:argument} tag
 	 */
-	void addArgument(@Nullable Object argument) throws JspTagException;
+	void addArgument(Object argument) throws JspTagException;
 
 }

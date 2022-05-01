@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,6 @@ import java.util.prefs.Preferences;
 
 import org.springframework.beans.factory.BeanDefinitionStoreException;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.lang.Nullable;
 
 /**
  * Subclass of PropertyPlaceholderConfigurer that supports JDK 1.4's
@@ -42,20 +41,16 @@ import org.springframework.lang.Nullable;
  * @see #setSystemTreePath
  * @see #setUserTreePath
  * @see java.util.prefs.Preferences
- * @deprecated as of 5.2, along with {@link PropertyPlaceholderConfigurer}
  */
-@Deprecated
 public class PreferencesPlaceholderConfigurer extends PropertyPlaceholderConfigurer implements InitializingBean {
 
-	@Nullable
 	private String systemTreePath;
 
-	@Nullable
 	private String userTreePath;
 
-	private Preferences systemPrefs = Preferences.systemRoot();
+	private Preferences systemPrefs;
 
-	private Preferences userPrefs = Preferences.userRoot();
+	private Preferences userPrefs;
 
 
 	/**
@@ -81,12 +76,10 @@ public class PreferencesPlaceholderConfigurer extends PropertyPlaceholderConfigu
 	 */
 	@Override
 	public void afterPropertiesSet() {
-		if (this.systemTreePath != null) {
-			this.systemPrefs = this.systemPrefs.node(this.systemTreePath);
-		}
-		if (this.userTreePath != null) {
-			this.userPrefs = this.userPrefs.node(this.userTreePath);
-		}
+		this.systemPrefs = (this.systemTreePath != null) ?
+				Preferences.systemRoot().node(this.systemTreePath) : Preferences.systemRoot();
+		this.userPrefs = (this.userTreePath != null) ?
+				Preferences.userRoot().node(this.userTreePath) : Preferences.userRoot();
 	}
 
 	/**
@@ -120,10 +113,9 @@ public class PreferencesPlaceholderConfigurer extends PropertyPlaceholderConfigu
 	 * @param preferences the Preferences to resolve against
 	 * @return the value for the placeholder, or {@code null} if none found
 	 */
-	@Nullable
-	protected String resolvePlaceholder(@Nullable String path, String key, Preferences preferences) {
+	protected String resolvePlaceholder(String path, String key, Preferences preferences) {
 		if (path != null) {
-			// Do not create the node if it does not exist...
+			 // Do not create the node if it does not exist...
 			try {
 				if (preferences.nodeExists(path)) {
 					return preferences.node(path).get(key, null);

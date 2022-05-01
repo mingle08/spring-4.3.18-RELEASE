@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,6 @@
 
 package org.springframework.web.context.request;
 
-import org.springframework.lang.Nullable;
-
 /**
  * Request-backed {@link org.springframework.beans.factory.config.Scope}
  * implementation.
@@ -26,6 +24,11 @@ import org.springframework.lang.Nullable;
  * can be exported through {@link RequestContextListener},
  * {@link org.springframework.web.filter.RequestContextFilter} or
  * {@link org.springframework.web.servlet.DispatcherServlet}.
+ *
+ * <p>This {@code Scope} will also work for Portlet environments,
+ * through an alternate {@code RequestAttributes} implementation
+ * (as exposed out-of-the-box by Spring's
+ * {@link org.springframework.web.portlet.DispatcherPortlet}.
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -36,6 +39,7 @@ import org.springframework.lang.Nullable;
  * @see RequestContextListener
  * @see org.springframework.web.filter.RequestContextFilter
  * @see org.springframework.web.servlet.DispatcherServlet
+ * @see org.springframework.web.portlet.DispatcherPortlet
  */
 public class RequestScope extends AbstractRequestAttributesScope {
 
@@ -49,7 +53,6 @@ public class RequestScope extends AbstractRequestAttributesScope {
 	 * returns {@code null}.
 	 */
 	@Override
-	@Nullable
 	public String getConversationId() {
 		return null;
 	}

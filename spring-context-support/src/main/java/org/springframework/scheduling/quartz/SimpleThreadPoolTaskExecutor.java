@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -76,7 +76,6 @@ public class SimpleThreadPoolTaskExecutor extends SimpleThreadPool
 		}
 	}
 
-	@Deprecated
 	@Override
 	public void execute(Runnable task, long startTimeout) {
 		execute(task);
@@ -84,30 +83,38 @@ public class SimpleThreadPoolTaskExecutor extends SimpleThreadPool
 
 	@Override
 	public Future<?> submit(Runnable task) {
-		FutureTask<Object> future = new FutureTask<>(task, null);
+		FutureTask<Object> future = new FutureTask<Object>(task, null);
 		execute(future);
 		return future;
 	}
 
 	@Override
 	public <T> Future<T> submit(Callable<T> task) {
-		FutureTask<T> future = new FutureTask<>(task);
+		FutureTask<T> future = new FutureTask<T>(task);
 		execute(future);
 		return future;
 	}
 
 	@Override
 	public ListenableFuture<?> submitListenable(Runnable task) {
-		ListenableFutureTask<Object> future = new ListenableFutureTask<>(task, null);
+		ListenableFutureTask<Object> future = new ListenableFutureTask<Object>(task, null);
 		execute(future);
 		return future;
 	}
 
 	@Override
 	public <T> ListenableFuture<T> submitListenable(Callable<T> task) {
-		ListenableFutureTask<T> future = new ListenableFutureTask<>(task);
+		ListenableFutureTask<T> future = new ListenableFutureTask<T>(task);
 		execute(future);
 		return future;
+	}
+
+	/**
+	 * This task executor prefers short-lived work units.
+	 */
+	@Override
+	public boolean prefersShortLivedTasks() {
+		return true;
 	}
 
 

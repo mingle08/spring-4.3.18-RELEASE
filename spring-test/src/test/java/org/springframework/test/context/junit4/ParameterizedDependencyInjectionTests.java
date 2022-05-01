@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,15 +28,15 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.testfixture.beans.Employee;
-import org.springframework.beans.testfixture.beans.Pet;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestContextManager;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.support.DependencyInjectionTestExecutionListener;
+import org.springframework.tests.sample.beans.Employee;
+import org.springframework.tests.sample.beans.Pet;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Simple JUnit 4 based integration test which demonstrates how to use JUnit's
@@ -92,16 +92,18 @@ public class ParameterizedDependencyInjectionTests {
 		invocationCount.incrementAndGet();
 
 		// Verifying dependency injection:
-		assertThat(this.pet).as("The pet field should have been autowired.").isNotNull();
+		assertNotNull("The pet field should have been autowired.", this.pet);
 
 		// Verifying 'parameterized' support:
 		Employee employee = this.applicationContext.getBean(this.employeeBeanName, Employee.class);
-		assertThat(employee.getName()).as("Name of the employee configured as bean [" + this.employeeBeanName + "].").isEqualTo(this.employeeName);
+		assertEquals("Name of the employee configured as bean [" + this.employeeBeanName + "].", this.employeeName,
+			employee.getName());
 	}
 
 	@AfterClass
 	public static void verifyNumParameterizedRuns() {
-		assertThat(invocationCount.get()).as("Number of times the parameterized test method was executed.").isEqualTo(employeeData().length);
+		assertEquals("Number of times the parameterized test method was executed.", employeeData().length,
+			invocationCount.get());
 	}
 
 }

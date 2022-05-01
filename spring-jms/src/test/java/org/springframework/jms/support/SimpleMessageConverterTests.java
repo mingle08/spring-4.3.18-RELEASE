@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,25 +20,23 @@ import java.io.ByteArrayInputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import javax.jms.BytesMessage;
+import javax.jms.JMSException;
+import javax.jms.MapMessage;
+import javax.jms.Message;
+import javax.jms.ObjectMessage;
+import javax.jms.Session;
+import javax.jms.TextMessage;
 
-import jakarta.jms.BytesMessage;
-import jakarta.jms.JMSException;
-import jakarta.jms.MapMessage;
-import jakarta.jms.Message;
-import jakarta.jms.ObjectMessage;
-import jakarta.jms.Session;
-import jakarta.jms.TextMessage;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.springframework.jms.support.converter.MessageConversionException;
 import org.springframework.jms.support.converter.SimpleMessageConverter;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * Unit tests for the {@link SimpleMessageConverter} class.
@@ -61,7 +59,7 @@ public class SimpleMessageConverterTests {
 
 		SimpleMessageConverter converter = new SimpleMessageConverter();
 		Message msg = converter.toMessage(content, session);
-		assertThat(converter.fromMessage(msg)).isEqualTo(content);
+		assertEquals(content, converter.fromMessage(msg));
 	}
 
 	@Test
@@ -74,11 +72,16 @@ public class SimpleMessageConverterTests {
 
 		given(session.createBytesMessage()).willReturn(message);
 		given(message.getBodyLength()).willReturn((long) content.length);
-		given(message.readBytes(any(byte[].class))).willAnswer(invocation -> byteArrayInputStream.read((byte[]) invocation.getArguments()[0]));
+		given(message.readBytes(any(byte[].class))).willAnswer(new Answer<Integer>() {
+			@Override
+			public Integer answer(InvocationOnMock invocation) throws Throwable {
+				return byteArrayInputStream.read((byte[]) invocation.getArguments()[0]);
+			}
+		});
 
 		SimpleMessageConverter converter = new SimpleMessageConverter();
 		Message msg = converter.toMessage(content, session);
-		assertThat(((byte[]) converter.fromMessage(msg)).length).isEqualTo(content.length);
+		assertEquals(content.length, ((byte[]) converter.fromMessage(msg)).length);
 
 		verify(message).writeBytes(content);
 	}
@@ -89,7 +92,7 @@ public class SimpleMessageConverterTests {
 		Session session = mock(Session.class);
 		MapMessage message = mock(MapMessage.class);
 
-		Map<String, String> content = new HashMap<>(2);
+		Map<String, String> content = new HashMap<String, String>(2);
 		content.put("key1", "value1");
 		content.put("key2", "value2");
 
@@ -100,7 +103,7 @@ public class SimpleMessageConverterTests {
 
 		SimpleMessageConverter converter = new SimpleMessageConverter();
 		Message msg = converter.toMessage(content, session);
-		assertThat(converter.fromMessage(msg)).isEqualTo(content);
+		assertEquals(content, converter.fromMessage(msg));
 
 		verify(message).setObject("key1", "value1");
 		verify(message).setObject("key2", "value2");
@@ -111,26 +114,24 @@ public class SimpleMessageConverterTests {
 		Session session = mock(Session.class);
 		ObjectMessage message = mock(ObjectMessage.class);
 
-		Integer content = 5;
+		Integer content = new Integer(5);
 
 		given(session.createObjectMessage(content)).willReturn(message);
 		given(message.getObject()).willReturn(content);
 
 		SimpleMessageConverter converter = new SimpleMessageConverter();
 		Message msg = converter.toMessage(content, session);
-		assertThat(converter.fromMessage(msg)).isEqualTo(content);
+		assertEquals(content, converter.fromMessage(msg));
 	}
 
-	@Test
+	@Test(expected = MessageConversionException.class)
 	public void testToMessageThrowsExceptionIfGivenNullObjectToConvert() throws Exception {
-		assertThatExceptionOfType(MessageConversionException.class).isThrownBy(() ->
-				new SimpleMessageConverter().toMessage(null, null));
+		new SimpleMessageConverter().toMessage(null, null);
 	}
 
-	@Test
+	@Test(expected = MessageConversionException.class)
 	public void testToMessageThrowsExceptionIfGivenIncompatibleObjectToConvert() throws Exception {
-		assertThatExceptionOfType(MessageConversionException.class).isThrownBy(() ->
-				new SimpleMessageConverter().toMessage(new Object(), null));
+		new SimpleMessageConverter().toMessage(new Object(), null);
 	}
 
 	@Test
@@ -140,7 +141,7 @@ public class SimpleMessageConverterTests {
 
 		SimpleMessageConverter converter = new SimpleMessageConverter();
 		Message msg = converter.toMessage(message, session);
-		assertThat(msg).isSameAs(message);
+		assertSame(message, msg);
 	}
 
 	@Test
@@ -149,7 +150,7 @@ public class SimpleMessageConverterTests {
 
 		SimpleMessageConverter converter = new SimpleMessageConverter();
 		Object msg = converter.fromMessage(message);
-		assertThat(msg).isSameAs(message);
+		assertSame(message, msg);
 	}
 
 	@Test
@@ -158,12 +159,15 @@ public class SimpleMessageConverterTests {
 		Session session = mock(Session.class);
 		given(session.createMapMessage()).willReturn(message);
 
-		Map<Integer, String> content = new HashMap<>(1);
+		Map<Integer, String> content = new HashMap<Integer, String>(1);
 		content.put(1, "value1");
 
 		SimpleMessageConverter converter = new SimpleMessageConverter();
-		assertThatExceptionOfType(MessageConversionException.class).isThrownBy(() ->
-				converter.toMessage(content, session));
+		try {
+			converter.toMessage(content, session);
+			fail("expected MessageConversionException");
+		}
+		catch (MessageConversionException ex) { /* expected */ }
 	}
 
 	@Test
@@ -172,12 +176,15 @@ public class SimpleMessageConverterTests {
 		Session session = mock(Session.class);
 		given(session.createMapMessage()).willReturn(message);
 
-		Map<Object, String> content = new HashMap<>(1);
+		Map<Object, String> content = new HashMap<Object, String>(1);
 		content.put(null, "value1");
 
 		SimpleMessageConverter converter = new SimpleMessageConverter();
-		assertThatExceptionOfType(MessageConversionException.class).isThrownBy(() ->
-				converter.toMessage(content, session));
+		try {
+			converter.toMessage(content, session);
+			fail("expected MessageConversionException");
+		}
+		catch (MessageConversionException ex) { /* expected */ }
 	}
 
 }

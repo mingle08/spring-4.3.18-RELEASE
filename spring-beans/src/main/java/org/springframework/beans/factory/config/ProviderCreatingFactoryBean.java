@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,33 +17,30 @@
 package org.springframework.beans.factory.config;
 
 import java.io.Serializable;
-
-import jakarta.inject.Provider;
+import javax.inject.Provider;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
  * A {@link org.springframework.beans.factory.FactoryBean} implementation that
- * returns a value which is a JSR-330 {@link jakarta.inject.Provider} that in turn
+ * returns a value which is a JSR-330 {@link javax.inject.Provider} that in turn
  * returns a bean sourced from a {@link org.springframework.beans.factory.BeanFactory}.
  *
  * <p>This is basically a JSR-330 compliant variant of Spring's good old
  * {@link ObjectFactoryCreatingFactoryBean}. It can be used for traditional
  * external dependency injection configuration that targets a property or
- * constructor argument of type {@code jakarta.inject.Provider}, as an
+ * constructor argument of type {@code javax.inject.Provider}, as an
  * alternative to JSR-330's {@code @Inject} annotation-driven approach.
  *
  * @author Juergen Hoeller
  * @since 3.0.2
- * @see jakarta.inject.Provider
+ * @see javax.inject.Provider
  * @see ObjectFactoryCreatingFactoryBean
  */
 public class ProviderCreatingFactoryBean extends AbstractFactoryBean<Provider<Object>> {
 
-	@Nullable
 	private String targetBeanName;
 
 
@@ -72,10 +69,7 @@ public class ProviderCreatingFactoryBean extends AbstractFactoryBean<Provider<Ob
 
 	@Override
 	protected Provider<Object> createInstance() {
-		BeanFactory beanFactory = getBeanFactory();
-		Assert.state(beanFactory != null, "No BeanFactory available");
-		Assert.state(this.targetBeanName != null, "No target bean name specified");
-		return new TargetBeanProvider(beanFactory, this.targetBeanName);
+		return new TargetBeanProvider(getBeanFactory(), this.targetBeanName);
 	}
 
 

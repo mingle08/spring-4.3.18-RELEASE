@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,43 +17,42 @@
 package org.springframework.jmx.access;
 
 import java.beans.PropertyDescriptor;
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.ThreadMXBean;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.BindException;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.management.Descriptor;
 import javax.management.MBeanServerConnection;
 import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import org.springframework.aop.framework.ProxyFactory;
-import org.springframework.core.testfixture.net.TestSocketUtils;
 import org.springframework.jmx.AbstractMBeanServerTests;
 import org.springframework.jmx.IJmxTestBean;
+import org.springframework.jmx.JmxException;
 import org.springframework.jmx.JmxTestBean;
 import org.springframework.jmx.export.MBeanExporter;
 import org.springframework.jmx.export.assembler.AbstractReflectiveMBeanInfoAssembler;
+import org.springframework.tests.Assume;
+import org.springframework.tests.TestGroup;
+import org.springframework.util.SocketUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatIOException;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.Assert.*;
+import static org.junit.Assume.*;
 
 /**
+ * To run the tests in the class, set the following Java system property:
+ * {@code -DtestGroups=jmxmp}.
+ *
  * @author Rob Harrop
  * @author Juergen Hoeller
  * @author Sam Brannen
  * @author Chris Beams
  */
-class MBeanClientInterceptorTests extends AbstractMBeanServerTests {
+public class MBeanClientInterceptorTests extends AbstractMBeanServerTests {
 
 	protected static final String OBJECT_NAME = "spring:test=proxy";
 
@@ -68,7 +67,7 @@ class MBeanClientInterceptorTests extends AbstractMBeanServerTests {
 		target.setName("Rob Harrop");
 
 		MBeanExporter adapter = new MBeanExporter();
-		Map<String, Object> beans = new HashMap<>();
+		Map<String, Object> beans = new HashMap<String, Object>();
 		beans.put(OBJECT_NAME, target);
 		adapter.setServer(getServer());
 		adapter.setBeans(beans);
@@ -90,95 +89,95 @@ class MBeanClientInterceptorTests extends AbstractMBeanServerTests {
 	}
 
 	@Test
-	void proxyClassIsDifferent() throws Exception {
+	public void testProxyClassIsDifferent() throws Exception {
 		assumeTrue(runTests);
 		IJmxTestBean proxy = getProxy();
-		assertThat(proxy.getClass()).as("The proxy class should be different than the base class").isNotSameAs(IJmxTestBean.class);
+		assertTrue("The proxy class should be different than the base class", (proxy.getClass() != IJmxTestBean.class));
 	}
 
 	@Test
-	void differentProxiesSameClass() throws Exception {
+	public void testDifferentProxiesSameClass() throws Exception {
 		assumeTrue(runTests);
 		IJmxTestBean proxy1 = getProxy();
 		IJmxTestBean proxy2 = getProxy();
 
-		assertThat(proxy2).as("The proxies should NOT be the same").isNotSameAs(proxy1);
-		assertThat(proxy2.getClass()).as("The proxy classes should be the same").isSameAs(proxy1.getClass());
+		assertNotSame("The proxies should NOT be the same", proxy1, proxy2);
+		assertSame("The proxy classes should be the same", proxy1.getClass(), proxy2.getClass());
 	}
 
 	@Test
-	void getAttributeValue() throws Exception {
+	public void testGetAttributeValue() throws Exception {
 		assumeTrue(runTests);
 		IJmxTestBean proxy1 = getProxy();
 		int age = proxy1.getAge();
-		assertThat(age).as("The age should be 100").isEqualTo(100);
+		assertEquals("The age should be 100", 100, age);
 	}
 
 	@Test
-	void setAttributeValue() throws Exception {
+	public void testSetAttributeValue() throws Exception {
 		assumeTrue(runTests);
 		IJmxTestBean proxy = getProxy();
 		proxy.setName("Rob Harrop");
-		assertThat(target.getName()).as("The name of the bean should have been updated").isEqualTo("Rob Harrop");
+		assertEquals("The name of the bean should have been updated", "Rob Harrop", target.getName());
 	}
 
-	@Test
-	void setAttributeValueWithRuntimeException() throws Exception {
+	@Test(expected = IllegalArgumentException.class)
+	public void testSetAttributeValueWithRuntimeException() throws Exception {
 		assumeTrue(runTests);
 		IJmxTestBean proxy = getProxy();
-		assertThatIllegalArgumentException().isThrownBy(() -> proxy.setName("Juergen"));
+		proxy.setName("Juergen");
 	}
 
-	@Test
-	void setAttributeValueWithCheckedException() throws Exception {
+	@Test(expected = ClassNotFoundException.class)
+	public void testSetAttributeValueWithCheckedException() throws Exception {
 		assumeTrue(runTests);
 		IJmxTestBean proxy = getProxy();
-		assertThatExceptionOfType(ClassNotFoundException.class).isThrownBy(() -> proxy.setName("Juergen Class"));
+		proxy.setName("Juergen Class");
 	}
 
-	@Test
-	void setAttributeValueWithIOException() throws Exception {
+	@Test(expected = IOException.class)
+	public void testSetAttributeValueWithIOException() throws Exception {
 		assumeTrue(runTests);
 		IJmxTestBean proxy = getProxy();
-		assertThatIOException().isThrownBy(() -> proxy.setName("Juergen IO"));
+		proxy.setName("Juergen IO");
 	}
 
-	@Test
-	void setReadOnlyAttribute() throws Exception {
+	@Test(expected = InvalidInvocationException.class)
+	public void testSetReadOnlyAttribute() throws Exception {
 		assumeTrue(runTests);
 		IJmxTestBean proxy = getProxy();
-		assertThatExceptionOfType(InvalidInvocationException.class).isThrownBy(() -> proxy.setAge(900));
+		proxy.setAge(900);
 	}
 
 	@Test
-	void invokeNoArgs() throws Exception {
+	public void testInvokeNoArgs() throws Exception {
 		assumeTrue(runTests);
 		IJmxTestBean proxy = getProxy();
 		long result = proxy.myOperation();
-		assertThat(result).as("The operation should return 1").isEqualTo(1);
+		assertEquals("The operation should return 1", 1, result);
 	}
 
 	@Test
-	void invokeArgs() throws Exception {
+	public void testInvokeArgs() throws Exception {
 		assumeTrue(runTests);
 		IJmxTestBean proxy = getProxy();
 		int result = proxy.add(1, 2);
-		assertThat(result).as("The operation should return 3").isEqualTo(3);
+		assertEquals("The operation should return 3", 3, result);
 	}
 
-	@Test
-	void invokeUnexposedMethodWithException() throws Exception {
+	@Test(expected = InvalidInvocationException.class)
+	public void testInvokeUnexposedMethodWithException() throws Exception {
 		assumeTrue(runTests);
 		IJmxTestBean bean = getProxy();
-		assertThatExceptionOfType(InvalidInvocationException.class).isThrownBy(() -> bean.dontExposeMe());
+		bean.dontExposeMe();
 	}
 
 	@Test
-	void lazyConnectionToRemote() throws Exception {
+	public void testTestLazyConnectionToRemote() throws Exception {
 		assumeTrue(runTests);
+		Assume.group(TestGroup.JMXMP);
 
-		@SuppressWarnings("deprecation")
-		final int port = TestSocketUtils.findAvailableTcpPort();
+		final int port = SocketUtils.findAvailableTcpPort();
 
 		JMXServiceURL url = new JMXServiceURL("service:jmx:jmxmp://localhost:" + port);
 		JMXConnectorServer connector = JMXConnectorServerFactory.newJMXConnectorServer(url, null, getServer());
@@ -205,33 +204,59 @@ class MBeanClientInterceptorTests extends AbstractMBeanServerTests {
 
 		// should now be able to access data via the lazy proxy
 		try {
-			assertThat(bean.getName()).isEqualTo("Rob Harrop");
-			assertThat(bean.getAge()).isEqualTo(100);
+			assertEquals("Rob Harrop", bean.getName());
+			assertEquals(100, bean.getAge());
+		}
+		finally {
+			connector.stop();
+		}
+
+		try {
+			bean.getName();
+		}
+		catch (JmxException ex) {
+			// expected
+		}
+
+		connector = JMXConnectorServerFactory.newJMXConnectorServer(url, null, getServer());
+		connector.start();
+
+		// should now be able to access data via the lazy proxy
+		try {
+			assertEquals("Rob Harrop", bean.getName());
+			assertEquals(100, bean.getAge());
 		}
 		finally {
 			connector.stop();
 		}
 	}
 
-	@Test
-	void mxBeanAttributeAccess() throws Exception {
+	/*
+	public void testMXBeanAttributeAccess() throws Exception {
 		MBeanClientInterceptor interceptor = new MBeanClientInterceptor();
 		interceptor.setServer(ManagementFactory.getPlatformMBeanServer());
 		interceptor.setObjectName("java.lang:type=Memory");
 		interceptor.setManagementInterface(MemoryMXBean.class);
 		MemoryMXBean proxy = ProxyFactory.getProxy(MemoryMXBean.class, interceptor);
-		assertThat(proxy.getHeapMemoryUsage().getMax()).isGreaterThan(0);
+		assertTrue(proxy.getHeapMemoryUsage().getMax() > 0);
 	}
 
-	@Test
-	void mxBeanOperationAccess() throws Exception {
+	public void testMXBeanOperationAccess() throws Exception {
 		MBeanClientInterceptor interceptor = new MBeanClientInterceptor();
 		interceptor.setServer(ManagementFactory.getPlatformMBeanServer());
 		interceptor.setObjectName("java.lang:type=Threading");
 		ThreadMXBean proxy = ProxyFactory.getProxy(ThreadMXBean.class, interceptor);
-		assertThat(proxy.getThreadInfo(Thread.currentThread().getId()).getStackTrace()).isNotNull();
+		assertTrue(proxy.getThreadInfo(Thread.currentThread().getId()).getStackTrace() != null);
 	}
 
+	public void testMXBeanAttributeListAccess() throws Exception {
+		MBeanClientInterceptor interceptor = new MBeanClientInterceptor();
+		interceptor.setServer(ManagementFactory.getPlatformMBeanServer());
+		interceptor.setObjectName("com.sun.management:type=HotSpotDiagnostic");
+		HotSpotDiagnosticMXBean proxy = ProxyFactory.getProxy(HotSpotDiagnosticMXBean.class, interceptor);
+		assertFalse(proxy.getDiagnosticOptions().isEmpty());
+	}
+	*/
 
 	private static class ProxyTestAssembler extends AbstractReflectiveMBeanInfoAssembler {
 
@@ -268,10 +293,12 @@ class MBeanClientInterceptorTests extends AbstractMBeanServerTests {
 
 		@SuppressWarnings("unused")
 		protected void populateAttributeDescriptor(Descriptor descriptor, Method getter, Method setter) {
+
 		}
 
 		@SuppressWarnings("unused")
 		protected void populateOperationDescriptor(Descriptor descriptor, Method method) {
+
 		}
 
 		@SuppressWarnings({ "unused", "rawtypes" })
@@ -281,6 +308,7 @@ class MBeanClientInterceptorTests extends AbstractMBeanServerTests {
 
 		@SuppressWarnings({ "unused", "rawtypes" })
 		protected void populateMBeanDescriptor(Descriptor mbeanDescriptor, String beanKey, Class beanClass) {
+
 		}
 	}
 

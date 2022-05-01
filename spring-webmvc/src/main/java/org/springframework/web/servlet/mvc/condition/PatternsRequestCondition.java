@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,42 +17,33 @@
 package org.springframework.web.servlet.mvc.condition;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import javax.servlet.http.HttpServletRequest;
 
-import jakarta.servlet.http.HttpServletRequest;
-
-import org.springframework.lang.Nullable;
 import org.springframework.util.AntPathMatcher;
-import org.springframework.util.ObjectUtils;
 import org.springframework.util.PathMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UrlPathHelper;
-import org.springframework.web.util.pattern.PathPattern;
 
 /**
  * A logical disjunction (' || ') request condition that matches a request
  * against a set of URL path patterns.
  *
- * <p>In contrast to {@link PathPatternsRequestCondition} which uses parsed
- * {@link PathPattern}s, this condition does String pattern matching via
- * {@link org.springframework.util.AntPathMatcher AntPathMatcher}.
- *
  * @author Rossen Stoyanchev
  * @since 3.1
  */
-public class PatternsRequestCondition extends AbstractRequestCondition<PatternsRequestCondition> {
-
-	private final static Set<String> EMPTY_PATH_PATTERN = Collections.singleton("");
-
+public final class PatternsRequestCondition extends AbstractRequestCondition<PatternsRequestCondition> {
 
 	private final Set<String> patterns;
+
+	private final UrlPathHelper pathHelper;
 
 	private final PathMatcher pathMatcher;
 
@@ -60,86 +51,62 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 
 	private final boolean useTrailingSlashMatch;
 
-	private final List<String> fileExtensions = new ArrayList<>();
+	private final List<String> fileExtensions = new ArrayList<String>();
 
 
 	/**
-	 * Constructor with URL patterns which are prepended with "/" if necessary.
-	 * @param patterns 0 or more URL patterns; no patterns results in an empty
-	 * path {@code ""} mapping which matches all requests.
+	 * Creates a new instance with the given URL patterns.
+	 * Each pattern that is not empty and does not start with "/" is prepended with "/".
+	 * @param patterns 0 or more URL patterns; if 0 the condition will match to every request.
 	 */
 	public PatternsRequestCondition(String... patterns) {
-		this(patterns, true, null);
+		this(asList(patterns), null, null, true, true, null);
 	}
 
 	/**
-	 * Variant of {@link #PatternsRequestCondition(String...)} with a
-	 * {@link PathMatcher} and flag for matching trailing slashes.
-	 * @since 5.3
+	 * Additional constructor with flags for using suffix pattern (.*) and
+	 * trailing slash matches.
+	 * @param patterns the URL patterns to use; if 0, the condition will match to every request.
+	 * @param urlPathHelper for determining the lookup path of a request
+	 * @param pathMatcher for path matching with patterns
+	 * @param useSuffixPatternMatch whether to enable matching by suffix (".*")
+	 * @param useTrailingSlashMatch whether to match irrespective of a trailing slash
 	 */
-	public PatternsRequestCondition(String[] patterns,  boolean useTrailingSlashMatch,
-			@Nullable PathMatcher pathMatcher) {
+	public PatternsRequestCondition(String[] patterns, UrlPathHelper urlPathHelper, PathMatcher pathMatcher,
+			boolean useSuffixPatternMatch, boolean useTrailingSlashMatch) {
 
-		this(patterns, null, pathMatcher, useTrailingSlashMatch);
+		this(asList(patterns), urlPathHelper, pathMatcher, useSuffixPatternMatch, useTrailingSlashMatch, null);
 	}
 
 	/**
-	 * Variant of {@link #PatternsRequestCondition(String...)} with a
-	 * {@link UrlPathHelper} and a {@link PathMatcher}, and whether to match
-	 * trailing slashes.
-	 * <p>As of 5.3 the path is obtained through the static method
-	 * {@link UrlPathHelper#getResolvedLookupPath} and a {@code UrlPathHelper}
-	 * does not need to be passed in.
-	 * @since 5.2.4
-	 * @deprecated as of 5.3 in favor of
-	 * {@link #PatternsRequestCondition(String[], boolean, PathMatcher)}.
+	 * Creates a new instance with the given URL patterns.
+	 * Each pattern that is not empty and does not start with "/" is pre-pended with "/".
+	 * @param patterns the URL patterns to use; if 0, the condition will match to every request.
+	 * @param urlPathHelper a {@link UrlPathHelper} for determining the lookup path for a request
+	 * @param pathMatcher a {@link PathMatcher} for pattern path matching
+	 * @param useSuffixPatternMatch whether to enable matching by suffix (".*")
+	 * @param useTrailingSlashMatch whether to match irrespective of a trailing slash
+	 * @param fileExtensions a list of file extensions to consider for path matching
 	 */
-	@Deprecated
-	public PatternsRequestCondition(String[] patterns, @Nullable UrlPathHelper urlPathHelper,
-			@Nullable PathMatcher pathMatcher, boolean useTrailingSlashMatch) {
+	public PatternsRequestCondition(String[] patterns, UrlPathHelper urlPathHelper,
+			PathMatcher pathMatcher, boolean useSuffixPatternMatch, boolean useTrailingSlashMatch,
+			List<String> fileExtensions) {
 
-		this(patterns, urlPathHelper, pathMatcher, false, useTrailingSlashMatch);
+		this(asList(patterns), urlPathHelper, pathMatcher, useSuffixPatternMatch, useTrailingSlashMatch, fileExtensions);
 	}
 
 	/**
-	 * Variant of {@link #PatternsRequestCondition(String...)} with a
-	 * {@link UrlPathHelper} and a {@link PathMatcher}, and flags for matching
-	 * with suffixes and trailing slashes.
-	 * <p>As of 5.3 the path is obtained through the static method
-	 * {@link UrlPathHelper#getResolvedLookupPath} and a {@code UrlPathHelper}
-	 * does not need to be passed in.
-	 * @deprecated as of 5.2.4. See class-level note in
-	 * {@link org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping}
-	 * on the deprecation of path extension config options.
+	 * Private constructor accepting a collection of patterns.
 	 */
-	@Deprecated
-	public PatternsRequestCondition(String[] patterns, @Nullable UrlPathHelper urlPathHelper,
-			@Nullable PathMatcher pathMatcher, boolean useSuffixPatternMatch, boolean useTrailingSlashMatch) {
+	private PatternsRequestCondition(Collection<String> patterns, UrlPathHelper urlPathHelper,
+			PathMatcher pathMatcher, boolean useSuffixPatternMatch, boolean useTrailingSlashMatch,
+			List<String> fileExtensions) {
 
-		this(patterns, urlPathHelper, pathMatcher, useSuffixPatternMatch, useTrailingSlashMatch, null);
-	}
-
-	/**
-	 * Variant of {@link #PatternsRequestCondition(String...)} with a
-	 * {@link UrlPathHelper} and a {@link PathMatcher}, and flags for matching
-	 * with suffixes and trailing slashes, along with specific extensions.
-	 * <p>As of 5.3 the path is obtained through the static method
-	 * {@link UrlPathHelper#getResolvedLookupPath} and a {@code UrlPathHelper}
-	 * does not need to be passed in.
-	 * @deprecated as of 5.2.4. See class-level note in
-	 * {@link org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping}
-	 * on the deprecation of path extension config options.
-	 */
-	@Deprecated
-	public PatternsRequestCondition(String[] patterns, @Nullable UrlPathHelper urlPathHelper,
-			@Nullable PathMatcher pathMatcher, boolean useSuffixPatternMatch,
-			boolean useTrailingSlashMatch, @Nullable List<String> fileExtensions) {
-
-		this.patterns = initPatterns(patterns);
-		this.pathMatcher = pathMatcher != null ? pathMatcher : new AntPathMatcher();
+		this.patterns = Collections.unmodifiableSet(prependLeadingSlash(patterns));
+		this.pathHelper = (urlPathHelper != null ? urlPathHelper : new UrlPathHelper());
+		this.pathMatcher = (pathMatcher != null ? pathMatcher : new AntPathMatcher());
 		this.useSuffixPatternMatch = useSuffixPatternMatch;
 		this.useTrailingSlashMatch = useTrailingSlashMatch;
-
 		if (fileExtensions != null) {
 			for (String fileExtension : fileExtensions) {
 				if (fileExtension.charAt(0) != '.') {
@@ -150,11 +117,16 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 		}
 	}
 
-	private static Set<String> initPatterns(String[] patterns) {
-		if (!hasPattern(patterns)) {
-			return EMPTY_PATH_PATTERN;
+
+	private static List<String> asList(String... patterns) {
+		return (patterns != null ? Arrays.asList(patterns) : Collections.<String>emptyList());
+	}
+
+	private static Set<String> prependLeadingSlash(Collection<String> patterns) {
+		if (patterns == null) {
+			return Collections.emptySet();
 		}
-		Set<String> result = new LinkedHashSet<>(patterns.length);
+		Set<String> result = new LinkedHashSet<String>(patterns.size());
 		for (String pattern : patterns) {
 			if (StringUtils.hasLength(pattern) && !pattern.startsWith("/")) {
 				pattern = "/" + pattern;
@@ -163,29 +135,6 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 		}
 		return result;
 	}
-
-	private static boolean hasPattern(String[] patterns) {
-		if (!ObjectUtils.isEmpty(patterns)) {
-			for (String pattern : patterns) {
-				if (StringUtils.hasText(pattern)) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * Private constructor for use when combining and matching.
-	 */
-	private PatternsRequestCondition(Set<String> patterns, PatternsRequestCondition other) {
-		this.patterns = patterns;
-		this.pathMatcher = other.pathMatcher;
-		this.useSuffixPatternMatch = other.useSuffixPatternMatch;
-		this.useTrailingSlashMatch = other.useTrailingSlashMatch;
-		this.fileExtensions.addAll(other.fileExtensions);
-	}
-
 
 	public Set<String> getPatterns() {
 		return this.patterns;
@@ -202,31 +151,6 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 	}
 
 	/**
-	 * Whether the condition is the "" (empty path) mapping.
-	 */
-	public boolean isEmptyPathMapping() {
-		return this.patterns == EMPTY_PATH_PATTERN;
-	}
-
-	/**
-	 * Return the mapping paths that are not patterns.
-	 * @since 5.3
-	 */
-	public Set<String> getDirectPaths() {
-		if (isEmptyPathMapping()) {
-			return EMPTY_PATH_PATTERN;
-		}
-		Set<String> result = Collections.emptySet();
-		for (String pattern : this.patterns) {
-			if (!this.pathMatcher.isPattern(pattern)) {
-				result = (result.isEmpty() ? new HashSet<>(1) : result);
-				result.add(pattern);
-			}
-		}
-		return result;
-	}
-
-	/**
 	 * Returns a new instance with URL patterns from the current instance ("this") and
 	 * the "other" instance as follows:
 	 * <ul>
@@ -238,16 +162,7 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 	 */
 	@Override
 	public PatternsRequestCondition combine(PatternsRequestCondition other) {
-		if (isEmptyPathMapping() && other.isEmptyPathMapping()) {
-			return this;
-		}
-		else if (other.isEmptyPathMapping()) {
-			return this;
-		}
-		else if (isEmptyPathMapping()) {
-			return other;
-		}
-		Set<String> result = new LinkedHashSet<>();
+		Set<String> result = new LinkedHashSet<String>();
 		if (!this.patterns.isEmpty() && !other.patterns.isEmpty()) {
 			for (String pattern1 : this.patterns) {
 				for (String pattern2 : other.patterns) {
@@ -255,7 +170,17 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 				}
 			}
 		}
-		return new PatternsRequestCondition(result, this);
+		else if (!this.patterns.isEmpty()) {
+			result.addAll(this.patterns);
+		}
+		else if (!other.patterns.isEmpty()) {
+			result.addAll(other.patterns);
+		}
+		else {
+			result.add("");
+		}
+		return new PatternsRequestCondition(result, this.pathHelper, this.pathMatcher, this.useSuffixPatternMatch,
+				this.useTrailingSlashMatch, this.fileExtensions);
 	}
 
 	/**
@@ -275,40 +200,41 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 	 * or {@code null} if no patterns match.
 	 */
 	@Override
-	@Nullable
 	public PatternsRequestCondition getMatchingCondition(HttpServletRequest request) {
-		String lookupPath = UrlPathHelper.getResolvedLookupPath(request);
+
+		if (this.patterns.isEmpty()) {
+			return this;
+		}
+
+		String lookupPath = this.pathHelper.getLookupPathForRequest(request);
 		List<String> matches = getMatchingPatterns(lookupPath);
-		return !matches.isEmpty() ? new PatternsRequestCondition(new LinkedHashSet<>(matches), this) : null;
+
+		return matches.isEmpty() ? null :
+			new PatternsRequestCondition(matches, this.pathHelper, this.pathMatcher, this.useSuffixPatternMatch,
+					this.useTrailingSlashMatch, this.fileExtensions);
 	}
 
 	/**
 	 * Find the patterns matching the given lookup path. Invoking this method should
-	 * yield results equivalent to those of calling {@link #getMatchingCondition}.
+	 * yield results equivalent to those of calling
+	 * {@link #getMatchingCondition(javax.servlet.http.HttpServletRequest)}.
 	 * This method is provided as an alternative to be used if no request is available
 	 * (e.g. introspection, tooling, etc).
 	 * @param lookupPath the lookup path to match to existing patterns
 	 * @return a collection of matching patterns sorted with the closest match at the top
 	 */
 	public List<String> getMatchingPatterns(String lookupPath) {
-		List<String> matches = null;
+		List<String> matches = new ArrayList<String>();
 		for (String pattern : this.patterns) {
 			String match = getMatchingPattern(pattern, lookupPath);
 			if (match != null) {
-				matches = (matches != null ? matches : new ArrayList<>());
 				matches.add(match);
 			}
 		}
-		if (matches == null) {
-			return Collections.emptyList();
-		}
-		if (matches.size() > 1) {
-			matches.sort(this.pathMatcher.getPatternComparator(lookupPath));
-		}
+		Collections.sort(matches, this.pathMatcher.getPatternComparator(lookupPath));
 		return matches;
 	}
 
-	@Nullable
 	private String getMatchingPattern(String pattern, String lookupPath) {
 		if (pattern.equals(lookupPath)) {
 			return pattern;
@@ -333,7 +259,7 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 		}
 		if (this.useTrailingSlashMatch) {
 			if (!pattern.endsWith("/") && this.pathMatcher.match(pattern + "/", lookupPath)) {
-				return pattern + "/";
+				return pattern +"/";
 			}
 		}
 		return null;
@@ -352,7 +278,7 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 	 */
 	@Override
 	public int compareTo(PatternsRequestCondition other, HttpServletRequest request) {
-		String lookupPath = UrlPathHelper.getResolvedLookupPath(request);
+		String lookupPath = this.pathHelper.getLookupPathForRequest(request);
 		Comparator<String> patternComparator = this.pathMatcher.getPatternComparator(lookupPath);
 		Iterator<String> iterator = this.patterns.iterator();
 		Iterator<String> iteratorOther = other.patterns.iterator();

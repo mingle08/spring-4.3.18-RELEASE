@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,22 +20,20 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Map;
-
-import jakarta.servlet.http.HttpSession;
+import javax.servlet.http.HttpSession;
 
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
-import org.springframework.lang.Nullable;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
 /**
  * An interceptor to copy information from the HTTP session to the "handshake
- * attributes" map to be made available via {@link WebSocketSession#getAttributes()}.
+ * attributes" map to made available via{@link WebSocketSession#getAttributes()}.
  *
- * <p>Copies a subset or all HTTP session attributes and/or the HTTP session ID
+ * <p>Copies a subset or all HTTP session attributes and/or the HTTP session id
  * under the key {@link #HTTP_SESSION_ID_ATTR_NAME}.
  *
  * @author Rossen Stoyanchev
@@ -128,7 +126,7 @@ public class HttpSessionHandshakeInterceptor implements HandshakeInterceptor {
 	/**
 	 * Whether to allow the HTTP session to be created while accessing it.
 	 * <p>By default set to {@code false}.
-	 * @see jakarta.servlet.http.HttpServletRequest#getSession(boolean)
+	 * @see javax.servlet.http.HttpServletRequest#getSession(boolean)
 	 */
 	public void setCreateSession(boolean createSession) {
 		this.createSession = createSession;
@@ -162,9 +160,9 @@ public class HttpSessionHandshakeInterceptor implements HandshakeInterceptor {
 		return true;
 	}
 
-	@Nullable
 	private HttpSession getSession(ServerHttpRequest request) {
-		if (request instanceof ServletServerHttpRequest serverRequest) {
+		if (request instanceof ServletServerHttpRequest) {
+			ServletServerHttpRequest serverRequest = (ServletServerHttpRequest) request;
 			return serverRequest.getServletRequest().getSession(isCreateSession());
 		}
 		return null;
@@ -172,7 +170,7 @@ public class HttpSessionHandshakeInterceptor implements HandshakeInterceptor {
 
 	@Override
 	public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response,
-			WebSocketHandler wsHandler, @Nullable Exception ex) {
+			WebSocketHandler wsHandler, Exception ex) {
 	}
 
 }

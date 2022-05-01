@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,7 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.aci.DevProfileInitializer;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Integration tests that verify support for {@link ApplicationContextInitializer
@@ -38,8 +38,8 @@ public class OverriddenInitializersAnnotationConfigTests extends SingleInitializ
 	@Test
 	@Override
 	public void activeBeans() {
-		assertThat(foo).isEqualTo("foo");
-		assertThat(bar).isNull();
-		assertThat(baz).isEqualTo("dev profile config");
+		assertEquals("foo", foo);
+		assertNull(bar);
+		assertEquals("dev profile config", baz);
 	}
 }

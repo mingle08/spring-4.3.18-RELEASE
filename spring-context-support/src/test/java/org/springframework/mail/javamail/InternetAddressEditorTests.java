@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,10 +16,9 @@
 
 package org.springframework.mail.javamail;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.*;
 
 /**
  * @author Brian Hanafee
@@ -37,43 +36,42 @@ public class InternetAddressEditorTests {
 
 	@Test
 	public void uninitialized() {
-		assertThat(editor.getAsText()).as("Uninitialized editor did not return empty value string").isEqualTo(EMPTY);
+		assertEquals("Uninitialized editor did not return empty value string", EMPTY, editor.getAsText());
 	}
 
 	@Test
 	public void setNull() {
 		editor.setAsText(null);
-		assertThat(editor.getAsText()).as("Setting null did not result in empty value string").isEqualTo(EMPTY);
+		assertEquals("Setting null did not result in empty value string", EMPTY, editor.getAsText());
 	}
 
 	@Test
 	public void setEmpty() {
 		editor.setAsText(EMPTY);
-		assertThat(editor.getAsText()).as("Setting empty string did not result in empty value string").isEqualTo(EMPTY);
+		assertEquals("Setting empty string did not result in empty value string", EMPTY, editor.getAsText());
 	}
 
 	@Test
 	public void allWhitespace() {
 		editor.setAsText(" ");
-		assertThat(editor.getAsText()).as("All whitespace was not recognized").isEqualTo(EMPTY);
+		assertEquals("All whitespace was not recognized", EMPTY, editor.getAsText());
 	}
 
 	@Test
-	public void simpleGoodAddress() {
+	public void simpleGoodAddess() {
 		editor.setAsText(SIMPLE);
-		assertThat(editor.getAsText()).as("Simple email address failed").isEqualTo(SIMPLE);
+		assertEquals("Simple email address failed", SIMPLE, editor.getAsText());
 	}
 
 	@Test
 	public void excessWhitespace() {
 		editor.setAsText(" " + SIMPLE + " ");
-		assertThat(editor.getAsText()).as("Whitespace was not stripped").isEqualTo(SIMPLE);
+		assertEquals("Whitespace was not stripped", SIMPLE, editor.getAsText());
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void simpleBadAddress() {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				editor.setAsText(BAD));
+		editor.setAsText(BAD);
 	}
 
 }

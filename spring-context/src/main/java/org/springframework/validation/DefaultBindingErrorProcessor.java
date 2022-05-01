@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.validation;
 
 import org.springframework.beans.PropertyAccessException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
-import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
@@ -68,7 +67,6 @@ public class DefaultBindingErrorProcessor implements BindingErrorProcessor {
 	public void processPropertyAccessException(PropertyAccessException ex, BindingResult bindingResult) {
 		// Create field error with the exceptions's code, e.g. "typeMismatch".
 		String field = ex.getPropertyName();
-		Assert.state(field != null, "No field in exception");
 		String[] codes = bindingResult.resolveMessageCodes(ex.getErrorCode(), field);
 		Object[] arguments = getArgumentsForBindError(bindingResult.getObjectName(), field);
 		Object rejectedValue = ex.getValue();
@@ -77,7 +75,6 @@ public class DefaultBindingErrorProcessor implements BindingErrorProcessor {
 		}
 		FieldError error = new FieldError(bindingResult.getObjectName(), field, rejectedValue, true,
 				codes, arguments, ex.getLocalizedMessage());
-		error.wrap(ex);
 		bindingResult.addError(error);
 	}
 

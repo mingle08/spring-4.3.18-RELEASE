@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,6 @@
 
 package org.springframework.web.socket;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
@@ -25,7 +24,6 @@ import org.springframework.util.ObjectUtils;
  *
  * @author Rossen Stoyanchev
  * @since 4.0
- * @param <T> the payload type
  */
 public abstract class AbstractWebSocketMessage<T> implements WebSocketMessage<T> {
 
@@ -58,9 +56,8 @@ public abstract class AbstractWebSocketMessage<T> implements WebSocketMessage<T>
 
 
 	/**
-	 * Return the message payload (never {@code null}).
+	 * Return the message payload, never be {@code null}.
 	 */
-	@Override
 	public T getPayload() {
 		return this.payload;
 	}
@@ -68,20 +65,20 @@ public abstract class AbstractWebSocketMessage<T> implements WebSocketMessage<T>
 	/**
 	 * Whether this is the last part of a message sent as a series of partial messages.
 	 */
-	@Override
 	public boolean isLast() {
 		return this.last;
 	}
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}
-		if (!(other instanceof AbstractWebSocketMessage<?> otherMessage)) {
+		if (!(other instanceof AbstractWebSocketMessage)) {
 			return false;
 		}
+		AbstractWebSocketMessage<?> otherMessage = (AbstractWebSocketMessage<?>) other;
 		return ObjectUtils.nullSafeEquals(this.payload, otherMessage.payload);
 	}
 

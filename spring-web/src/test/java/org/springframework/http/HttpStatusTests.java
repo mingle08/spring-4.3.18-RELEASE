@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,21 +19,18 @@ package org.springframework.http;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
-/**
- * @author Arjen Poutsma
- */
-class HttpStatusTests {
+/** @author Arjen Poutsma */
+public class HttpStatusTests {
 
-	private final Map<Integer, String> statusCodes = new LinkedHashMap<>();
+	private Map<Integer, String> statusCodes = new LinkedHashMap<Integer, String>();
 
-
-	@BeforeEach
-	void createStatusCodes() {
+	@Before
+	public void createStatusCodes() {
 		statusCodes.put(100, "CONTINUE");
 		statusCodes.put(101, "SWITCHING_PROTOCOLS");
 		statusCodes.put(102, "PROCESSING");
@@ -84,7 +81,6 @@ class HttpStatusTests {
 		statusCodes.put(422, "UNPROCESSABLE_ENTITY");
 		statusCodes.put(423, "LOCKED");
 		statusCodes.put(424, "FAILED_DEPENDENCY");
-		statusCodes.put(425, "TOO_EARLY");
 		statusCodes.put(426, "UPGRADE_REQUIRED");
 		statusCodes.put(428, "PRECONDITION_REQUIRED");
 		statusCodes.put(429, "TOO_MANY_REQUESTS");
@@ -105,37 +101,26 @@ class HttpStatusTests {
 		statusCodes.put(511, "NETWORK_AUTHENTICATION_REQUIRED");
 	}
 
-
 	@Test
-	void fromMapToEnum() {
+	public void fromMapToEnum() {
 		for (Map.Entry<Integer, String> entry : statusCodes.entrySet()) {
 			int value = entry.getKey();
 			HttpStatus status = HttpStatus.valueOf(value);
-			assertThat(status.value()).as("Invalid value").isEqualTo(value);
-			assertThat(status.name()).as("Invalid name for [" + value + "]").isEqualTo(entry.getValue());
+			assertEquals("Invalid value", value, status.value());
+			assertEquals("Invalid name for [" + value + "]", entry.getValue(), status.name());
 		}
 	}
 
 	@Test
-	void fromEnumToMap() {
+	public void fromEnumToMap() {
+
 		for (HttpStatus status : HttpStatus.values()) {
-			int code = status.value();
-			// The following status codes have more than one corresponding HttpStatus enum constant.
-			if (code == 302 || code == 413 || code == 414) {
+			int value = status.value();
+			if (value == 302 || value == 413 || value == 414) {
 				continue;
 			}
-			assertThat(statusCodes).as("Map has no value for [" + code + "]").containsKey(code);
-			assertThat(status.name()).as("Invalid name for [" + code + "]").isEqualTo(statusCodes.get(code));
+			assertTrue("Map has no value for [" + value + "]", statusCodes.containsKey(value));
+			assertEquals("Invalid name for [" + value + "]", statusCodes.get(value), status.name());
 		}
 	}
-
-	@Test
-	void allStatusSeriesShouldMatchExpectations() {
-		// The Series of an HttpStatus is set manually, so we make sure it is the correct one.
-		for (HttpStatus status : HttpStatus.values()) {
-			HttpStatus.Series expectedSeries = HttpStatus.Series.valueOf(status.value());
-			assertThat(status.series()).isEqualTo(expectedSeries);
-		}
-	}
-
 }

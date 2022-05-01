@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,7 @@
 package org.springframework.test.context.support;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,12 +28,10 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ActiveProfilesResolver;
-import org.springframework.test.context.TestContextAnnotationUtils.AnnotationDescriptor;
+import org.springframework.test.util.MetaAnnotationUtils;
+import org.springframework.test.util.MetaAnnotationUtils.AnnotationDescriptor;
 import org.springframework.util.Assert;
-import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
-
-import static org.springframework.test.context.TestContextAnnotationUtils.findAnnotationDescriptor;
 
 /**
  * Utility methods for working with {@link ActiveProfiles @ActiveProfiles} and
@@ -52,8 +51,6 @@ abstract class ActiveProfilesUtils {
 
 	private static final Log logger = LogFactory.getLog(ActiveProfilesUtils.class);
 
-	private static final DefaultActiveProfilesResolver defaultActiveProfilesResolver = new DefaultActiveProfilesResolver();
-
 
 	/**
 	 * Resolve <em>active bean definition profiles</em> for the supplied {@link Class}.
@@ -72,53 +69,62 @@ abstract class ActiveProfilesUtils {
 	static String[] resolveActiveProfiles(Class<?> testClass) {
 		Assert.notNull(testClass, "Class must not be null");
 
-		AnnotationDescriptor<ActiveProfiles> descriptor = findAnnotationDescriptor(testClass, ActiveProfiles.class);
-		List<String[]> profileArrays = new ArrayList<>();
+		final List<String[]> profileArrays = new ArrayList<String[]>();
 
+		Class<ActiveProfiles> annotationType = ActiveProfiles.class;
+		AnnotationDescriptor<ActiveProfiles> descriptor =
+				MetaAnnotationUtils.findAnnotationDescriptor(testClass, annotationType);
 		if (descriptor == null && logger.isDebugEnabled()) {
 			logger.debug(String.format(
 					"Could not find an 'annotation declaring class' for annotation type [%s] and class [%s]",
-					ActiveProfiles.class.getName(), testClass.getName()));
+					annotationType.getName(), testClass.getName()));
 		}
 
 		while (descriptor != null) {
 			Class<?> rootDeclaringClass = descriptor.getRootDeclaringClass();
-			ActiveProfiles annotation = descriptor.getAnnotation();
+			Class<?> declaringClass = descriptor.getDeclaringClass();
+			ActiveProfiles annotation = descriptor.synthesizeAnnotation();
 
 			if (logger.isTraceEnabled()) {
 				logger.trace(String.format("Retrieved @ActiveProfiles [%s] for declaring class [%s]",
-						annotation, descriptor.getDeclaringClass().getName()));
+						annotation, declaringClass.getName()));
+			}
+
+			Class<? extends ActiveProfilesResolver> resolverClass = annotation.resolver();
+			if (ActiveProfilesResolver.class == resolverClass) {
+				resolverClass = DefaultActiveProfilesResolver.class;
 			}
 
 			ActiveProfilesResolver resolver;
-			Class<? extends ActiveProfilesResolver> resolverClass = annotation.resolver();
-			if (ActiveProfilesResolver.class == resolverClass) {
-				resolver = defaultActiveProfilesResolver;
+			try {
+				resolver = BeanUtils.instantiateClass(resolverClass, ActiveProfilesResolver.class);
 			}
-			else {
-				try {
-					resolver = BeanUtils.instantiateClass(resolverClass, ActiveProfilesResolver.class);
-				}
-				catch (Exception ex) {
-					String msg = String.format("Could not instantiate ActiveProfilesResolver of type [%s] " +
-							"for test class [%s]", resolverClass.getName(), rootDeclaringClass.getName());
-					logger.error(msg);
-					throw new IllegalStateException(msg, ex);
-				}
+			catch (Exception ex) {
+				String msg = String.format("Could not instantiate ActiveProfilesResolver of type [%s] " +
+						"for test class [%s]", resolverClass.getName(), rootDeclaringClass.getName());
+				logger.error(msg);
+				throw new IllegalStateException(msg, ex);
 			}
 
 			String[] profiles = resolver.resolve(rootDeclaringClass);
-			if (!ObjectUtils.isEmpty(profiles)) {
-				// Prepend to the list so that we can later traverse "down" the hierarchy
-				// to ensure that we retain the top-down profile registration order
-				// within a test class hierarchy.
-				profileArrays.add(0, profiles);
+			if (profiles == null) {
+				String msg = String.format(
+						"ActiveProfilesResolver [%s] returned a null array of bean definition profiles",
+						resolverClass.getName());
+				logger.error(msg);
+				throw new IllegalStateException(msg);
 			}
 
-			descriptor = (annotation.inheritProfiles() ? descriptor.next() : null);
+			profileArrays.add(profiles);
+
+			descriptor = (annotation.inheritProfiles() ? MetaAnnotationUtils.findAnnotationDescriptor(
+					rootDeclaringClass.getSuperclass(), annotationType) : null);
 		}
 
-		Set<String> activeProfiles = new LinkedHashSet<>();
+		// Reverse the list so that we can traverse "down" the hierarchy.
+		Collections.reverse(profileArrays);
+
+		final Set<String> activeProfiles = new LinkedHashSet<String>();
 		for (String[] profiles : profileArrays) {
 			for (String profile : profiles) {
 				if (StringUtils.hasText(profile)) {

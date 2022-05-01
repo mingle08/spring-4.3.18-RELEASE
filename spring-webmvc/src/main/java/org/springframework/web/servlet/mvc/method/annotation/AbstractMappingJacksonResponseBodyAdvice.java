@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,7 +23,6 @@ import org.springframework.http.converter.json.AbstractJackson2HttpMessageConver
 import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
-import org.springframework.lang.Nullable;
 
 /**
  * A convenient base class for {@code ResponseBodyAdvice} implementations
@@ -42,14 +41,10 @@ public abstract class AbstractMappingJacksonResponseBodyAdvice implements Respon
 	}
 
 	@Override
-	@Nullable
-	public final Object beforeBodyWrite(@Nullable Object body, MethodParameter returnType,
+	public final Object beforeBodyWrite(Object body, MethodParameter returnType,
 			MediaType contentType, Class<? extends HttpMessageConverter<?>> converterType,
 			ServerHttpRequest request, ServerHttpResponse response) {
 
-		if (body == null) {
-			return null;
-		}
 		MappingJacksonValue container = getOrCreateContainer(body);
 		beforeBodyWriteInternal(container, contentType, returnType, request, response);
 		return container;

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,19 +25,17 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.ReflectionUtils;
 
 /**
  * Utility for detecting and accessing JBoss VFS in the classpath.
  *
- * <p>As of Spring 4.0, this class supports VFS 3.x on JBoss AS 6+
- * (package {@code org.jboss.vfs}) and is in particular compatible with
- * JBoss AS 7 and WildFly 8+.
+ * <p>As of Spring 4.0, this class supports VFS 3.x on JBoss AS 6+ (package
+ * {@code org.jboss.vfs}) and is in particular compatible with JBoss AS 7 and
+ * WildFly 8.
  *
- * <p>Thanks go to Marius Bogoevici for the initial implementation.
- *
- * <p><b>Note:</b> This is an internal class and should not be used outside the framework.
+ * <p>Thanks go to Marius Bogoevici for the initial patch.
+ * <b>Note:</b> This is an internal class and should not be used outside the framework.
  *
  * @author Costin Leau
  * @author Juergen Hoeller
@@ -59,45 +57,45 @@ public abstract class VfsUtils {
 	private static final Method VIRTUAL_FILE_METHOD_TO_URI;
 	private static final Method VIRTUAL_FILE_METHOD_GET_NAME;
 	private static final Method VIRTUAL_FILE_METHOD_GET_PATH_NAME;
-	private static final Method VIRTUAL_FILE_METHOD_GET_PHYSICAL_FILE;
 	private static final Method VIRTUAL_FILE_METHOD_GET_CHILD;
 
 	protected static final Class<?> VIRTUAL_FILE_VISITOR_INTERFACE;
 	protected static final Method VIRTUAL_FILE_METHOD_VISIT;
 
 	private static final Field VISITOR_ATTRIBUTES_FIELD_RECURSE;
+	private static final Method GET_PHYSICAL_FILE;
 
 	static {
 		ClassLoader loader = VfsUtils.class.getClassLoader();
 		try {
 			Class<?> vfsClass = loader.loadClass(VFS3_PKG + VFS_NAME);
-			VFS_METHOD_GET_ROOT_URL = vfsClass.getMethod("getChild", URL.class);
-			VFS_METHOD_GET_ROOT_URI = vfsClass.getMethod("getChild", URI.class);
+			VFS_METHOD_GET_ROOT_URL = ReflectionUtils.findMethod(vfsClass, "getChild", URL.class);
+			VFS_METHOD_GET_ROOT_URI = ReflectionUtils.findMethod(vfsClass, "getChild", URI.class);
 
 			Class<?> virtualFile = loader.loadClass(VFS3_PKG + "VirtualFile");
-			VIRTUAL_FILE_METHOD_EXISTS = virtualFile.getMethod("exists");
-			VIRTUAL_FILE_METHOD_GET_INPUT_STREAM = virtualFile.getMethod("openStream");
-			VIRTUAL_FILE_METHOD_GET_SIZE = virtualFile.getMethod("getSize");
-			VIRTUAL_FILE_METHOD_GET_LAST_MODIFIED = virtualFile.getMethod("getLastModified");
-			VIRTUAL_FILE_METHOD_TO_URI = virtualFile.getMethod("toURI");
-			VIRTUAL_FILE_METHOD_TO_URL = virtualFile.getMethod("toURL");
-			VIRTUAL_FILE_METHOD_GET_NAME = virtualFile.getMethod("getName");
-			VIRTUAL_FILE_METHOD_GET_PATH_NAME = virtualFile.getMethod("getPathName");
-			VIRTUAL_FILE_METHOD_GET_PHYSICAL_FILE = virtualFile.getMethod("getPhysicalFile");
-			VIRTUAL_FILE_METHOD_GET_CHILD = virtualFile.getMethod("getChild", String.class);
+			VIRTUAL_FILE_METHOD_EXISTS = ReflectionUtils.findMethod(virtualFile, "exists");
+			VIRTUAL_FILE_METHOD_GET_INPUT_STREAM = ReflectionUtils.findMethod(virtualFile, "openStream");
+			VIRTUAL_FILE_METHOD_GET_SIZE = ReflectionUtils.findMethod(virtualFile, "getSize");
+			VIRTUAL_FILE_METHOD_GET_LAST_MODIFIED = ReflectionUtils.findMethod(virtualFile, "getLastModified");
+			VIRTUAL_FILE_METHOD_TO_URI = ReflectionUtils.findMethod(virtualFile, "toURI");
+			VIRTUAL_FILE_METHOD_TO_URL = ReflectionUtils.findMethod(virtualFile, "toURL");
+			VIRTUAL_FILE_METHOD_GET_NAME = ReflectionUtils.findMethod(virtualFile, "getName");
+			VIRTUAL_FILE_METHOD_GET_PATH_NAME = ReflectionUtils.findMethod(virtualFile, "getPathName");
+			GET_PHYSICAL_FILE = ReflectionUtils.findMethod(virtualFile, "getPhysicalFile");
+			VIRTUAL_FILE_METHOD_GET_CHILD = ReflectionUtils.findMethod(virtualFile, "getChild", String.class);
 
 			VIRTUAL_FILE_VISITOR_INTERFACE = loader.loadClass(VFS3_PKG + "VirtualFileVisitor");
-			VIRTUAL_FILE_METHOD_VISIT = virtualFile.getMethod("visit", VIRTUAL_FILE_VISITOR_INTERFACE);
+			VIRTUAL_FILE_METHOD_VISIT = ReflectionUtils.findMethod(virtualFile, "visit", VIRTUAL_FILE_VISITOR_INTERFACE);
 
 			Class<?> visitorAttributesClass = loader.loadClass(VFS3_PKG + "VisitorAttributes");
-			VISITOR_ATTRIBUTES_FIELD_RECURSE = visitorAttributesClass.getField("RECURSE");
+			VISITOR_ATTRIBUTES_FIELD_RECURSE = ReflectionUtils.findField(visitorAttributesClass, "RECURSE");
 		}
 		catch (Throwable ex) {
 			throw new IllegalStateException("Could not detect JBoss VFS infrastructure", ex);
 		}
 	}
 
-	protected static Object invokeVfsMethod(Method method, @Nullable Object target, Object... args) throws IOException {
+	protected static Object invokeVfsMethod(Method method, Object target, Object... args) throws IOException {
 		try {
 			return method.invoke(target, args);
 		}
@@ -126,7 +124,7 @@ public abstract class VfsUtils {
 
 	static boolean isReadable(Object vfsResource) {
 		try {
-			return (Long) invokeVfsMethod(VIRTUAL_FILE_METHOD_GET_SIZE, vfsResource) > 0;
+			return ((Long) invokeVfsMethod(VIRTUAL_FILE_METHOD_GET_SIZE, vfsResource) > 0);
 		}
 		catch (IOException ex) {
 			return false;
@@ -171,7 +169,7 @@ public abstract class VfsUtils {
 	}
 
 	static File getFile(Object vfsResource) throws IOException {
-		return (File) invokeVfsMethod(VIRTUAL_FILE_METHOD_GET_PHYSICAL_FILE, vfsResource);
+		return (File) invokeVfsMethod(GET_PHYSICAL_FILE, vfsResource);
 	}
 
 	static Object getRoot(URI url) throws IOException {
@@ -184,12 +182,10 @@ public abstract class VfsUtils {
 		return invokeVfsMethod(VFS_METHOD_GET_ROOT_URL, null, url);
 	}
 
-	@Nullable
-	protected static Object doGetVisitorAttributes() {
+	protected static Object doGetVisitorAttribute() {
 		return ReflectionUtils.getField(VISITOR_ATTRIBUTES_FIELD_RECURSE, null);
 	}
 
-	@Nullable
 	protected static String doGetPath(Object resource) {
 		return (String) ReflectionUtils.invokeMethod(VIRTUAL_FILE_METHOD_GET_PATH_NAME, resource);
 	}

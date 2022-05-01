@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,6 @@ package org.springframework.beans.factory.config;
 import java.lang.reflect.Constructor;
 
 import org.springframework.beans.BeansException;
-import org.springframework.lang.Nullable;
 
 /**
  * Extension of the {@link InstantiationAwareBeanPostProcessor} interface,
@@ -40,31 +39,21 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	/**
 	 * Predict the type of the bean to be eventually returned from this
 	 * processor's {@link #postProcessBeforeInstantiation} callback.
-	 * <p>The default implementation returns {@code null}.
 	 * @param beanClass the raw class of the bean
 	 * @param beanName the name of the bean
 	 * @return the type of the bean, or {@code null} if not predictable
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 */
-	@Nullable
-	default Class<?> predictBeanType(Class<?> beanClass, String beanName) throws BeansException {
-		return null;
-	}
+	Class<?> predictBeanType(Class<?> beanClass, String beanName) throws BeansException;
 
 	/**
 	 * Determine the candidate constructors to use for the given bean.
-	 * <p>The default implementation returns {@code null}.
 	 * @param beanClass the raw class of the bean (never {@code null})
 	 * @param beanName the name of the bean
 	 * @return the candidate constructors, or {@code null} if none specified
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 */
-	@Nullable
-	default Constructor<?>[] determineCandidateConstructors(Class<?> beanClass, String beanName)
-			throws BeansException {
-
-		return null;
-	}
+	Constructor<?>[] determineCandidateConstructors(Class<?> beanClass, String beanName) throws BeansException;
 
 	/**
 	 * Obtain a reference for early access to the specified bean,
@@ -80,15 +69,12 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	 * return the raw bean instance from those subsequent callbacks (if the wrapper
 	 * for the affected bean has been built for a call to this method already,
 	 * it will be exposes as final bean reference by default).
-	 * <p>The default implementation returns the given {@code bean} as-is.
 	 * @param bean the raw bean instance
 	 * @param beanName the name of the bean
 	 * @return the object to expose as bean reference
 	 * (typically with the passed-in bean instance as default)
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 */
-	default Object getEarlyBeanReference(Object bean, String beanName) throws BeansException {
-		return bean;
-	}
+	Object getEarlyBeanReference(Object bean, String beanName) throws BeansException;
 
 }

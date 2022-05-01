@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,7 +32,6 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.style.ToStringCreator;
-import org.springframework.lang.Nullable;
 import org.springframework.test.annotation.DirtiesContext.HierarchyMode;
 import org.springframework.test.context.MergedContextConfiguration;
 import org.springframework.util.Assert;
@@ -70,7 +69,7 @@ public class DefaultContextCache implements ContextCache {
 	 * of other contexts.
 	 */
 	private final Map<MergedContextConfiguration, Set<MergedContextConfiguration>> hierarchyMap =
-			new ConcurrentHashMap<>(32);
+			new ConcurrentHashMap<MergedContextConfiguration, Set<MergedContextConfiguration>>(32);
 
 	private final int maxSize;
 
@@ -118,7 +117,6 @@ public class DefaultContextCache implements ContextCache {
 	 * {@inheritDoc}
 	 */
 	@Override
-	@Nullable
 	public ApplicationContext get(MergedContextConfiguration key) {
 		Assert.notNull(key, "Key must not be null");
 		ApplicationContext context = this.contextMap.get(key);
@@ -143,7 +141,11 @@ public class DefaultContextCache implements ContextCache {
 		MergedContextConfiguration child = key;
 		MergedContextConfiguration parent = child.getParent();
 		while (parent != null) {
-			Set<MergedContextConfiguration> list = this.hierarchyMap.computeIfAbsent(parent, k -> new HashSet<>());
+			Set<MergedContextConfiguration> list = this.hierarchyMap.get(parent);
+			if (list == null) {
+				list = new HashSet<MergedContextConfiguration>();
+				this.hierarchyMap.put(parent, list);
+			}
 			list.add(child);
 			child = parent;
 			parent = child.getParent();
@@ -154,21 +156,19 @@ public class DefaultContextCache implements ContextCache {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void remove(MergedContextConfiguration key, @Nullable HierarchyMode hierarchyMode) {
+	public void remove(MergedContextConfiguration key, HierarchyMode hierarchyMode) {
 		Assert.notNull(key, "Key must not be null");
 
-		// startKey is the level at which to begin clearing the cache,
-		// depending on the configured hierarchy mode.s
+		// startKey is the level at which to begin clearing the cache, depending
+		// on the configured hierarchy mode.
 		MergedContextConfiguration startKey = key;
 		if (hierarchyMode == HierarchyMode.EXHAUSTIVE) {
-			MergedContextConfiguration parent = startKey.getParent();
-			while (parent != null) {
-				startKey = parent;
-				parent = startKey.getParent();
+			while (startKey.getParent() != null) {
+				startKey = startKey.getParent();
 			}
 		}
 
-		List<MergedContextConfiguration> removedContexts = new ArrayList<>();
+		List<MergedContextConfiguration> removedContexts = new ArrayList<MergedContextConfiguration>();
 		remove(removedContexts, startKey);
 
 		// Remove all remaining references to any removed contexts from the
@@ -180,9 +180,9 @@ public class DefaultContextCache implements ContextCache {
 		}
 
 		// Remove empty entries from the hierarchy map.
-		for (Map.Entry<MergedContextConfiguration, Set<MergedContextConfiguration>> entry : this.hierarchyMap.entrySet()) {
-			if (entry.getValue().isEmpty()) {
-				this.hierarchyMap.remove(entry.getKey());
+		for (MergedContextConfiguration currentKey : this.hierarchyMap.keySet()) {
+			if (this.hierarchyMap.get(currentKey).isEmpty()) {
+				this.hierarchyMap.remove(currentKey);
 			}
 		}
 	}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.Currency;
 import java.util.Locale;
 import java.util.Set;
-
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 import javax.money.MonetaryAmount;
@@ -53,8 +52,9 @@ public class Jsr354NumberFormatAnnotationFormatterFactory extends EmbeddedValueR
 
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Set<Class<?>> getFieldTypes() {
-		return Collections.singleton(MonetaryAmount.class);
+		return (Set) Collections.singleton(MonetaryAmount.class);
 	}
 
 	@Override
@@ -69,9 +69,8 @@ public class Jsr354NumberFormatAnnotationFormatterFactory extends EmbeddedValueR
 
 
 	private Formatter<MonetaryAmount> configureFormatterFrom(NumberFormat annotation) {
-		String pattern = resolveEmbeddedValue(annotation.pattern());
-		if (StringUtils.hasLength(pattern)) {
-			return new PatternDecoratingFormatter(pattern);
+		if (StringUtils.hasLength(annotation.pattern())) {
+			return new PatternDecoratingFormatter(resolveEmbeddedValue(annotation.pattern()));
 		}
 		else {
 			Style style = annotation.style();

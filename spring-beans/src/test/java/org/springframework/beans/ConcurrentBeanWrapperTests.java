@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,17 +18,17 @@ package org.springframework.beans;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Guillaume Poirier
@@ -36,21 +36,23 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Chris Beams
  * @since 08.03.2004
  */
-class ConcurrentBeanWrapperTests {
+public final class ConcurrentBeanWrapperTests {
 
 	private final Log logger = LogFactory.getLog(getClass());
 
-	private final Set<TestRun> set = ConcurrentHashMap.newKeySet();
+	private Set<TestRun> set = Collections.synchronizedSet(new HashSet<TestRun>());
 
 	private Throwable ex = null;
 
-	@RepeatedTest(100)
-	void testSingleThread() {
-		performSet();
+	@Test
+	public void testSingleThread() {
+		for (int i = 0; i < 100; i++) {
+			performSet();
+		}
 	}
 
 	@Test
-	void testConcurrent() {
+	public void testConcurrent() {
 		for (int i = 0; i < 10; i++) {
 			TestRun run = new TestRun(this);
 			set.add(run);
@@ -71,7 +73,7 @@ class ConcurrentBeanWrapperTests {
 			}
 		}
 		if (ex != null) {
-			throw new AssertionError("Unexpected exception", ex);
+			fail(ex.getMessage());
 		}
 	}
 
@@ -80,7 +82,7 @@ class ConcurrentBeanWrapperTests {
 
 		Properties p = (Properties) System.getProperties().clone();
 
-		assertThat(p).as("The System properties must not be empty").isNotEmpty();
+		assertTrue("The System properties must not be empty", p.size() != 0);
 
 		for (Iterator<?> i = p.entrySet().iterator(); i.hasNext();) {
 			i.next();
@@ -101,7 +103,7 @@ class ConcurrentBeanWrapperTests {
 
 		BeanWrapperImpl wrapper = new BeanWrapperImpl(bean);
 		wrapper.setPropertyValue("properties", value);
-		assertThat(bean.getProperties()).isEqualTo(p);
+		assertEquals(p, bean.getProperties());
 	}
 
 
@@ -109,7 +111,7 @@ class ConcurrentBeanWrapperTests {
 
 		private ConcurrentBeanWrapperTests test;
 
-		TestRun(ConcurrentBeanWrapperTests test) {
+		public TestRun(ConcurrentBeanWrapperTests test) {
 			this.test = test;
 		}
 

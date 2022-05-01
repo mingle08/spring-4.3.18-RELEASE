@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,11 +24,10 @@ import java.net.URLConnection;
 import java.util.Enumeration;
 import java.util.Properties;
 
-import org.springframework.core.SpringProperties;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
+import org.springframework.util.DefaultPropertiesPersister;
 import org.springframework.util.PropertiesPersister;
 import org.springframework.util.ResourceUtils;
 
@@ -41,20 +40,12 @@ import org.springframework.util.ResourceUtils;
  *
  * @author Juergen Hoeller
  * @author Rob Harrop
- * @author Sebastien Deleuze
  * @since 2.0
  * @see PropertiesLoaderSupport
  */
 public abstract class PropertiesLoaderUtils {
 
 	private static final String XML_FILE_EXTENSION = ".xml";
-
-	/**
-	 * Boolean flag controlled by a {@code spring.xml.ignore} system property that instructs Spring to
-	 * ignore XML, i.e. to not initialize the XML-related infrastructure.
-	 * <p>The default is "false".
-	 */
-	private static final boolean shouldIgnoreXml = SpringProperties.getFlag("spring.xml.ignore");
 
 
 	/**
@@ -78,7 +69,7 @@ public abstract class PropertiesLoaderUtils {
 	public static void fillProperties(Properties props, EncodedResource resource)
 			throws IOException {
 
-		fillProperties(props, resource, ResourcePropertiesPersister.INSTANCE);
+		fillProperties(props, resource, new DefaultPropertiesPersister());
 	}
 
 	/**
@@ -96,9 +87,6 @@ public abstract class PropertiesLoaderUtils {
 		try {
 			String filename = resource.getResource().getFilename();
 			if (filename != null && filename.endsWith(XML_FILE_EXTENSION)) {
-				if (shouldIgnoreXml) {
-					throw new UnsupportedOperationException("XML support disabled");
-				}
 				stream = resource.getInputStream();
 				persister.loadFromXml(props, stream);
 			}
@@ -141,17 +129,18 @@ public abstract class PropertiesLoaderUtils {
 	 * @throws IOException if loading failed
 	 */
 	public static void fillProperties(Properties props, Resource resource) throws IOException {
-		try (InputStream is = resource.getInputStream()) {
+		InputStream is = resource.getInputStream();
+		try {
 			String filename = resource.getFilename();
 			if (filename != null && filename.endsWith(XML_FILE_EXTENSION)) {
-				if (shouldIgnoreXml) {
-					throw new UnsupportedOperationException("XML support disabled");
-				}
 				props.loadFromXML(is);
 			}
 			else {
 				props.load(is);
 			}
+		}
+		finally {
+			is.close();
 		}
 	}
 
@@ -179,7 +168,7 @@ public abstract class PropertiesLoaderUtils {
 	 * @return the populated Properties instance
 	 * @throws IOException if loading failed
 	 */
-	public static Properties loadAllProperties(String resourceName, @Nullable ClassLoader classLoader) throws IOException {
+	public static Properties loadAllProperties(String resourceName, ClassLoader classLoader) throws IOException {
 		Assert.notNull(resourceName, "Resource name must not be null");
 		ClassLoader classLoaderToUse = classLoader;
 		if (classLoaderToUse == null) {
@@ -192,16 +181,17 @@ public abstract class PropertiesLoaderUtils {
 			URL url = urls.nextElement();
 			URLConnection con = url.openConnection();
 			ResourceUtils.useCachesIfNecessary(con);
-			try (InputStream is = con.getInputStream()) {
+			InputStream is = con.getInputStream();
+			try {
 				if (resourceName.endsWith(XML_FILE_EXTENSION)) {
-					if (shouldIgnoreXml) {
-						throw new UnsupportedOperationException("XML support disabled");
-					}
 					props.loadFromXML(is);
 				}
 				else {
 					props.load(is);
 				}
+			}
+			finally {
+				is.close();
 			}
 		}
 		return props;

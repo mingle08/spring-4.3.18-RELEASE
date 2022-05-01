@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -56,24 +56,25 @@ import org.springframework.core.Ordered;
  * configuration:
  *
  * <pre class="code">
- * &lt;beans&gt;
+ * {@code
+ * <beans>
  *
- *     &lt;cache:annotation-driven/&gt;
+ *     <cache:annotation-driven/>
  *
- *     &lt;bean id="myService" class="com.foo.MyService"/&gt;
+ *     <bean id="myService" class="com.foo.MyService"/>
  *
- *     &lt;bean id="cacheManager" class="org.springframework.cache.support.SimpleCacheManager"&gt;
- *         &lt;property name="caches"&gt;
- *             &lt;set&gt;
- *                 &lt;bean class="org.springframework.cache.concurrent.ConcurrentMapCacheFactoryBean"&gt;
- *                     &lt;property name="name" value="default"/&gt;
- *                 &lt;/bean&gt;
- *             &lt;/set&gt;
- *         &lt;/property&gt;
- *     &lt;/bean&gt;
+ *     <bean id="cacheManager" class="org.springframework.cache.support.SimpleCacheManager">
+ *         <property name="caches">
+ *             <set>
+ *                 <bean class="org.springframework.cache.concurrent.ConcurrentMapCacheFactoryBean">
+ *                     <property name="name" value="default"/>
+ *                 </bean>
+ *             </set>
+ *         </property>
+ *     </bean>
  *
- * &lt;/beans&gt;
- * </pre>
+ * </beans>
+ * }</pre>
  *
  * In both of the scenarios above, {@code @EnableCaching} and {@code
  * <cache:annotation-driven/>} are responsible for registering the necessary Spring
@@ -103,7 +104,7 @@ import org.springframework.core.Ordered;
  * <pre class="code">
  * &#064;Configuration
  * &#064;EnableCaching
- * public class AppConfig implements CachingConfigurer {
+ * public class AppConfig extends CachingConfigurerSupport {
  *
  *     &#064;Bean
  *     public MyService myService() {

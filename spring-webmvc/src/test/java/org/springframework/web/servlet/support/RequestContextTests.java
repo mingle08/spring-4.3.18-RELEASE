@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,17 +19,17 @@ package org.springframework.web.servlet.support;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.mock.web.test.MockHttpServletResponse;
+import org.springframework.mock.web.test.MockServletContext;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.GenericWebApplicationContext;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
-import org.springframework.web.testfixture.servlet.MockHttpServletResponse;
-import org.springframework.web.testfixture.servlet.MockServletContext;
 import org.springframework.web.util.WebUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Dave Syer
@@ -43,9 +43,9 @@ public class RequestContextTests {
 
 	private MockServletContext servletContext = new MockServletContext();
 
-	private Map<String, Object> model = new HashMap<>();
+	private Map<String, Object> model = new HashMap<String, Object>();
 
-	@BeforeEach
+	@Before
 	public void init() {
 		GenericWebApplicationContext applicationContext = new GenericWebApplicationContext();
 		applicationContext.refresh();
@@ -56,27 +56,27 @@ public class RequestContextTests {
 	public void testGetContextUrl() throws Exception {
 		request.setContextPath("foo/");
 		RequestContext context = new RequestContext(request, response, servletContext, model);
-		assertThat(context.getContextUrl("bar")).isEqualTo("foo/bar");
+		assertEquals("foo/bar", context.getContextUrl("bar"));
 	}
 
 	@Test
 	public void testGetContextUrlWithMap() throws Exception {
 		request.setContextPath("foo/");
 		RequestContext context = new RequestContext(request, response, servletContext, model);
-		Map<String, Object> map = new HashMap<>();
+		Map<String, Object> map = new HashMap<String, Object>();
 		map.put("foo", "bar");
 		map.put("spam", "bucket");
-		assertThat(context.getContextUrl("{foo}?spam={spam}", map)).isEqualTo("foo/bar?spam=bucket");
+		assertEquals("foo/bar?spam=bucket", context.getContextUrl("{foo}?spam={spam}", map));
 	}
 
 	@Test
 	public void testGetContextUrlWithMapEscaping() throws Exception {
 		request.setContextPath("foo/");
 		RequestContext context = new RequestContext(request, response, servletContext, model);
-		Map<String, Object> map = new HashMap<>();
+		Map<String, Object> map = new HashMap<String, Object>();
 		map.put("foo", "bar baz");
 		map.put("spam", "&bucket=");
-		assertThat(context.getContextUrl("{foo}?spam={spam}", map)).isEqualTo("foo/bar%20baz?spam=%26bucket%3D");
+		assertEquals("foo/bar%20baz?spam=%26bucket%3D", context.getContextUrl("{foo}?spam={spam}", map));
 	}
 
 	@Test
@@ -85,12 +85,12 @@ public class RequestContextTests {
 		request.setServletPath("/servlet");
 		RequestContext context = new RequestContext(request, response, servletContext, model);
 
-		assertThat(context.getPathToServlet()).isEqualTo("/app/servlet");
+		assertEquals("/app/servlet", context.getPathToServlet());
 
 		request.setAttribute(WebUtils.FORWARD_CONTEXT_PATH_ATTRIBUTE, "/origApp");
 		request.setAttribute(WebUtils.FORWARD_SERVLET_PATH_ATTRIBUTE, "/origServlet");
 
-		assertThat(context.getPathToServlet()).isEqualTo("/origApp/origServlet");
+		assertEquals("/origApp/origServlet", context.getPathToServlet());
 	}
 
 }

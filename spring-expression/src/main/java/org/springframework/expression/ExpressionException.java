@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,20 +16,17 @@
 
 package org.springframework.expression;
 
-import org.springframework.lang.Nullable;
-
 /**
  * Super class for exceptions that can occur whilst processing expressions.
  *
  * @author Andy Clement
- * @author Phillip Webb
+ * @author Phil Webb
  * @since 3.0
  */
 @SuppressWarnings("serial")
 public class ExpressionException extends RuntimeException {
 
-	@Nullable
-	protected final String expressionString;
+	protected String expressionString;
 
 	protected int position;  // -1 if not known; should be known in all reasonable cases
 
@@ -40,8 +37,6 @@ public class ExpressionException extends RuntimeException {
 	 */
 	public ExpressionException(String message) {
 		super(message);
-		this.expressionString = null;
-		this.position = 0;
 	}
 
 	/**
@@ -51,8 +46,6 @@ public class ExpressionException extends RuntimeException {
 	 */
 	public ExpressionException(String message, Throwable cause) {
 		super(message, cause);
-		this.expressionString = null;
-		this.position = 0;
 	}
 
 	/**
@@ -60,7 +53,7 @@ public class ExpressionException extends RuntimeException {
 	 * @param expressionString the expression string
 	 * @param message a descriptive message
 	 */
-	public ExpressionException(@Nullable String expressionString, String message) {
+	public ExpressionException(String expressionString, String message) {
 		super(message);
 		this.expressionString = expressionString;
 		this.position = -1;
@@ -72,7 +65,7 @@ public class ExpressionException extends RuntimeException {
 	 * @param position the position in the expression string where the problem occurred
 	 * @param message a descriptive message
 	 */
-	public ExpressionException(@Nullable String expressionString, int position, String message) {
+	public ExpressionException(String expressionString, int position, String message) {
 		super(message);
 		this.expressionString = expressionString;
 		this.position = position;
@@ -85,7 +78,6 @@ public class ExpressionException extends RuntimeException {
 	 */
 	public ExpressionException(int position, String message) {
 		super(message);
-		this.expressionString = null;
 		this.position = position;
 	}
 
@@ -97,7 +89,6 @@ public class ExpressionException extends RuntimeException {
 	 */
 	public ExpressionException(int position, String message, Throwable cause) {
 		super(message, cause);
-		this.expressionString = null;
 		this.position = position;
 	}
 
@@ -105,7 +96,6 @@ public class ExpressionException extends RuntimeException {
 	/**
 	 * Return the expression string.
 	 */
-	@Nullable
 	public final String getExpressionString() {
 		return this.expressionString;
 	}
@@ -137,7 +127,7 @@ public class ExpressionException extends RuntimeException {
 			StringBuilder output = new StringBuilder();
 			output.append("Expression [");
 			output.append(this.expressionString);
-			output.append(']');
+			output.append("]");
 			if (this.position >= 0) {
 				output.append(" @");
 				output.append(this.position);

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,8 +17,7 @@
 package org.springframework.mail.javamail;
 
 import java.io.InputStream;
-
-import jakarta.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMessage;
 
 import org.springframework.mail.MailException;
 import org.springframework.mail.MailSender;
@@ -40,7 +39,7 @@ import org.springframework.mail.MailSender;
  * mechanism, possibly using a {@link MimeMessageHelper} for populating the message.
  * See {@link MimeMessageHelper MimeMessageHelper's javadoc} for an example.
  *
- * <p>The entire JavaMail {@link jakarta.mail.Session} management is abstracted
+ * <p>The entire JavaMail {@link javax.mail.Session} management is abstracted
  * by the JavaMailSender. Client code should not deal with a Session in any way,
  * rather leave the entire JavaMail configuration and resource handling to the
  * JavaMailSender implementation. This also increases testability.
@@ -54,8 +53,8 @@ import org.springframework.mail.MailSender;
  *
  * @author Juergen Hoeller
  * @since 07.10.2003
- * @see jakarta.mail.internet.MimeMessage
- * @see jakarta.mail.Session
+ * @see javax.mail.internet.MimeMessage
+ * @see javax.mail.Session
  * @see JavaMailSenderImpl
  * @see MimeMessagePreparator
  * @see MimeMessageHelper

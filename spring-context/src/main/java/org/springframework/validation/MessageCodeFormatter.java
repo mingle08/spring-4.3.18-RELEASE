@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,6 @@
 
 package org.springframework.validation;
 
-import org.springframework.lang.Nullable;
-
 /**
  * A strategy interface for formatting message codes.
  *
@@ -26,7 +24,6 @@ import org.springframework.lang.Nullable;
  * @see DefaultMessageCodesResolver
  * @see DefaultMessageCodesResolver.Format
  */
-@FunctionalInterface
 public interface MessageCodeFormatter {
 
 	/**
@@ -38,6 +35,6 @@ public interface MessageCodeFormatter {
 	 * @return concatenated message code, e.g.: "typeMismatch.user.age"
 	 * @see DefaultMessageCodesResolver.Format
 	 */
-	String format(String errorCode, @Nullable String objectName, @Nullable String field);
+	String format(String errorCode, String objectName, String field);
 
 }

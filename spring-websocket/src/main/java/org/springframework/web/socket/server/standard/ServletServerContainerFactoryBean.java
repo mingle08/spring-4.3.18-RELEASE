@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,20 +16,19 @@
 
 package org.springframework.web.socket.server.standard;
 
-import jakarta.servlet.ServletContext;
-import jakarta.websocket.WebSocketContainer;
-import jakarta.websocket.server.ServerContainer;
+import javax.servlet.ServletContext;
+import javax.websocket.WebSocketContainer;
+import javax.websocket.server.ServerContainer;
 
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.web.context.ServletContextAware;
 
 /**
- * A {@link FactoryBean} for configuring {@link jakarta.websocket.server.ServerContainer}.
+ * A {@link FactoryBean} for configuring {@link javax.websocket.server.ServerContainer}.
  * Since there is usually only one {@code ServerContainer} instance accessible under a
- * well-known {@code jakarta.servlet.ServletContext} attribute, simply declaring this
+ * well-known {@code javax.servlet.ServletContext} attribute, simply declaring this
  * FactoryBean and using its setters allows for configuring the {@code ServerContainer}
  * through Spring configuration.
  *
@@ -47,57 +46,47 @@ import org.springframework.web.context.ServletContextAware;
 public class ServletServerContainerFactoryBean
 		implements FactoryBean<WebSocketContainer>, ServletContextAware, InitializingBean {
 
-	@Nullable
 	private Long asyncSendTimeout;
 
-	@Nullable
 	private Long maxSessionIdleTimeout;
 
-	@Nullable
 	private Integer maxTextMessageBufferSize;
 
-	@Nullable
 	private Integer maxBinaryMessageBufferSize;
 
-	@Nullable
 	private ServletContext servletContext;
 
-	@Nullable
 	private ServerContainer serverContainer;
 
 
-	public void setAsyncSendTimeout(Long timeoutInMillis) {
+	public void setAsyncSendTimeout(long timeoutInMillis) {
 		this.asyncSendTimeout = timeoutInMillis;
 	}
 
-	@Nullable
 	public Long getAsyncSendTimeout() {
 		return this.asyncSendTimeout;
 	}
 
-	public void setMaxSessionIdleTimeout(Long timeoutInMillis) {
+	public void setMaxSessionIdleTimeout(long timeoutInMillis) {
 		this.maxSessionIdleTimeout = timeoutInMillis;
 	}
 
-	@Nullable
 	public Long getMaxSessionIdleTimeout() {
 		return this.maxSessionIdleTimeout;
 	}
 
-	public void setMaxTextMessageBufferSize(Integer bufferSize) {
+	public void setMaxTextMessageBufferSize(int bufferSize) {
 		this.maxTextMessageBufferSize = bufferSize;
 	}
 
-	@Nullable
 	public Integer getMaxTextMessageBufferSize() {
 		return this.maxTextMessageBufferSize;
 	}
 
-	public void setMaxBinaryMessageBufferSize(Integer bufferSize) {
+	public void setMaxBinaryMessageBufferSize(int bufferSize) {
 		this.maxBinaryMessageBufferSize = bufferSize;
 	}
 
-	@Nullable
 	public Integer getMaxBinaryMessageBufferSize() {
 		return this.maxBinaryMessageBufferSize;
 	}
@@ -111,11 +100,11 @@ public class ServletServerContainerFactoryBean
 	@Override
 	public void afterPropertiesSet() {
 		Assert.state(this.servletContext != null,
-				"A ServletContext is required to access the jakarta.websocket.server.ServerContainer instance");
+				"A ServletContext is required to access the javax.websocket.server.ServerContainer instance");
 		this.serverContainer = (ServerContainer) this.servletContext.getAttribute(
-				"jakarta.websocket.server.ServerContainer");
+				"javax.websocket.server.ServerContainer");
 		Assert.state(this.serverContainer != null,
-				"Attribute 'jakarta.websocket.server.ServerContainer' not found in ServletContext");
+				"Attribute 'javax.websocket.server.ServerContainer' not found in ServletContext");
 
 		if (this.asyncSendTimeout != null) {
 			this.serverContainer.setAsyncSendTimeout(this.asyncSendTimeout);
@@ -133,7 +122,6 @@ public class ServletServerContainerFactoryBean
 
 
 	@Override
-	@Nullable
 	public ServerContainer getObject() {
 		return this.serverContainer;
 	}

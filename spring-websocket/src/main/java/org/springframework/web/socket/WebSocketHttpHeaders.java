@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.springframework.http.HttpHeaders;
-import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -56,7 +55,7 @@ public class WebSocketHttpHeaders extends HttpHeaders {
 	 * Create a new instance.
 	 */
 	public WebSocketHttpHeaders() {
-		this(new HttpHeaders());
+		this(new HttpHeaders(), false);
 	}
 
 	/**
@@ -65,7 +64,21 @@ public class WebSocketHttpHeaders extends HttpHeaders {
 	 * @param headers the HTTP headers to wrap
 	 */
 	public WebSocketHttpHeaders(HttpHeaders headers) {
-		this.headers = headers;
+		this(headers, false);
+	}
+
+	/**
+	 * Private constructor that can create read-only {@code WebSocketHttpHeader} instances.
+	 */
+	private WebSocketHttpHeaders(HttpHeaders headers, boolean readOnly) {
+		this.headers = readOnly ? HttpHeaders.readOnlyHttpHeaders(headers) : headers;
+	}
+
+	/**
+	 * Returns {@code WebSocketHttpHeaders} object that can only be read, not written to.
+	 */
+	public static WebSocketHttpHeaders readOnlyWebSocketHttpHeaders(WebSocketHttpHeaders headers) {
+		return new WebSocketHttpHeaders(headers, true);
 	}
 
 
@@ -73,7 +86,7 @@ public class WebSocketHttpHeaders extends HttpHeaders {
 	 * Sets the (new) value of the {@code Sec-WebSocket-Accept} header.
 	 * @param secWebSocketAccept the value of the header
 	 */
-	public void setSecWebSocketAccept(@Nullable String secWebSocketAccept) {
+	public void setSecWebSocketAccept(String secWebSocketAccept) {
 		set(SEC_WEBSOCKET_ACCEPT, secWebSocketAccept);
 	}
 
@@ -81,7 +94,6 @@ public class WebSocketHttpHeaders extends HttpHeaders {
 	 * Returns the value of the {@code Sec-WebSocket-Accept} header.
 	 * @return the value of the header
 	 */
-	@Nullable
 	public String getSecWebSocketAccept() {
 		return getFirst(SEC_WEBSOCKET_ACCEPT);
 	}
@@ -96,7 +108,7 @@ public class WebSocketHttpHeaders extends HttpHeaders {
 			return Collections.emptyList();
 		}
 		else {
-			List<WebSocketExtension> result = new ArrayList<>(values.size());
+			List<WebSocketExtension> result = new ArrayList<WebSocketExtension>(values.size());
 			for (String value : values) {
 				result.addAll(WebSocketExtension.parseExtensions(value));
 			}
@@ -109,7 +121,7 @@ public class WebSocketHttpHeaders extends HttpHeaders {
 	 * @param extensions the values for the header
 	 */
 	public void setSecWebSocketExtensions(List<WebSocketExtension> extensions) {
-		List<String> result = new ArrayList<>(extensions.size());
+		List<String> result = new ArrayList<String>(extensions.size());
 		for (WebSocketExtension extension : extensions) {
 			result.add(extension.toString());
 		}
@@ -120,7 +132,7 @@ public class WebSocketHttpHeaders extends HttpHeaders {
 	 * Sets the (new) value of the {@code Sec-WebSocket-Key} header.
 	 * @param secWebSocketKey the value of the header
 	 */
-	public void setSecWebSocketKey(@Nullable String secWebSocketKey) {
+	public void setSecWebSocketKey(String secWebSocketKey) {
 		set(SEC_WEBSOCKET_KEY, secWebSocketKey);
 	}
 
@@ -128,7 +140,6 @@ public class WebSocketHttpHeaders extends HttpHeaders {
 	 * Returns the value of the {@code Sec-WebSocket-Key} header.
 	 * @return the value of the header
 	 */
-	@Nullable
 	public String getSecWebSocketKey() {
 		return getFirst(SEC_WEBSOCKET_KEY);
 	}
@@ -138,7 +149,9 @@ public class WebSocketHttpHeaders extends HttpHeaders {
 	 * @param secWebSocketProtocol the value of the header
 	 */
 	public void setSecWebSocketProtocol(String secWebSocketProtocol) {
-		set(SEC_WEBSOCKET_PROTOCOL, secWebSocketProtocol);
+		if (secWebSocketProtocol != null) {
+			set(SEC_WEBSOCKET_PROTOCOL, secWebSocketProtocol);
+		}
 	}
 
 	/**
@@ -170,7 +183,7 @@ public class WebSocketHttpHeaders extends HttpHeaders {
 	 * Sets the (new) value of the {@code Sec-WebSocket-Version} header.
 	 * @param secWebSocketVersion the value of the header
 	 */
-	public void setSecWebSocketVersion(@Nullable String secWebSocketVersion) {
+	public void setSecWebSocketVersion(String secWebSocketVersion) {
 		set(SEC_WEBSOCKET_VERSION, secWebSocketVersion);
 	}
 
@@ -178,7 +191,6 @@ public class WebSocketHttpHeaders extends HttpHeaders {
 	 * Returns the value of the {@code Sec-WebSocket-Version} header.
 	 * @return the value of the header
 	 */
-	@Nullable
 	public String getSecWebSocketVersion() {
 		return getFirst(SEC_WEBSOCKET_VERSION);
 	}
@@ -192,7 +204,6 @@ public class WebSocketHttpHeaders extends HttpHeaders {
 	 * @return the first header value; or {@code null}
 	 */
 	@Override
-	@Nullable
 	public String getFirst(String headerName) {
 		return this.headers.getFirst(headerName);
 	}
@@ -206,7 +217,7 @@ public class WebSocketHttpHeaders extends HttpHeaders {
 	 * @see #set(String, String)
 	 */
 	@Override
-	public void add(String headerName, @Nullable String headerValue) {
+	public void add(String headerName, String headerValue) {
 		this.headers.add(headerName, headerValue);
 	}
 
@@ -219,7 +230,7 @@ public class WebSocketHttpHeaders extends HttpHeaders {
 	 * @see #add(String, String)
 	 */
 	@Override
-	public void set(String headerName, @Nullable String headerValue) {
+	public void set(String headerName, String headerValue) {
 		this.headers.set(headerName, headerValue);
 	}
 
@@ -297,13 +308,14 @@ public class WebSocketHttpHeaders extends HttpHeaders {
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}
-		if (!(other instanceof WebSocketHttpHeaders otherHeaders)) {
+		if (!(other instanceof WebSocketHttpHeaders)) {
 			return false;
 		}
+		WebSocketHttpHeaders otherHeaders = (WebSocketHttpHeaders) other;
 		return this.headers.equals(otherHeaders.headers);
 	}
 

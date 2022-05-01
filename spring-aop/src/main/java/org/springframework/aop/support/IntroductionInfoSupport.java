@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -43,9 +43,9 @@ import org.springframework.util.ClassUtils;
 @SuppressWarnings("serial")
 public class IntroductionInfoSupport implements IntroductionInfo, Serializable {
 
-	protected final Set<Class<?>> publishedInterfaces = new LinkedHashSet<>();
+	protected final Set<Class<?>> publishedInterfaces = new LinkedHashSet<Class<?>>();
 
-	private transient Map<Method, Boolean> rememberedMethods = new ConcurrentHashMap<>(32);
+	private transient Map<Method, Boolean> rememberedMethods = new ConcurrentHashMap<Method, Boolean>(32);
 
 
 	/**
@@ -118,7 +118,7 @@ public class IntroductionInfoSupport implements IntroductionInfo, Serializable {
 		// Rely on default serialization; just initialize state after deserialization.
 		ois.defaultReadObject();
 		// Initialize transient fields.
-		this.rememberedMethods = new ConcurrentHashMap<>(32);
+		this.rememberedMethods = new ConcurrentHashMap<Method, Boolean>(32);
 	}
 
 }

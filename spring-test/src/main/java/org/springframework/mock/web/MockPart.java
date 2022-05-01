@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,16 +21,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.Collections;
-
-import jakarta.servlet.http.Part;
+import javax.servlet.http.Part;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Mock implementation of {@code jakarta.servlet.http.Part}.
+ * Mock implementation of {@code javax.servlet.http.Part}.
  *
  * @author Rossen Stoyanchev
  * @author Juergen Hoeller
@@ -42,7 +40,6 @@ public class MockPart implements Part {
 
 	private final String name;
 
-	@Nullable
 	private final String filename;
 
 	private final byte[] content;
@@ -54,7 +51,7 @@ public class MockPart implements Part {
 	 * Constructor for a part with byte[] content only.
 	 * @see #getHeaders()
 	 */
-	public MockPart(String name, @Nullable byte[] content) {
+	public MockPart(String name, byte[] content) {
 		this(name, null, content);
 	}
 
@@ -62,8 +59,8 @@ public class MockPart implements Part {
 	 * Constructor for a part with a filename and byte[] content.
 	 * @see #getHeaders()
 	 */
-	public MockPart(String name, @Nullable String filename, @Nullable byte[] content) {
-		Assert.hasLength(name, "'name' must not be empty");
+	public MockPart(String name, String filename, byte[] content) {
+		Assert.hasLength(name, "Name must not be null");
 		this.name = name;
 		this.filename = filename;
 		this.content = (content != null ? content : new byte[0]);
@@ -76,14 +73,12 @@ public class MockPart implements Part {
 		return this.name;
 	}
 
-	@Override
-	@Nullable
+	// Servlet 3.1
 	public String getSubmittedFileName() {
 		return this.filename;
 	}
 
 	@Override
-	@Nullable
 	public String getContentType() {
 		MediaType contentType = this.headers.getContentType();
 		return (contentType != null ? contentType.toString() : null);
@@ -110,7 +105,6 @@ public class MockPart implements Part {
 	}
 
 	@Override
-	@Nullable
 	public String getHeader(String name) {
 		return this.headers.getFirst(name);
 	}
@@ -118,7 +112,7 @@ public class MockPart implements Part {
 	@Override
 	public Collection<String> getHeaders(String name) {
 		Collection<String> headerValues = this.headers.get(name);
-		return (headerValues != null ? headerValues : Collections.emptyList());
+		return (headerValues != null ? headerValues : Collections.<String>emptyList());
 	}
 
 	@Override

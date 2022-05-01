@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,19 +16,16 @@
 
 package org.springframework.format.datetime.standard;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.MonthDay;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
-import java.time.YearMonth;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.springframework.context.support.EmbeddedValueResolutionSupport;
@@ -36,32 +33,34 @@ import org.springframework.format.AnnotationFormatterFactory;
 import org.springframework.format.Parser;
 import org.springframework.format.Printer;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.util.StringUtils;
+import org.springframework.lang.UsesJava8;
 
 /**
  * Formats fields annotated with the {@link DateTimeFormat} annotation using the
  * JSR-310 <code>java.time</code> package in JDK 8.
  *
  * @author Juergen Hoeller
- * @author Sam Brannen
- * @author Kazuki Shimizu
  * @since 4.0
  * @see org.springframework.format.annotation.DateTimeFormat
  */
+@UsesJava8
 public class Jsr310DateTimeFormatAnnotationFormatterFactory extends EmbeddedValueResolutionSupport
 		implements AnnotationFormatterFactory<DateTimeFormat> {
 
-	// Create the set of field types that may be annotated with @DateTimeFormat.
-	private static final Set<Class<?>> FIELD_TYPES = Set.of(
-				Instant.class,
-				LocalDate.class,
-				LocalTime.class,
-				LocalDateTime.class,
-				ZonedDateTime.class,
-				OffsetDateTime.class,
-				OffsetTime.class,
-				YearMonth.class,
-				MonthDay.class);
+	private static final Set<Class<?>> FIELD_TYPES;
+
+	static {
+		// Create the set of field types that may be annotated with @DateTimeFormat.
+		Set<Class<?>> fieldTypes = new HashSet<Class<?>>(8);
+		fieldTypes.add(LocalDate.class);
+		fieldTypes.add(LocalTime.class);
+		fieldTypes.add(LocalDateTime.class);
+		fieldTypes.add(ZonedDateTime.class);
+		fieldTypes.add(OffsetDateTime.class);
+		fieldTypes.add(OffsetTime.class);
+		FIELD_TYPES = Collections.unmodifiableSet(fieldTypes);
+	}
+
 
 	@Override
 	public final Set<Class<?>> getFieldTypes() {
@@ -95,17 +94,8 @@ public class Jsr310DateTimeFormatAnnotationFormatterFactory extends EmbeddedValu
 	@Override
 	@SuppressWarnings("unchecked")
 	public Parser<?> getParser(DateTimeFormat annotation, Class<?> fieldType) {
-		List<String> resolvedFallbackPatterns = new ArrayList<>();
-		for (String fallbackPattern : annotation.fallbackPatterns()) {
-			String resolvedFallbackPattern = resolveEmbeddedValue(fallbackPattern);
-			if (StringUtils.hasLength(resolvedFallbackPattern)) {
-				resolvedFallbackPatterns.add(resolvedFallbackPattern);
-			}
-		}
-
 		DateTimeFormatter formatter = getFormatter(annotation, fieldType);
-		return new TemporalAccessorParser((Class<? extends TemporalAccessor>) fieldType,
-				formatter, resolvedFallbackPatterns.toArray(new String[0]), annotation);
+		return new TemporalAccessorParser((Class<? extends TemporalAccessor>) fieldType, formatter);
 	}
 
 	/**
@@ -116,15 +106,9 @@ public class Jsr310DateTimeFormatAnnotationFormatterFactory extends EmbeddedValu
 	 */
 	protected DateTimeFormatter getFormatter(DateTimeFormat annotation, Class<?> fieldType) {
 		DateTimeFormatterFactory factory = new DateTimeFormatterFactory();
-		String style = resolveEmbeddedValue(annotation.style());
-		if (StringUtils.hasLength(style)) {
-			factory.setStylePattern(style);
-		}
+		factory.setStylePattern(resolveEmbeddedValue(annotation.style()));
 		factory.setIso(annotation.iso());
-		String pattern = resolveEmbeddedValue(annotation.pattern());
-		if (StringUtils.hasLength(pattern)) {
-			factory.setPattern(pattern);
-		}
+		factory.setPattern(resolveEmbeddedValue(annotation.pattern()));
 		return factory.createDateTimeFormatter();
 	}
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,10 +16,7 @@
 
 package org.springframework.messaging.simp.user;
 
-import java.security.Principal;
 import java.util.Set;
-
-import org.springframework.lang.Nullable;
 
 /**
  * Represents a connected user.
@@ -35,15 +32,6 @@ public interface SimpUser {
 	String getName();
 
 	/**
-	 * Return the user associated with the session, if available. Typically, the
-	 * user information is available unless the user is connected to a different
-	 * server in a multi-server user registry scenario.
-	 * @since 5.3
-	 */
-	@Nullable
-	Principal getPrincipal();
-
-	/**
 	 * Whether the user has any sessions.
 	 */
 	boolean hasSessions();
@@ -51,15 +39,14 @@ public interface SimpUser {
 	/**
 	 * Look up the session for the given id.
 	 * @param sessionId the session id
-	 * @return the matching session, or {@code null} if none found
+	 * @return the matching session of {@code null}.
 	 */
-	@Nullable
 	SimpSession getSession(String sessionId);
 
 	/**
 	 * Return the sessions for the user.
 	 * The returned set is a copy and will never be modified.
-	 * @return a set of session ids, or an empty set if none
+	 * @return a set of session ids, or an empty set.
 	 */
 	Set<SimpSession> getSessions();
 

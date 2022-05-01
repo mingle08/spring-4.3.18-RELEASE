@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,11 +23,10 @@ import java.util.concurrent.Callable;
 
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
-import org.springframework.lang.Nullable;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.context.request.async.CallableProcessingInterceptor;
 import org.springframework.web.context.request.async.DeferredResult;
 import org.springframework.web.context.request.async.DeferredResultProcessingInterceptor;
+import org.springframework.web.context.request.async.WebAsyncTask;
 
 /**
  * Helps with configuring options for asynchronous request processing.
@@ -37,27 +36,24 @@ import org.springframework.web.context.request.async.DeferredResultProcessingInt
  */
 public class AsyncSupportConfigurer {
 
-	@Nullable
 	private AsyncTaskExecutor taskExecutor;
 
-	@Nullable
 	private Long timeout;
 
-	private final List<CallableProcessingInterceptor> callableInterceptors = new ArrayList<>();
+	private final List<CallableProcessingInterceptor> callableInterceptors =
+			new ArrayList<CallableProcessingInterceptor>();
 
-	private final List<DeferredResultProcessingInterceptor> deferredResultInterceptors = new ArrayList<>();
+	private final List<DeferredResultProcessingInterceptor> deferredResultInterceptors =
+			new ArrayList<DeferredResultProcessingInterceptor>();
 
 
 	/**
-	 * The provided task executor is used to:
-	 * <ol>
-	 * <li>Handle {@link Callable} controller method return values.
-	 * <li>Perform blocking writes when streaming to the response
-	 * through a reactive (e.g. Reactor, RxJava) controller method return value.
-	 * </ol>
-	 * <p>By default only a {@link SimpleAsyncTaskExecutor} is used. However when
-	 * using the above two use cases, it's recommended to configure an executor
-	 * backed by a thread pool such as {@link ThreadPoolTaskExecutor}.
+	 * Set the default {@link AsyncTaskExecutor} to use when a controller method
+	 * returns a {@link Callable}. Controller methods can override this default on
+	 * a per-request basis by returning a {@link WebAsyncTask}.
+	 * <p>By default a {@link SimpleAsyncTaskExecutor} instance is used, and it's
+	 * highly recommended to change that default in production since the simple
+	 * executor does not re-use threads.
 	 * @param taskExecutor the task executor instance to use by default
 	 */
 	public AsyncSupportConfigurer setTaskExecutor(AsyncTaskExecutor taskExecutor) {
@@ -71,7 +67,7 @@ public class AsyncSupportConfigurer {
 	 * processing thread has exited and ends when the request is dispatched again
 	 * for further processing of the concurrently produced result.
 	 * <p>If this value is not set, the default timeout of the underlying
-	 * implementation is used.
+	 * implementation is used, e.g. 10 seconds on Tomcat with Servlet 3.
 	 * @param timeout the timeout value in milliseconds
 	 */
 	public AsyncSupportConfigurer setDefaultTimeout(long timeout) {
@@ -95,20 +91,16 @@ public class AsyncSupportConfigurer {
 	 * execution that starts when a controller returns a {@link DeferredResult}.
 	 * @param interceptors the interceptors to register
 	 */
-	public AsyncSupportConfigurer registerDeferredResultInterceptors(
-			DeferredResultProcessingInterceptor... interceptors) {
-
+	public AsyncSupportConfigurer registerDeferredResultInterceptors(DeferredResultProcessingInterceptor... interceptors) {
 		this.deferredResultInterceptors.addAll(Arrays.asList(interceptors));
 		return this;
 	}
 
 
-	@Nullable
 	protected AsyncTaskExecutor getTaskExecutor() {
 		return this.taskExecutor;
 	}
 
-	@Nullable
 	protected Long getTimeout() {
 		return this.timeout;
 	}

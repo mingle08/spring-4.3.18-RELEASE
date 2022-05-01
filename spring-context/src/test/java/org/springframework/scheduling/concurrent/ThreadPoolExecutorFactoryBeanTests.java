@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,88 +16,51 @@
 
 package org.springframework.scheduling.concurrent;
 
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.support.GenericApplicationContext;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
 
 /**
- * Tests for {@link ThreadPoolExecutorFactoryBean}.
- *
  * @author Juergen Hoeller
  */
-class ThreadPoolExecutorFactoryBeanTests {
+public class ThreadPoolExecutorFactoryBeanTests {
 
 	@Test
-	void defaultExecutor() throws Exception {
-		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(ExecutorConfig.class);
-		ExecutorService executor = context.getBean(ExecutorService.class);
+	public void defaultExecutor() throws Exception {
+		ApplicationContext context = new AnnotationConfigApplicationContext(ExecutorConfig.class);
+		ExecutorService executor = context.getBean("executor", ExecutorService.class);
 
-		FutureTask<String> task = new FutureTask<>(() -> "foo");
-		executor.execute(task);
-		assertThat(task.get()).isEqualTo("foo");
-		context.close();
-	}
-
-	@Test
-	void executorWithDefaultSettingsDoesNotPrestartAllCoreThreads() {
-		GenericApplicationContext context = new GenericApplicationContext();
-		context.registerBean("taskExecutor", ThreadPoolExecutorFactoryBean.class, TestThreadPoolExecutorFactoryBean::new);
-		context.refresh();
-		ThreadPoolExecutor threadPoolExecutor = context.getBean(ThreadPoolExecutor.class);
-		verify(threadPoolExecutor, never()).prestartAllCoreThreads();
-		context.close();
-	}
-
-	@Test
-	void executorWithPrestartAllCoreThreads() {
-		GenericApplicationContext context = new GenericApplicationContext();
-		context.registerBean("taskExecutor", ThreadPoolExecutorFactoryBean.class, () -> {
-			TestThreadPoolExecutorFactoryBean factoryBean = new TestThreadPoolExecutorFactoryBean();
-			factoryBean.setPrestartAllCoreThreads(true);
-			return factoryBean;
+		FutureTask<String> task = new FutureTask<String>(new Callable<String>() {
+			@Override
+			public String call() throws Exception {
+				return "foo";
+			}
 		});
-		context.refresh();
-		ThreadPoolExecutor threadPoolExecutor = context.getBean(ThreadPoolExecutor.class);
-		verify(threadPoolExecutor).prestartAllCoreThreads();
-		context.close();
+		executor.execute(task);
+		assertEquals("foo", task.get());
 	}
 
 
 	@Configuration
-	static class ExecutorConfig {
+	public static class ExecutorConfig {
 
 		@Bean
-		ThreadPoolExecutorFactoryBean executor() {
+		public ThreadPoolExecutorFactoryBean executorFactory() {
 			return new ThreadPoolExecutorFactoryBean();
 		}
-	}
 
-
-	@SuppressWarnings("serial")
-	private static class TestThreadPoolExecutorFactoryBean extends ThreadPoolExecutorFactoryBean {
-
-		@Override
-		protected ThreadPoolExecutor createExecutor(
-				int corePoolSize, int maxPoolSize, int keepAliveSeconds, BlockingQueue<Runnable> queue,
-				ThreadFactory threadFactory, RejectedExecutionHandler rejectedExecutionHandler) {
-
-			return mock(ThreadPoolExecutor.class);
+		@Bean
+		public ExecutorService executor() {
+			return executorFactory().getObject();
 		}
 	}
 

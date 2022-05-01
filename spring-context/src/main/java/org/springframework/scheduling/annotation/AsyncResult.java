@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,10 @@
 
 package org.springframework.scheduling.annotation;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.concurrent.FailureCallback;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.ListenableFutureCallback;
@@ -41,25 +39,22 @@ import org.springframework.util.concurrent.SuccessCallback;
  * @author Juergen Hoeller
  * @author Rossen Stoyanchev
  * @since 3.0
- * @param <V> the value type
  * @see Async
  * @see #forValue(Object)
  * @see #forExecutionException(Throwable)
  */
 public class AsyncResult<V> implements ListenableFuture<V> {
 
-	@Nullable
 	private final V value;
 
-	@Nullable
-	private final Throwable executionException;
+	private final ExecutionException executionException;
 
 
 	/**
 	 * Create a new AsyncResult holder.
 	 * @param value the value to pass through
 	 */
-	public AsyncResult(@Nullable V value) {
+	public AsyncResult(V value) {
 		this(value, null);
 	}
 
@@ -67,7 +62,7 @@ public class AsyncResult<V> implements ListenableFuture<V> {
 	 * Create a new AsyncResult holder.
 	 * @param value the value to pass through
 	 */
-	private AsyncResult(@Nullable V value, @Nullable Throwable ex) {
+	private AsyncResult(V value, ExecutionException ex) {
 		this.value = value;
 		this.executionException = ex;
 	}
@@ -89,18 +84,14 @@ public class AsyncResult<V> implements ListenableFuture<V> {
 	}
 
 	@Override
-	@Nullable
 	public V get() throws ExecutionException {
 		if (this.executionException != null) {
-			throw (this.executionException instanceof ExecutionException ?
-					(ExecutionException) this.executionException :
-					new ExecutionException(this.executionException));
+			throw this.executionException;
 		}
 		return this.value;
 	}
 
 	@Override
-	@Nullable
 	public V get(long timeout, TimeUnit unit) throws ExecutionException {
 		return get();
 	}
@@ -114,7 +105,8 @@ public class AsyncResult<V> implements ListenableFuture<V> {
 	public void addCallback(SuccessCallback<? super V> successCallback, FailureCallback failureCallback) {
 		try {
 			if (this.executionException != null) {
-				failureCallback.onFailure(exposedException(this.executionException));
+				Throwable cause = this.executionException.getCause();
+				failureCallback.onFailure(cause != null ? cause : this.executionException);
 			}
 			else {
 				successCallback.onSuccess(this.value);
@@ -122,18 +114,6 @@ public class AsyncResult<V> implements ListenableFuture<V> {
 		}
 		catch (Throwable ex) {
 			// Ignore
-		}
-	}
-
-	@Override
-	public CompletableFuture<V> completable() {
-		if (this.executionException != null) {
-			CompletableFuture<V> completable = new CompletableFuture<>();
-			completable.completeExceptionally(exposedException(this.executionException));
-			return completable;
-		}
-		else {
-			return CompletableFuture.completedFuture(this.value);
 		}
 	}
 
@@ -145,7 +125,7 @@ public class AsyncResult<V> implements ListenableFuture<V> {
 	 * @see Future#get()
 	 */
 	public static <V> ListenableFuture<V> forValue(V value) {
-		return new AsyncResult<>(value, null);
+		return new AsyncResult<V>(value, null);
 	}
 
 	/**
@@ -157,23 +137,8 @@ public class AsyncResult<V> implements ListenableFuture<V> {
 	 * @see ExecutionException
 	 */
 	public static <V> ListenableFuture<V> forExecutionException(Throwable ex) {
-		return new AsyncResult<>(null, ex);
-	}
-
-	/**
-	 * Determine the exposed exception: either the cause of a given
-	 * {@link ExecutionException}, or the original exception as-is.
-	 * @param original the original as given to {@link #forExecutionException}
-	 * @return the exposed exception
-	 */
-	private static Throwable exposedException(Throwable original) {
-		if (original instanceof ExecutionException) {
-			Throwable cause = original.getCause();
-			if (cause != null) {
-				return cause;
-			}
-		}
-		return original;
+		return new AsyncResult<V>(null,
+				(ex instanceof ExecutionException ? (ExecutionException) ex : new ExecutionException(ex)));
 	}
 
 }

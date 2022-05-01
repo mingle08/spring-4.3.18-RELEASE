@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,11 @@
 
 package org.springframework.web.servlet.resource;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.util.Assert;
-import org.springframework.web.bind.ServletRequestBindingException;
-import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
 /**
  * An interceptor that exposes the {@link ResourceUrlProvider} instance it
@@ -30,7 +29,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
  * @author Rossen Stoyanchev
  * @since 4.1
  */
-public class ResourceUrlProviderExposingInterceptor implements HandlerInterceptor {
+public class ResourceUrlProviderExposingInterceptor extends HandlerInterceptorAdapter {
 
 	/**
 	 * Name of the request attribute that holds the {@link ResourceUrlProvider}.
@@ -49,12 +48,7 @@ public class ResourceUrlProviderExposingInterceptor implements HandlerIntercepto
 	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
 			throws Exception {
 
-		try {
-			request.setAttribute(RESOURCE_URL_PROVIDER_ATTR, this.resourceUrlProvider);
-		}
-		catch (ResourceUrlEncodingFilter.LookupPathIndexException ex) {
-			throw new ServletRequestBindingException(ex.getMessage(), ex);
-		}
+		request.setAttribute(RESOURCE_URL_PROVIDER_ATTR, this.resourceUrlProvider);
 		return true;
 	}
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@
 package org.springframework.aop.framework.autoproxy;
 
 import org.springframework.aop.TargetSource;
-import org.springframework.lang.Nullable;
 
 /**
  * Implementations can create special target sources, such as pooling target
@@ -30,7 +29,6 @@ import org.springframework.lang.Nullable;
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
-@FunctionalInterface
 public interface TargetSourceCreator {
 
 	/**
@@ -40,7 +38,6 @@ public interface TargetSourceCreator {
 	 * @return a special TargetSource or {@code null} if this TargetSourceCreator isn't
 	 * interested in the particular bean
 	 */
-	@Nullable
 	TargetSource getTargetSource(Class<?> beanClass, String beanName);
 
 }

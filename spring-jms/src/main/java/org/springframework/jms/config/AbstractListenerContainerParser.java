@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,8 @@
 
 package org.springframework.jms.config;
 
-import jakarta.jms.Session;
+import javax.jms.Session;
+
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -31,7 +32,6 @@ import org.springframework.beans.factory.parsing.CompositeComponentDefinition;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.factory.xml.BeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
-import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 /**
@@ -102,14 +102,13 @@ abstract class AbstractListenerContainerParser implements BeanDefinitionParser {
 
 
 	@Override
-	@Nullable
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
 		CompositeComponentDefinition compositeDef =
 				new CompositeComponentDefinition(element.getTagName(), parserContext.extractSource(element));
 		parserContext.pushContainingComponent(compositeDef);
 
-		MutablePropertyValues commonProperties = parseCommonContainerProperties(element, parserContext);
-		MutablePropertyValues specificProperties = parseSpecificContainerProperties(element, parserContext);
+		PropertyValues commonProperties = parseCommonContainerProperties(element, parserContext);
+		PropertyValues specificProperties = parseSpecificContainerProperties(element, parserContext);
 
 		String factoryId = element.getAttribute(FACTORY_ID_ATTRIBUTE);
 		if (StringUtils.hasText(factoryId)) {
@@ -137,7 +136,7 @@ abstract class AbstractListenerContainerParser implements BeanDefinitionParser {
 	}
 
 	private void parseListener(Element containerEle, Element listenerEle, ParserContext parserContext,
-			MutablePropertyValues commonContainerProperties, PropertyValues specificContainerProperties) {
+			PropertyValues commonContainerProperties, PropertyValues specificContainerProperties) {
 
 		RootBeanDefinition listenerDef = new RootBeanDefinition();
 		listenerDef.setSource(parserContext.extractSource(listenerEle));
@@ -172,15 +171,12 @@ abstract class AbstractListenerContainerParser implements BeanDefinitionParser {
 
 		if (listenerEle.hasAttribute(RESPONSE_DESTINATION_ATTRIBUTE)) {
 			String responseDestination = listenerEle.getAttribute(RESPONSE_DESTINATION_ATTRIBUTE);
-			Boolean pubSubDomain = (Boolean) commonContainerProperties.get("replyPubSubDomain");
-			if (pubSubDomain == null) {
-				pubSubDomain = false;
-			}
+			Boolean pubSubDomain = (Boolean) commonContainerProperties.getPropertyValue("replyPubSubDomain").getValue();
 			listenerDef.getPropertyValues().add(
 					pubSubDomain ? "defaultResponseTopicName" : "defaultResponseQueueName", responseDestination);
-			PropertyValue destinationResolver = containerDef.getPropertyValues().getPropertyValue("destinationResolver");
-			if (destinationResolver != null) {
-				listenerDef.getPropertyValues().addPropertyValue(destinationResolver);
+			if (containerDef.getPropertyValues().contains("destinationResolver")) {
+				listenerDef.getPropertyValues().add("destinationResolver",
+						containerDef.getPropertyValues().getPropertyValue("destinationResolver").getValue());
 			}
 		}
 
@@ -254,7 +250,7 @@ abstract class AbstractListenerContainerParser implements BeanDefinitionParser {
 		else if (DESTINATION_TYPE_TOPIC.equals(destinationType)) {
 			pubSubDomain = true;
 		}
-		else if (!StringUtils.hasLength(destinationType) || DESTINATION_TYPE_QUEUE.equals(destinationType)) {
+		else if ("".equals(destinationType) || DESTINATION_TYPE_QUEUE.equals(destinationType)) {
 			// the default: queue
 		}
 		else {
@@ -313,7 +309,6 @@ abstract class AbstractListenerContainerParser implements BeanDefinitionParser {
 	 * Create the {@link BeanDefinition} for the container factory using the specified
 	 * shared property values.
 	 */
-	@Nullable
 	protected abstract RootBeanDefinition createContainerFactory(String factoryId, Element containerEle, ParserContext parserContext,
 			PropertyValues commonContainerProperties, PropertyValues specificContainerProperties);
 
@@ -324,7 +319,6 @@ abstract class AbstractListenerContainerParser implements BeanDefinitionParser {
 			PropertyValues commonContainerProperties, PropertyValues specificContainerProperties);
 
 
-	@Nullable
 	protected Integer parseAcknowledgeMode(Element ele, ParserContext parserContext) {
 		String acknowledge = ele.getAttribute(ACKNOWLEDGE_ATTRIBUTE);
 		if (StringUtils.hasText(acknowledge)) {

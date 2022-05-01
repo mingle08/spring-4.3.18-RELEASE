@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,18 +16,21 @@
 
 package org.springframework.test.context.jdbc;
 
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import javax.sql.DataSource;
+
+import org.junit.FixMethodOrder;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.MethodSorters;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.jdbc.JdbcTestUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Integration tests which verify that scripts executed via {@link Sql @Sql}
@@ -36,30 +39,37 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Sam Brannen
  * @since 4.1
  */
-@SpringJUnitConfig(EmptyDatabaseConfig.class)
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@RunWith(SpringJUnit4ClassRunner.class)
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@ContextConfiguration(classes = EmptyDatabaseConfig.class)
 @Sql({ "schema.sql", "data.sql" })
 @DirtiesContext
-class NonTransactionalSqlScriptsTests {
+public class NonTransactionalSqlScriptsTests {
+
+	protected JdbcTemplate jdbcTemplate;
+
 
 	@Autowired
-	JdbcTemplate jdbcTemplate;
+	public void setDataSource(DataSource dataSource) {
+		this.jdbcTemplate = new JdbcTemplate(dataSource);
+	}
 
 	@Test
-	@Order(1)
-	void classLevelScripts() {
+	// test##_ prefix is required for @FixMethodOrder.
+	public void test01_classLevelScripts() {
 		assertNumUsers(1);
 	}
 
 	@Test
 	@Sql("data-add-dogbert.sql")
-	@Order(2)
-	void methodLevelScripts() {
+	// test##_ prefix is required for @FixMethodOrder.
+	public void test02_methodLevelScripts() {
 		assertNumUsers(2);
 	}
 
-	void assertNumUsers(int expected) {
-		assertThat(JdbcTestUtils.countRowsInTable(jdbcTemplate, "user")).as("Number of rows in the 'user' table.").isEqualTo(expected);
+	protected void assertNumUsers(int expected) {
+		assertEquals("Number of rows in the 'user' table.", expected,
+			JdbcTestUtils.countRowsInTable(jdbcTemplate, "user"));
 	}
 
 }

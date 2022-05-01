@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,8 @@
 
 package org.springframework.web.servlet.view;
 
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -29,9 +29,9 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.beans.factory.support.PropertiesBeanDefinitionReader;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.Ordered;
-import org.springframework.lang.Nullable;
 import org.springframework.web.context.support.GenericWebApplicationContext;
 import org.springframework.web.servlet.View;
 
@@ -58,15 +58,11 @@ import org.springframework.web.servlet.View;
  * @see java.util.ResourceBundle#getBundle
  * @see java.util.PropertyResourceBundle
  * @see UrlBasedViewResolver
- * @see BeanNameViewResolver
- * @deprecated as of 5.3, in favor of Spring's common view resolver variants
- * and/or custom resolver implementations
  */
-@Deprecated
 public class ResourceBundleViewResolver extends AbstractCachingViewResolver
 		implements Ordered, InitializingBean, DisposableBean {
 
-	/** The default basename if no other basename is supplied. */
+	/** The default basename if no other basename is supplied */
 	public static final String DEFAULT_BASENAME = "views";
 
 
@@ -74,19 +70,19 @@ public class ResourceBundleViewResolver extends AbstractCachingViewResolver
 
 	private ClassLoader bundleClassLoader = Thread.currentThread().getContextClassLoader();
 
-	@Nullable
 	private String defaultParentView;
 
-	@Nullable
 	private Locale[] localesToInitialize;
 
 	private int order = Ordered.LOWEST_PRECEDENCE;  // default: same as non-Ordered
 
 	/* Locale -> BeanFactory */
-	private final Map<Locale, BeanFactory> localeCache = new HashMap<>();
+	private final Map<Locale, BeanFactory> localeCache =
+			new HashMap<Locale, BeanFactory>();
 
 	/* List of ResourceBundle -> BeanFactory */
-	private final Map<List<ResourceBundle>, ConfigurableApplicationContext> bundleCache = new HashMap<>();
+	private final Map<List<ResourceBundle>, ConfigurableApplicationContext> bundleCache =
+			new HashMap<List<ResourceBundle>, ConfigurableApplicationContext>();
 
 
 	/**
@@ -150,7 +146,7 @@ public class ResourceBundleViewResolver extends AbstractCachingViewResolver
 	 * <p>This avoids repeated "yyy1.(parent)=xxx", "yyy2.(parent)=xxx" definitions
 	 * in the bundle, especially if all defined views share the same parent.
 	 * <p>The parent will typically define the view class and common attributes.
-	 * Concrete views might simply consist of a URL definition then:
+	 * Concrete views might simply consist of an URL definition then:
 	 * a la "yyy1.url=/my.jsp", "yyy2.url=/your.jsp".
 	 * <p>View definitions that define their own parent or carry their own
 	 * class can still override this. Strictly speaking, the rule that a
@@ -230,9 +226,10 @@ public class ResourceBundleViewResolver extends AbstractCachingViewResolver
 		}
 
 		// Build list of ResourceBundle references for Locale.
-		List<ResourceBundle> bundles = new ArrayList<>(this.basenames.length);
+		List<ResourceBundle> bundles = new LinkedList<ResourceBundle>();
 		for (String basename : this.basenames) {
-			bundles.add(getBundle(basename, locale));
+			ResourceBundle bundle = getBundle(basename, locale);
+			bundles.add(bundle);
 		}
 
 		// Try to find cached factory for ResourceBundle list:
@@ -251,8 +248,7 @@ public class ResourceBundleViewResolver extends AbstractCachingViewResolver
 		factory.setServletContext(getServletContext());
 
 		// Load bean definitions from resource bundle.
-		org.springframework.beans.factory.support.PropertiesBeanDefinitionReader reader =
-				new org.springframework.beans.factory.support.PropertiesBeanDefinitionReader(factory);
+		PropertiesBeanDefinitionReader reader = new PropertiesBeanDefinitionReader(factory);
 		reader.setDefaultParentBean(this.defaultParentView);
 		for (ResourceBundle bundle : bundles) {
 			reader.registerBeanDefinitions(bundle);

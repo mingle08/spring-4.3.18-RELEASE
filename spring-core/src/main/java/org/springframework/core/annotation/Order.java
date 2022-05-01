@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,9 +40,9 @@ import org.springframework.core.Ordered;
  * order which is an orthogonal concern determined by dependency relationships and
  * {@code @DependsOn} declarations (influencing a runtime-determined dependency graph).
  *
- * <p>Since Spring 4.1, the standard {@link jakarta.annotation.Priority} annotation
+ * <p>Since Spring 4.1, the standard {@link javax.annotation.Priority} annotation
  * can be used as a drop-in replacement for this annotation in ordering scenarios.
- * Note that {@code @Priority} may have additional semantics when a single element
+ * Note that {@code Priority} may have additional semantics when a single element
  * has to be picked (see {@link AnnotationAwareOrderComparator#getPriority}).
  *
  * <p>Alternatively, order values may also be determined on a per-instance basis
@@ -58,7 +58,7 @@ import org.springframework.core.Ordered;
  * @see org.springframework.core.Ordered
  * @see AnnotationAwareOrderComparator
  * @see OrderUtils
- * @see jakarta.annotation.Priority
+ * @see javax.annotation.Priority
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD, ElementType.FIELD})

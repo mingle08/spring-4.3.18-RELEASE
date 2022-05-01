@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,13 +23,13 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestContextManager;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.transaction.TransactionAssert.assertThatTransaction;
+import static org.springframework.test.transaction.TransactionTestUtils.*;
+import static org.testng.Assert.*;
 
 /**
  * <p>
  * TestNG based integration test to assess the claim in <a
- * href="https://opensource.atlassian.com/projects/spring/browse/SPR-3880"
+ * href="http://opensource.atlassian.com/projects/spring/browse/SPR-3880"
  * target="_blank">SPR-3880</a> that a &quot;context marked dirty using
  * {@link DirtiesContext &#064;DirtiesContext} in [a] TestNG based test is not
  * reloaded in subsequent tests&quot;.
@@ -53,13 +53,11 @@ public class DirtiesContextTransactionalTestNGSpringContextTests extends Abstrac
 
 
 	private void performCommonAssertions() {
-		assertThatTransaction().isActive();
-		assertThat(super.applicationContext)
-			.as("The application context should have been set due to ApplicationContextAware semantics.")
-			.isNotNull();
-		assertThat(super.jdbcTemplate)
-			.as("The JdbcTemplate should have been created in setDataSource() via DI for the DataSource.")
-			.isNotNull();
+		assertInTransaction(true);
+		assertNotNull(super.applicationContext,
+			"The application context should have been set due to ApplicationContextAware semantics.");
+		assertNotNull(super.jdbcTemplate,
+			"The JdbcTemplate should have been created in setDataSource() via DI for the DataSource.");
 	}
 
 	@Test
@@ -72,17 +70,15 @@ public class DirtiesContextTransactionalTestNGSpringContextTests extends Abstrac
 	@Test(dependsOnMethods = { "dirtyContext" })
 	public void verifyContextWasDirtied() {
 		performCommonAssertions();
-		assertThat(super.applicationContext)
-			.as("The application context should have been 'dirtied'.")
-			.isNotSameAs(this.dirtiedApplicationContext);
+		assertNotSame(super.applicationContext, this.dirtiedApplicationContext,
+			"The application context should have been 'dirtied'.");
 		this.dirtiedApplicationContext = super.applicationContext;
 	}
 
 	@Test(dependsOnMethods = { "verifyContextWasDirtied" })
 	public void verifyContextWasNotDirtied() {
-		assertThat(this.applicationContext)
-			.as("The application context should NOT have been 'dirtied'.")
-			.isSameAs(this.dirtiedApplicationContext);
+		assertSame(this.applicationContext, this.dirtiedApplicationContext,
+			"The application context should NOT have been 'dirtied'.");
 	}
 
 }

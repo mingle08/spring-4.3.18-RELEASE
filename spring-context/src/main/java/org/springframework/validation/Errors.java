@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,6 @@ package org.springframework.validation;
 import java.util.List;
 
 import org.springframework.beans.PropertyAccessor;
-import org.springframework.lang.Nullable;
 
 /**
  * Stores and exposes information about data-binding and validation
@@ -83,8 +82,8 @@ public interface Errors {
 	 * {@code pushNestedPath(String)} call.
 	 * <p>Using the nested path stack allows to set temporary nested paths
 	 * for subobjects without having to worry about a temporary path holder.
-	 * <p>For example: current path "spouse.", pushNestedPath("child") &rarr;
-	 * result path "spouse.child."; popNestedPath() &rarr; "spouse." again.
+	 * <p>For example: current path "spouse.", pushNestedPath("child") ->
+	 * result path "spouse.child."; popNestedPath() -> "spouse." again.
 	 * @param subPath the sub path to push onto the nested path stack
 	 * @see #popNestedPath
 	 */
@@ -120,7 +119,7 @@ public interface Errors {
 	 * (can be {@code null})
 	 * @param defaultMessage fallback default message
 	 */
-	void reject(String errorCode, @Nullable Object[] errorArgs, @Nullable String defaultMessage);
+	void reject(String errorCode, Object[] errorArgs, String defaultMessage);
 
 	/**
 	 * Register a field error for the specified field of the current object
@@ -134,7 +133,7 @@ public interface Errors {
 	 * @param errorCode error code, interpretable as a message key
 	 * @see #getNestedPath()
 	 */
-	void rejectValue(@Nullable String field, String errorCode);
+	void rejectValue(String field, String errorCode);
 
 	/**
 	 * Register a field error for the specified field of the current object
@@ -149,7 +148,7 @@ public interface Errors {
 	 * @param defaultMessage fallback default message
 	 * @see #getNestedPath()
 	 */
-	void rejectValue(@Nullable String field, String errorCode, String defaultMessage);
+	void rejectValue(String field, String errorCode, String defaultMessage);
 
 	/**
 	 * Register a field error for the specified field of the current object
@@ -166,8 +165,7 @@ public interface Errors {
 	 * @param defaultMessage fallback default message
 	 * @see #getNestedPath()
 	 */
-	void rejectValue(@Nullable String field, String errorCode,
-			@Nullable Object[] errorArgs, @Nullable String defaultMessage);
+	void rejectValue(String field, String errorCode, Object[] errorArgs, String defaultMessage);
 
 	/**
 	 * Add all errors from the given {@code Errors} instance to this
@@ -194,7 +192,7 @@ public interface Errors {
 
 	/**
 	 * Get all errors, both global and field ones.
-	 * @return a list of {@link ObjectError} instances
+	 * @return List of {@link ObjectError} instances
 	 */
 	List<ObjectError> getAllErrors();
 
@@ -214,7 +212,7 @@ public interface Errors {
 
 	/**
 	 * Get all global errors.
-	 * @return a list of {@link ObjectError} instances
+	 * @return List of ObjectError instances
 	 */
 	List<ObjectError> getGlobalErrors();
 
@@ -222,7 +220,6 @@ public interface Errors {
 	 * Get the <i>first</i> global error, if any.
 	 * @return the global error, or {@code null}
 	 */
-	@Nullable
 	ObjectError getGlobalError();
 
 	/**
@@ -249,7 +246,6 @@ public interface Errors {
 	 * Get the <i>first</i> error associated with a field, if any.
 	 * @return the field-specific error, or {@code null}
 	 */
-	@Nullable
 	FieldError getFieldError();
 
 	/**
@@ -280,7 +276,6 @@ public interface Errors {
 	 * @param field the field name
 	 * @return the field-specific error, or {@code null}
 	 */
-	@Nullable
 	FieldError getFieldError(String field);
 
 	/**
@@ -291,7 +286,6 @@ public interface Errors {
 	 * @param field the field name
 	 * @return the current value of the given field
 	 */
-	@Nullable
 	Object getFieldValue(String field);
 
 	/**
@@ -302,7 +296,6 @@ public interface Errors {
 	 * @param field the field name
 	 * @return the type of the field, or {@code null} if not determinable
 	 */
-	@Nullable
 	Class<?> getFieldType(String field);
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.lang.Nullable;
 
 /**
  * Converts String to a Boolean.
@@ -31,9 +30,9 @@ import org.springframework.lang.Nullable;
  */
 final class StringToBooleanConverter implements Converter<String, Boolean> {
 
-	private static final Set<String> trueValues = new HashSet<>(8);
+	private static final Set<String> trueValues = new HashSet<String>(4);
 
-	private static final Set<String> falseValues = new HashSet<>(8);
+	private static final Set<String> falseValues = new HashSet<String>(4);
 
 	static {
 		trueValues.add("true");
@@ -47,12 +46,10 @@ final class StringToBooleanConverter implements Converter<String, Boolean> {
 		falseValues.add("0");
 	}
 
-
 	@Override
-	@Nullable
 	public Boolean convert(String source) {
 		String value = source.trim();
-		if (value.isEmpty()) {
+		if ("".equals(value)) {
 			return null;
 		}
 		value = value.toLowerCase();

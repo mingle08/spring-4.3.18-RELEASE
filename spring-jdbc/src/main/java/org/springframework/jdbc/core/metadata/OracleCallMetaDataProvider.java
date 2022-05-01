@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,7 +23,6 @@ import java.sql.Types;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.jdbc.core.SqlOutParameter;
 import org.springframework.jdbc.core.SqlParameter;
-import org.springframework.lang.Nullable;
 
 /**
  * Oracle-specific implementation for the {@link CallMetaDataProvider} interface.
@@ -58,15 +57,13 @@ public class OracleCallMetaDataProvider extends GenericCallMetaDataProvider {
 	}
 
 	@Override
-	@Nullable
-	public String metaDataCatalogNameToUse(@Nullable String catalogName) {
+	public String metaDataCatalogNameToUse(String catalogName) {
 		// Oracle uses catalog name for package name or an empty string if no package
 		return (catalogName == null ? "" : catalogNameToUse(catalogName));
 	}
 
 	@Override
-	@Nullable
-	public String metaDataSchemaNameToUse(@Nullable String schemaName) {
+	public String metaDataSchemaNameToUse(String schemaName) {
 		// Use current user schema if no schema specified
 		return (schemaName == null ? getUserName() : super.metaDataSchemaNameToUse(schemaName));
 	}

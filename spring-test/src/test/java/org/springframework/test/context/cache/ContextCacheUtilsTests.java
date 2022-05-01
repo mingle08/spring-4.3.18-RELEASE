@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,16 +16,15 @@
 
 package org.springframework.test.context.cache;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.core.SpringProperties;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.context.cache.ContextCache.DEFAULT_MAX_CONTEXT_CACHE_SIZE;
-import static org.springframework.test.context.cache.ContextCache.MAX_CONTEXT_CACHE_SIZE_PROPERTY_NAME;
-import static org.springframework.test.context.cache.ContextCacheUtils.retrieveMaxCacheSize;
+import static org.junit.Assert.*;
+import static org.springframework.test.context.cache.ContextCacheUtils.*;
+import static org.springframework.test.context.cache.ContextCache.*;
 
 /**
  * Unit tests for {@link ContextCacheUtils}.
@@ -33,58 +32,58 @@ import static org.springframework.test.context.cache.ContextCacheUtils.retrieveM
  * @author Sam Brannen
  * @since 4.3
  */
-class ContextCacheUtilsTests {
+public class ContextCacheUtilsTests {
 
-	@BeforeEach
-	@AfterEach
-	void clearProperties() {
+	@Before
+	@After
+	public void clearProperties() {
 		System.clearProperty(MAX_CONTEXT_CACHE_SIZE_PROPERTY_NAME);
 		SpringProperties.setProperty(MAX_CONTEXT_CACHE_SIZE_PROPERTY_NAME, null);
 	}
 
 	@Test
-	void retrieveMaxCacheSizeFromDefault() {
+	public void retrieveMaxCacheSizeFromDefault() {
 		assertDefaultValue();
 	}
 
 	@Test
-	void retrieveMaxCacheSizeFromBogusSystemProperty() {
+	public void retrieveMaxCacheSizeFromBogusSystemProperty() {
 		System.setProperty(MAX_CONTEXT_CACHE_SIZE_PROPERTY_NAME, "bogus");
 		assertDefaultValue();
 	}
 
 	@Test
-	void retrieveMaxCacheSizeFromBogusSpringProperty() {
+	public void retrieveMaxCacheSizeFromBogusSpringProperty() {
 		SpringProperties.setProperty(MAX_CONTEXT_CACHE_SIZE_PROPERTY_NAME, "bogus");
 		assertDefaultValue();
 	}
 
 	@Test
-	void retrieveMaxCacheSizeFromDecimalSpringProperty() {
+	public void retrieveMaxCacheSizeFromDecimalSpringProperty() {
 		SpringProperties.setProperty(MAX_CONTEXT_CACHE_SIZE_PROPERTY_NAME, "3.14");
 		assertDefaultValue();
 	}
 
 	@Test
-	void retrieveMaxCacheSizeFromSystemProperty() {
+	public void retrieveMaxCacheSizeFromSystemProperty() {
 		System.setProperty(MAX_CONTEXT_CACHE_SIZE_PROPERTY_NAME, "42");
-		assertThat(retrieveMaxCacheSize()).isEqualTo(42);
+		assertEquals(42, retrieveMaxCacheSize());
 	}
 
 	@Test
-	void retrieveMaxCacheSizeFromSystemPropertyContainingWhitespace() {
+	public void retrieveMaxCacheSizeFromSystemPropertyContainingWhitespace() {
 		System.setProperty(MAX_CONTEXT_CACHE_SIZE_PROPERTY_NAME, "42\t");
-		assertThat(retrieveMaxCacheSize()).isEqualTo(42);
+		assertEquals(42, retrieveMaxCacheSize());
 	}
 
 	@Test
-	void retrieveMaxCacheSizeFromSpringProperty() {
+	public void retrieveMaxCacheSizeFromSpringProperty() {
 		SpringProperties.setProperty(MAX_CONTEXT_CACHE_SIZE_PROPERTY_NAME, "99");
-		assertThat(retrieveMaxCacheSize()).isEqualTo(99);
+		assertEquals(99, retrieveMaxCacheSize());
 	}
 
 	private static void assertDefaultValue() {
-		assertThat(retrieveMaxCacheSize()).isEqualTo(DEFAULT_MAX_CONTEXT_CACHE_SIZE);
+		assertEquals(DEFAULT_MAX_CONTEXT_CACHE_SIZE, retrieveMaxCacheSize());
 	}
 
 }

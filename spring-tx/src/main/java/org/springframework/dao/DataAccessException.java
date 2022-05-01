@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,11 +17,10 @@
 package org.springframework.dao;
 
 import org.springframework.core.NestedRuntimeException;
-import org.springframework.lang.Nullable;
 
 /**
  * Root of the hierarchy of data access exceptions discussed in
- * <a href="https://www.amazon.com/exec/obidos/tg/detail/-/0764543857/">Expert One-On-One J2EE Design and Development</a>.
+ * <a href="http://www.amazon.com/exec/obidos/tg/detail/-/0764543857/">Expert One-On-One J2EE Design and Development</a>.
  * Please see Chapter 9 of this book for detailed discussion of the
  * motivation for this package.
  *
@@ -53,7 +52,7 @@ public abstract class DataAccessException extends NestedRuntimeException {
 	 * @param cause the root cause (usually from using a underlying
 	 * data access API such as JDBC)
 	 */
-	public DataAccessException(@Nullable String msg, @Nullable Throwable cause) {
+	public DataAccessException(String msg, Throwable cause) {
 		super(msg, cause);
 	}
 

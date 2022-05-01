@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,11 +19,9 @@ package org.springframework.jdbc.object;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
-
 import javax.sql.DataSource;
 
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.lang.Nullable;
 
 /**
  * Reusable RDBMS query in which concrete subclasses must implement
@@ -34,13 +32,12 @@ import org.springframework.lang.Nullable;
  * and a DataSource. SQL will often vary between subclasses.
  *
  * @author Thomas Risberg
- * @param <T> the result type
  * @see org.springframework.jdbc.object.SqlQuery
  */
 public abstract class UpdatableSqlQuery<T> extends SqlQuery<T> {
 
 	/**
-	 * Constructor to allow use as a JavaBean.
+	 * Constructor to allow use as a JavaBean
 	 */
 	public UpdatableSqlQuery() {
 		setUpdatableResults(true);
@@ -48,8 +45,8 @@ public abstract class UpdatableSqlQuery<T> extends SqlQuery<T> {
 
 	/**
 	 * Convenient constructor with DataSource and SQL string.
-	 * @param ds the DataSource to use to get connections
-	 * @param sql the SQL to run
+	 * @param ds DataSource to use to get connections
+	 * @param sql SQL to run
 	 */
 	public UpdatableSqlQuery(DataSource ds, String sql) {
 		super(ds, sql);
@@ -62,14 +59,14 @@ public abstract class UpdatableSqlQuery<T> extends SqlQuery<T> {
 	 * implementation of the {@code updateRow()} method.
 	 */
 	@Override
-	protected RowMapper<T> newRowMapper(@Nullable Object[] parameters, @Nullable Map<?, ?> context) {
+	protected RowMapper<T> newRowMapper(Object[] parameters, Map<?, ?> context) {
 		return new RowMapperImpl(context);
 	}
 
 	/**
 	 * Subclasses must implement this method to update each row of the
 	 * ResultSet and optionally create object of the result type.
-	 * @param rs the ResultSet we're working through
+	 * @param rs ResultSet we're working through
 	 * @param rowNum row number (from 0) we're up to
 	 * @param context passed to the execute() method.
 	 * It can be {@code null} if no contextual information is need.  If you
@@ -81,7 +78,7 @@ public abstract class UpdatableSqlQuery<T> extends SqlQuery<T> {
 	 * Subclasses can simply not catch SQLExceptions, relying on the
 	 * framework to clean up.
 	 */
-	protected abstract T updateRow(ResultSet rs, int rowNum, @Nullable Map<?, ?> context) throws SQLException;
+	protected abstract T updateRow(ResultSet rs, int rowNum, Map<?, ?> context) throws SQLException;
 
 
 	/**
@@ -90,10 +87,9 @@ public abstract class UpdatableSqlQuery<T> extends SqlQuery<T> {
 	 */
 	protected class RowMapperImpl implements RowMapper<T> {
 
-		@Nullable
 		private final Map<?, ?> context;
 
-		public RowMapperImpl(@Nullable Map<?, ?> context) {
+		public RowMapperImpl(Map<?, ?> context) {
 			this.context = context;
 		}
 

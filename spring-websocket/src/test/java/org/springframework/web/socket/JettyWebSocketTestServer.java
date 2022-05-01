@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,17 +17,16 @@
 package org.springframework.web.socket;
 
 import java.util.EnumSet;
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.ServletContext;
 
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.Filter;
-import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.DispatcherServlet;
@@ -42,7 +41,7 @@ public class JettyWebSocketTestServer implements WebSocketTestServer {
 
 	private Server jettyServer;
 
-	private int port;
+	private int port = -1;
 
 	private ServletContextHandler contextHandler;
 
@@ -58,7 +57,6 @@ public class JettyWebSocketTestServer implements WebSocketTestServer {
 		ServletHolder servletHolder = new ServletHolder(new DispatcherServlet(wac));
 		this.contextHandler = new ServletContextHandler();
 		this.contextHandler.addServlet(servletHolder, "/");
-		this.contextHandler.addServletContainerInitializer(new JettyWebSocketServletContainerInitializer());
 		for (Filter filter : filters) {
 			this.contextHandler.addFilter(new FilterHolder(filter), "/*", getDispatcherTypes());
 		}

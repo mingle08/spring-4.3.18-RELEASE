@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,11 +17,11 @@
 package org.springframework.web.multipart.support;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,22 +30,18 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.Part;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.Part;
-
-import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
-import org.springframework.lang.Nullable;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * Spring MultipartHttpServletRequest adapter, wrapping a Servlet HttpServletRequest
+ * Spring MultipartHttpServletRequest adapter, wrapping a Servlet 3.0 HttpServletRequest
  * and its Part objects. Parameters get exposed through the native request's getParameter
  * methods - without any custom processing on our side.
  *
@@ -56,7 +52,15 @@ import org.springframework.web.multipart.MultipartFile;
  */
 public class StandardMultipartHttpServletRequest extends AbstractMultipartHttpServletRequest {
 
-	@Nullable
+	private static final String CONTENT_DISPOSITION = "content-disposition";
+
+	private static final String FILENAME_KEY = "filename=";
+
+	private static final String FILENAME_WITH_CHARSET_KEY = "filename*=";
+
+	private static final Charset US_ASCII = Charset.forName("us-ascii");
+
+
 	private Set<String> multipartParameterNames;
 
 
@@ -91,12 +95,14 @@ public class StandardMultipartHttpServletRequest extends AbstractMultipartHttpSe
 	private void parseRequest(HttpServletRequest request) {
 		try {
 			Collection<Part> parts = request.getParts();
-			this.multipartParameterNames = new LinkedHashSet<>(parts.size());
-			MultiValueMap<String, MultipartFile> files = new LinkedMultiValueMap<>(parts.size());
+			this.multipartParameterNames = new LinkedHashSet<String>(parts.size());
+			MultiValueMap<String, MultipartFile> files = new LinkedMultiValueMap<String, MultipartFile>(parts.size());
 			for (Part part : parts) {
-				String headerValue = part.getHeader(HttpHeaders.CONTENT_DISPOSITION);
-				ContentDisposition disposition = ContentDisposition.parse(headerValue);
-				String filename = disposition.getFilename();
+				String disposition = part.getHeader(CONTENT_DISPOSITION);
+				String filename = extractFilename(disposition);
+				if (filename == null) {
+					filename = extractFilenameWithCharset(disposition);
+				}
 				if (filename != null) {
 					files.add(part.getName(), new StandardMultipartFile(part, filename));
 				}
@@ -107,17 +113,65 @@ public class StandardMultipartHttpServletRequest extends AbstractMultipartHttpSe
 			setMultipartFiles(files);
 		}
 		catch (Throwable ex) {
-			handleParseFailure(ex);
+			throw new MultipartException("Could not parse multipart servlet request", ex);
 		}
 	}
 
-	protected void handleParseFailure(Throwable ex) {
-		String msg = ex.getMessage();
-		if (msg != null && msg.contains("size") && msg.contains("exceed")) {
-			throw new MaxUploadSizeExceededException(-1, ex);
+	private String extractFilename(String contentDisposition, String key) {
+		if (contentDisposition == null) {
+			return null;
 		}
-		throw new MultipartException("Failed to parse multipart servlet request", ex);
+		int startIndex = contentDisposition.indexOf(key);
+		if (startIndex == -1) {
+			return null;
+		}
+		String filename = contentDisposition.substring(startIndex + key.length());
+		if (filename.startsWith("\"")) {
+			int endIndex = filename.indexOf("\"", 1);
+			if (endIndex != -1) {
+				return filename.substring(1, endIndex);
+			}
+		}
+		else {
+			int endIndex = filename.indexOf(";");
+			if (endIndex != -1) {
+				return filename.substring(0, endIndex);
+			}
+		}
+		return filename;
 	}
+
+	private String extractFilename(String contentDisposition) {
+		return extractFilename(contentDisposition, FILENAME_KEY);
+	}
+
+	private String extractFilenameWithCharset(String contentDisposition) {
+		String filename = extractFilename(contentDisposition, FILENAME_WITH_CHARSET_KEY);
+		if (filename == null) {
+			return null;
+		}
+		int index = filename.indexOf("'");
+		if (index != -1) {
+			Charset charset = null;
+			try {
+				charset = Charset.forName(filename.substring(0, index));
+			}
+			catch (IllegalArgumentException ex) {
+				// ignore
+			}
+			filename = filename.substring(index + 1);
+			// Skip language information..
+			index = filename.indexOf("'");
+			if (index != -1) {
+				filename = filename.substring(index + 1);
+			}
+			if (charset != null) {
+				filename = new String(filename.getBytes(US_ASCII), charset);
+			}
+		}
+		return filename;
+	}
+
 
 	@Override
 	protected void initializeMultipart() {
@@ -133,9 +187,9 @@ public class StandardMultipartHttpServletRequest extends AbstractMultipartHttpSe
 			return super.getParameterNames();
 		}
 
-		// Servlet getParameterNames() not guaranteed to include multipart form items
+		// Servlet 3.0 getParameterNames() not guaranteed to include multipart form items
 		// (e.g. on WebLogic 12) -> need to merge them here to be on the safe side
-		Set<String> paramNames = new LinkedHashSet<>();
+		Set<String> paramNames = new LinkedHashSet<String>();
 		Enumeration<String> paramEnum = super.getParameterNames();
 		while (paramEnum.hasMoreElements()) {
 			paramNames.add(paramEnum.nextElement());
@@ -153,9 +207,10 @@ public class StandardMultipartHttpServletRequest extends AbstractMultipartHttpSe
 			return super.getParameterMap();
 		}
 
-		// Servlet getParameterMap() not guaranteed to include multipart form items
+		// Servlet 3.0 getParameterMap() not guaranteed to include multipart form items
 		// (e.g. on WebLogic 12) -> need to merge them here to be on the safe side
-		Map<String, String[]> paramMap = new LinkedHashMap<>(super.getParameterMap());
+		Map<String, String[]> paramMap = new LinkedHashMap<String, String[]>();
+		paramMap.putAll(super.getParameterMap());
 		for (String paramName : this.multipartParameterNames) {
 			if (!paramMap.containsKey(paramName)) {
 				paramMap.put(paramName, getParameterValues(paramName));
@@ -182,7 +237,7 @@ public class StandardMultipartHttpServletRequest extends AbstractMultipartHttpSe
 			if (part != null) {
 				HttpHeaders headers = new HttpHeaders();
 				for (String headerName : part.getHeaderNames()) {
-					headers.put(headerName, new ArrayList<>(part.getHeaders(headerName)));
+					headers.put(headerName, new ArrayList<String>(part.getHeaders(headerName)));
 				}
 				return headers;
 			}
@@ -197,7 +252,7 @@ public class StandardMultipartHttpServletRequest extends AbstractMultipartHttpSe
 
 
 	/**
-	 * Spring MultipartFile adapter, wrapping a Servlet Part object.
+	 * Spring MultipartFile adapter, wrapping a Servlet 3.0 Part object.
 	 */
 	@SuppressWarnings("serial")
 	private static class StandardMultipartFile implements MultipartFile, Serializable {
@@ -250,19 +305,14 @@ public class StandardMultipartHttpServletRequest extends AbstractMultipartHttpSe
 		public void transferTo(File dest) throws IOException, IllegalStateException {
 			this.part.write(dest.getPath());
 			if (dest.isAbsolute() && !dest.exists()) {
-				// Servlet Part.write is not guaranteed to support absolute file paths:
+				// Servlet 3.0 Part.write is not guaranteed to support absolute file paths:
 				// may translate the given path to a relative location within a temp dir
 				// (e.g. on Jetty whereas Tomcat and Undertow detect absolute paths).
 				// At least we offloaded the file from memory storage; it'll get deleted
 				// from the temp dir eventually in any case. And for our user's purposes,
 				// we can manually copy it to the requested location as a fallback.
-				FileCopyUtils.copy(this.part.getInputStream(), Files.newOutputStream(dest.toPath()));
+				FileCopyUtils.copy(this.part.getInputStream(), new FileOutputStream(dest));
 			}
-		}
-
-		@Override
-		public void transferTo(Path dest) throws IOException, IllegalStateException {
-			FileCopyUtils.copy(this.part.getInputStream(), Files.newOutputStream(dest));
 		}
 	}
 

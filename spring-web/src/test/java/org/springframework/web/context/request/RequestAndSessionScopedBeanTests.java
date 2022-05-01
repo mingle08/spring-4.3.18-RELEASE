@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,18 +16,18 @@
 
 package org.springframework.web.context.request;
 
-import jakarta.servlet.http.HttpServletRequest;
-import org.junit.jupiter.api.Test;
+import javax.servlet.http.HttpServletRequest;
+
+import org.junit.Test;
 
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.support.RootBeanDefinition;
-import org.springframework.beans.testfixture.beans.TestBean;
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.tests.sample.beans.TestBean;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.StaticWebApplicationContext;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * @author Rod Johnson
@@ -37,7 +37,7 @@ public class RequestAndSessionScopedBeanTests {
 
 	@Test
 	@SuppressWarnings("resource")
-	public void testPutBeanInRequest() {
+	public void testPutBeanInRequest() throws Exception {
 		String targetBeanName = "target";
 
 		StaticWebApplicationContext wac = new StaticWebApplicationContext();
@@ -50,29 +50,34 @@ public class RequestAndSessionScopedBeanTests {
 		HttpServletRequest request = new MockHttpServletRequest();
 		RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 		TestBean target = (TestBean) wac.getBean(targetBeanName);
-		assertThat(target.getName()).isEqualTo("abc");
-		assertThat(request.getAttribute(targetBeanName)).isSameAs(target);
+		assertEquals("abc", target.getName());
+		assertSame(target, request.getAttribute(targetBeanName));
 
 		TestBean target2 = (TestBean) wac.getBean(targetBeanName);
-		assertThat(target2.getName()).isEqualTo("abc");
-		assertThat(target).isSameAs(target2);
-		assertThat(request.getAttribute(targetBeanName)).isSameAs(target2);
+		assertEquals("abc", target2.getName());
+		assertSame(target2, target);
+		assertSame(target2, request.getAttribute(targetBeanName));
 
 		request = new MockHttpServletRequest();
 		RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 		TestBean target3 = (TestBean) wac.getBean(targetBeanName);
-		assertThat(target3.getName()).isEqualTo("abc");
-		assertThat(request.getAttribute(targetBeanName)).isSameAs(target3);
-		assertThat(target).isNotSameAs(target3);
+		assertEquals("abc", target3.getName());
+		assertSame(target3, request.getAttribute(targetBeanName));
+		assertNotSame(target3, target);
 
 		RequestContextHolder.setRequestAttributes(null);
-		assertThatExceptionOfType(BeanCreationException.class).isThrownBy(() ->
-				wac.getBean(targetBeanName));
+		try {
+			wac.getBean(targetBeanName);
+			fail("Should have thrown BeanCreationException");
+		}
+		catch (BeanCreationException ex) {
+			// expected
+		}
 	}
 
 	@Test
 	@SuppressWarnings("resource")
-	public void testPutBeanInSession() {
+	public void testPutBeanInSession() throws Exception {
 		String targetBeanName = "target";
 		HttpServletRequest request = new MockHttpServletRequest();
 		RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
@@ -85,12 +90,19 @@ public class RequestAndSessionScopedBeanTests {
 		wac.refresh();
 
 		TestBean target = (TestBean) wac.getBean(targetBeanName);
-		assertThat(target.getName()).isEqualTo("abc");
-		assertThat(request.getSession().getAttribute(targetBeanName)).isSameAs(target);
+		assertEquals("abc", target.getName());
+		assertSame(target, request.getSession().getAttribute(targetBeanName));
 
 		RequestContextHolder.setRequestAttributes(null);
-		assertThatExceptionOfType(BeanCreationException.class).isThrownBy(() ->
-				wac.getBean(targetBeanName));
+		try {
+			wac.getBean(targetBeanName);
+			fail("Should have thrown BeanCreationException");
+		}
+		catch (BeanCreationException ex) {
+			// expected
+		}
+
+
 	}
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,8 +15,6 @@
  */
 
 package org.springframework.util.backoff;
-
-import org.springframework.util.Assert;
 
 /**
  * Implementation of {@link BackOff} that increases the back off period for each
@@ -117,7 +115,7 @@ public class ExponentialBackOff implements BackOff {
 	 * Return the initial interval in milliseconds.
 	 */
 	public long getInitialInterval() {
-		return this.initialInterval;
+		return initialInterval;
 	}
 
 	/**
@@ -132,7 +130,7 @@ public class ExponentialBackOff implements BackOff {
 	 * Return the value to multiply the current interval by for each retry attempt.
 	 */
 	public double getMultiplier() {
-		return this.multiplier;
+		return multiplier;
 	}
 
 	/**
@@ -146,7 +144,7 @@ public class ExponentialBackOff implements BackOff {
 	 * Return the maximum back off time.
 	 */
 	public long getMaxInterval() {
-		return this.maxInterval;
+		return maxInterval;
 	}
 
 	/**
@@ -162,7 +160,7 @@ public class ExponentialBackOff implements BackOff {
 	 * {@link BackOffExecution#nextBackOff()} returns {@link BackOffExecution#STOP}.
 	 */
 	public long getMaxElapsedTime() {
-		return this.maxElapsedTime;
+		return maxElapsedTime;
 	}
 
 	@Override
@@ -171,8 +169,10 @@ public class ExponentialBackOff implements BackOff {
 	}
 
 	private void checkMultiplier(double multiplier) {
-		Assert.isTrue(multiplier >= 1, () -> "Invalid multiplier '" + multiplier + "'. Should be greater than " +
-					"or equal to 1. A multiplier of 1 is equivalent to a fixed interval.");
+		if (multiplier < 1) {
+			throw new IllegalArgumentException("Invalid multiplier '" + multiplier + "'. Should be equal" +
+					"or higher than 1. A multiplier of 1 is equivalent to a fixed interval");
+		}
 	}
 
 
@@ -199,8 +199,9 @@ public class ExponentialBackOff implements BackOff {
 				return maxInterval;
 			}
 			else if (this.currentInterval < 0) {
-				long initialInterval = getInitialInterval();
-				this.currentInterval = Math.min(initialInterval, maxInterval);
+			 	long initialInterval = getInitialInterval();
+				this.currentInterval = (initialInterval < maxInterval
+						? initialInterval : maxInterval);
 			}
 			else {
 				this.currentInterval = multiplyInterval(maxInterval);
@@ -211,7 +212,7 @@ public class ExponentialBackOff implements BackOff {
 		private long multiplyInterval(long maxInterval) {
 			long i = this.currentInterval;
 			i *= getMultiplier();
-			return Math.min(i, maxInterval);
+			return (i > maxInterval ? maxInterval : i);
 		}
 
 

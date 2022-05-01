@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,10 +22,6 @@ import org.quartz.spi.TriggerFiredBundle;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.PropertyAccessorFactory;
-import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.lang.Nullable;
 
 /**
  * Subclass of {@link AdaptableJobFactory} that also supports Spring-style
@@ -44,16 +40,10 @@ import org.springframework.lang.Nullable;
  * @see SchedulerFactoryBean#setJobFactory
  * @see QuartzJobBean
  */
-public class SpringBeanJobFactory extends AdaptableJobFactory
-		implements ApplicationContextAware, SchedulerContextAware {
+public class SpringBeanJobFactory extends AdaptableJobFactory implements SchedulerContextAware {
 
-	@Nullable
 	private String[] ignoredUnknownProperties;
 
-	@Nullable
-	private ApplicationContext applicationContext;
-
-	@Nullable
 	private SchedulerContext schedulerContext;
 
 
@@ -70,11 +60,6 @@ public class SpringBeanJobFactory extends AdaptableJobFactory
 	}
 
 	@Override
-	public void setApplicationContext(ApplicationContext applicationContext) {
-		this.applicationContext = applicationContext;
-	}
-
-	@Override
 	public void setSchedulerContext(SchedulerContext schedulerContext) {
 		this.schedulerContext = schedulerContext;
 	}
@@ -86,11 +71,7 @@ public class SpringBeanJobFactory extends AdaptableJobFactory
 	 */
 	@Override
 	protected Object createJobInstance(TriggerFiredBundle bundle) throws Exception {
-		Object job = (this.applicationContext != null ?
-				this.applicationContext.getAutowireCapableBeanFactory().createBean(
-						bundle.getJobDetail().getJobClass(), AutowireCapableBeanFactory.AUTOWIRE_CONSTRUCTOR, false) :
-				super.createJobInstance(bundle));
-
+		Object job = super.createJobInstance(bundle);
 		if (isEligibleForPropertyPopulation(job)) {
 			BeanWrapper bw = PropertyAccessorFactory.forBeanPropertyAccess(job);
 			MutablePropertyValues pvs = new MutablePropertyValues();
@@ -111,7 +92,6 @@ public class SpringBeanJobFactory extends AdaptableJobFactory
 				bw.setPropertyValues(pvs, true);
 			}
 		}
-
 		return job;
 	}
 

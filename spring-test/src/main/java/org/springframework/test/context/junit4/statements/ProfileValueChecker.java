@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,7 +23,6 @@ import org.junit.AssumptionViolatedException;
 import org.junit.runners.model.Statement;
 
 import org.springframework.core.annotation.AnnotatedElementUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.test.annotation.IfProfileValue;
 import org.springframework.test.annotation.ProfileValueUtils;
 import org.springframework.util.Assert;
@@ -46,7 +45,6 @@ public class ProfileValueChecker extends Statement {
 
 	private final Class<?> testClass;
 
-	@Nullable
 	private final Method testMethod;
 
 
@@ -58,7 +56,7 @@ public class ProfileValueChecker extends Statement {
 	 * @param testMethod the test method to check; may be {@code null} if
 	 * this {@code ProfileValueChecker} is being applied at the class level
 	 */
-	public ProfileValueChecker(Statement next, Class<?> testClass, @Nullable Method testMethod) {
+	public ProfileValueChecker(Statement next, Class<?> testClass, Method testMethod) {
 		Assert.notNull(next, "The next statement must not be null");
 		Assert.notNull(testClass, "The test class must not be null");
 		this.next = next;
@@ -77,10 +75,10 @@ public class ProfileValueChecker extends Statement {
 	 * <p>If a test is not enabled, this method will abort further evaluation
 	 * of the execution chain with a failed assumption; otherwise, this method
 	 * will simply evaluate the next {@link Statement} in the execution chain.
-	 * @throws AssumptionViolatedException if the test is disabled
-	 * @throws Throwable if evaluation of the next statement fails
 	 * @see ProfileValueUtils#isTestEnabledInThisEnvironment(Class)
 	 * @see ProfileValueUtils#isTestEnabledInThisEnvironment(Method, Class)
+	 * @throws AssumptionViolatedException if the test is disabled
+	 * @throws Throwable if evaluation of the next statement fails
 	 */
 	@Override
 	public void evaluate() throws Throwable {

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,28 +29,31 @@ import org.springframework.util.Assert;
  */
 final class EmbeddedDatabaseConfigurerFactory {
 
-	private EmbeddedDatabaseConfigurerFactory() {
-	}
-
-
 	/**
 	 * Return a configurer instance for the given embedded database type.
-	 * @param type the embedded database type (HSQL, H2 or Derby)
+	 * @param type HSQL, H2 or Derby
 	 * @return the configurer instance
 	 * @throws IllegalStateException if the driver for the specified database type is not available
 	 */
 	public static EmbeddedDatabaseConfigurer getConfigurer(EmbeddedDatabaseType type) throws IllegalStateException {
 		Assert.notNull(type, "EmbeddedDatabaseType is required");
 		try {
-			return switch (type) {
-				case HSQL -> HsqlEmbeddedDatabaseConfigurer.getInstance();
-				case H2 -> H2EmbeddedDatabaseConfigurer.getInstance();
-				case DERBY -> DerbyEmbeddedDatabaseConfigurer.getInstance();
-				default -> throw new UnsupportedOperationException("Embedded database type [" + type + "] is not supported");
-			};
+			switch (type) {
+				case HSQL:
+					return HsqlEmbeddedDatabaseConfigurer.getInstance();
+				case H2:
+					return H2EmbeddedDatabaseConfigurer.getInstance();
+				case DERBY:
+					return DerbyEmbeddedDatabaseConfigurer.getInstance();
+				default:
+					throw new UnsupportedOperationException("Embedded database type [" + type + "] is not supported");
+			}
 		}
-		catch (ClassNotFoundException | NoClassDefFoundError ex) {
+		catch (ClassNotFoundException ex) {
 			throw new IllegalStateException("Driver for test database type [" + type + "] is not available", ex);
+		}
+		catch (NoClassDefFoundError err) {
+			throw new IllegalStateException("Driver for test database type [" + type + "] is not available", err);
 		}
 	}
 

@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN 2.0//EN" "https://www.springframework.org/dtd/spring-beans-2.0.dtd">
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN 2.0//EN" "http://www.springframework.org/dtd/spring-beans-2.0.dtd">
 
 <beans>
 
 	<bean id="jmxAdapter" class="org.springframework.jmx.export.MBeanExporter">
 		<property name="assembler">
-			<ref bean="metadataAssembler"/>
+			<ref local="metadataAssembler"/>
 		</property>
 		<property name="namingStrategy">
-			<ref bean="namingStrategy"/>
+			<ref local="namingStrategy"/>
 		</property>
 	</bean>
 
@@ -23,13 +23,13 @@
 
 	<bean id="metadataAssembler" class="org.springframework.jmx.export.assembler.MetadataMBeanInfoAssembler">
 		<property name="attributeSource">
-			<ref bean="attributeSource"/>
+			<ref local="attributeSource"/>
 		</property>
 	</bean>
 
 	<bean id="namingStrategy" class="org.springframework.jmx.export.naming.MetadataNamingStrategy">
 		<property name="attributeSource">
-			<ref bean="attributeSource"/>
+			<ref local="attributeSource"/>
 		</property>
 	</bean>
 

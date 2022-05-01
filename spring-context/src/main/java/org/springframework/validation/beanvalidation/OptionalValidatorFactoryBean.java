@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,8 @@
 
 package org.springframework.validation.beanvalidation;
 
-import jakarta.validation.ValidationException;
+import javax.validation.ValidationException;
+
 import org.apache.commons.logging.LogFactory;
 
 /**
@@ -25,7 +26,7 @@ import org.apache.commons.logging.LogFactory;
  * in case of no Bean Validation provider being available.
  *
  * <p>This is the actual class used by Spring's MVC configuration namespace,
- * in case of the {@code jakarta.validation} API being present but no explicit
+ * in case of the {@code javax.validation} API being present but no explicit
  * Validator having been configured.
  *
  * @author Juergen Hoeller

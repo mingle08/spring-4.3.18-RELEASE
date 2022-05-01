@@ -1,36 +1,17 @@
-/*
- * Copyright 2002-2021 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.springframework.expression.spel.testresources;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.springframework.util.ObjectUtils;
 
 ///CLOVER:OFF
 @SuppressWarnings("unused")
 public class Inventor {
-
 	private String name;
 	public String _name;
 	public String _name_;
@@ -44,16 +25,16 @@ public class Inventor {
 	public Map<String,String> testMap;
 	private boolean wonNobelPrize;
 	private PlaceOfBirth[] placesLived;
-	private List<PlaceOfBirth> placesLivedList = new ArrayList<>();
+	private List<PlaceOfBirth> placesLivedList = new ArrayList<PlaceOfBirth>();
 	public ArrayContainer arrayContainer;
 	public boolean publicBoolean;
 	private boolean accessedThroughGetSet;
-	public List<Integer> listOfInteger = new ArrayList<>();
-	public List<Boolean> booleanList = new ArrayList<>();
-	public Map<String,Boolean> mapOfStringToBoolean = new LinkedHashMap<>();
-	public Map<Integer,String> mapOfNumbersUpToTen = new LinkedHashMap<>();
-	public List<Integer> listOfNumbersUpToTen = new ArrayList<>();
-	public List<Integer> listOneFive = new ArrayList<>();
+	public List<Integer> listOfInteger = new ArrayList<Integer>();
+	public List<Boolean> booleanList = new ArrayList<Boolean>();
+	public Map<String,Boolean> mapOfStringToBoolean = new LinkedHashMap<String,Boolean>();
+	public Map<Integer,String> mapOfNumbersUpToTen = new LinkedHashMap<Integer,String>();
+	public List<Integer> listOfNumbersUpToTen = new ArrayList<Integer>();
+	public List<Integer> listOneFive = new ArrayList<Integer>();
 	public String[] stringArrayOfThreeItems = new String[]{"1","2","3"};
 	private String foo;
 	public int counter;
@@ -65,7 +46,7 @@ public class Inventor {
 		this.birthdate = birthdate;
 		this.nationality = nationality;
 		this.arrayContainer = new ArrayContainer();
-		testMap = new HashMap<>();
+		testMap = new HashMap<String,String>();
 		testMap.put("monday", "montag");
 		testMap.put("tuesday", "dienstag");
 		testMap.put("wednesday", "mittwoch");
@@ -183,7 +164,7 @@ public class Inventor {
 	}
 
 	public List<String> getDoublesAsStringList() {
-		List<String> result = new ArrayList<>();
+		List<String> result = new ArrayList<String>();
 		result.add("14.35");
 		result.add("15.45");
 		return result;
@@ -193,27 +174,20 @@ public class Inventor {
 		return a + b + c;
 	}
 
-	public String aVarargsMethod(String... strings) {
-		return Arrays.toString(strings);
+	public int aVarargsMethod(String... strings) {
+		if (strings == null)
+			return 0;
+		return strings.length;
 	}
 
-	public String aVarargsMethod2(int i, String... strings) {
-		return String.valueOf(i) + "-" + Arrays.toString(strings);
-	}
-
-	@SuppressWarnings("unchecked")
-	public String optionalVarargsMethod(Optional<String>... values) {
-		return Arrays.toString(values);
-	}
-
-	public String aVarargsMethod3(String str1, String... strings) {
-		if (ObjectUtils.isEmpty(strings)) {
-			return str1;
-		}
-		return str1 + "-" + String.join("-", strings);
+	public int aVarargsMethod2(int i, String... strings) {
+		if (strings == null)
+			return i;
+		return strings.length + i;
 	}
 
 	public Inventor(String... strings) {
+
 	}
 
 	public boolean getSomeProperty() {

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,19 +17,19 @@
 package org.springframework.web.servlet.mvc.method.annotation;
 
 import java.lang.reflect.Method;
+import javax.servlet.http.Cookie;
 
-import jakarta.servlet.http.Cookie;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.SynthesizingMethodParameter;
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.mock.web.test.MockHttpServletResponse;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.context.request.ServletWebRequest;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
-import org.springframework.web.testfixture.servlet.MockHttpServletResponse;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Test fixture with {@link ServletCookieValueMethodArgumentResolver}.
@@ -41,23 +41,25 @@ public class ServletCookieValueMethodArgumentResolverTests {
 
 	private ServletCookieValueMethodArgumentResolver resolver;
 
-	private MockHttpServletRequest request;
+	private MethodParameter cookieParameter;
+
+	private MethodParameter cookieStringParameter;
 
 	private ServletWebRequest webRequest;
 
-	private MethodParameter cookieParameter;
-	private MethodParameter cookieStringParameter;
+	private MockHttpServletRequest request;
 
 
-	@BeforeEach
-	public void setup() throws Exception {
+	@Before
+	public void setUp() throws Exception {
 		resolver = new ServletCookieValueMethodArgumentResolver(null);
-		request = new MockHttpServletRequest();
-		webRequest = new ServletWebRequest(request, new MockHttpServletResponse());
 
 		Method method = getClass().getMethod("params", Cookie.class, String.class);
 		cookieParameter = new SynthesizingMethodParameter(method, 0);
 		cookieStringParameter = new SynthesizingMethodParameter(method, 1);
+
+		request = new MockHttpServletRequest();
+		webRequest = new ServletWebRequest(request, new MockHttpServletResponse());
 	}
 
 
@@ -67,7 +69,7 @@ public class ServletCookieValueMethodArgumentResolverTests {
 		request.setCookies(expected);
 
 		Cookie result = (Cookie) resolver.resolveArgument(cookieParameter, null, webRequest, null);
-		assertThat(result).as("Invalid result").isEqualTo(expected);
+		assertEquals("Invalid result", expected, result);
 	}
 
 	@Test
@@ -76,7 +78,7 @@ public class ServletCookieValueMethodArgumentResolverTests {
 		request.setCookies(cookie);
 
 		String result = (String) resolver.resolveArgument(cookieStringParameter, null, webRequest, null);
-		assertThat(result).as("Invalid result").isEqualTo(cookie.getValue());
+		assertEquals("Invalid result", cookie.getValue(), result);
 	}
 
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,8 +20,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.springframework.http.HttpStatusCode;
-import org.springframework.lang.Nullable;
+import org.springframework.http.HttpStatus;
 import org.springframework.ui.Model;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.support.BindingAwareModelMap;
@@ -30,8 +29,8 @@ import org.springframework.web.bind.support.SimpleSessionStatus;
 
 /**
  * Records model and view related decisions made by
- * {@link HandlerMethodArgumentResolver HandlerMethodArgumentResolvers} and
- * {@link HandlerMethodReturnValueHandler HandlerMethodReturnValueHandlers} during the course of invocation of
+ * {@link HandlerMethodArgumentResolver}s and
+ * {@link HandlerMethodReturnValueHandler}s during the course of invocation of
  * a controller method.
  *
  * <p>The {@link #setRequestHandled} flag can be used to indicate the request
@@ -44,29 +43,25 @@ import org.springframework.web.bind.support.SimpleSessionStatus;
  * returns the redirect model instead of the default model.
  *
  * @author Rossen Stoyanchev
- * @author Juergen Hoeller
  * @since 3.1
  */
 public class ModelAndViewContainer {
 
 	private boolean ignoreDefaultModelOnRedirect = false;
 
-	@Nullable
 	private Object view;
 
 	private final ModelMap defaultModel = new BindingAwareModelMap();
 
-	@Nullable
 	private ModelMap redirectModel;
 
 	private boolean redirectModelScenario = false;
 
-	@Nullable
-	private HttpStatusCode status;
+	private HttpStatus status;
 
-	private final Set<String> noBinding = new HashSet<>(4);
+	private final Set<String> noBinding = new HashSet<String>(4);
 
-	private final Set<String> bindingDisabled = new HashSet<>(4);
+	private final Set<String> bindingDisabled = new HashSet<String>(4);
 
 	private final SessionStatus sessionStatus = new SimpleSessionStatus();
 
@@ -93,7 +88,7 @@ public class ModelAndViewContainer {
 	 * Set a view name to be resolved by the DispatcherServlet via a ViewResolver.
 	 * Will override any pre-existing view name or View.
 	 */
-	public void setViewName(@Nullable String viewName) {
+	public void setViewName(String viewName) {
 		this.view = viewName;
 	}
 
@@ -101,7 +96,6 @@ public class ModelAndViewContainer {
 	 * Return the view name to be resolved by the DispatcherServlet via a
 	 * ViewResolver, or {@code null} if a View object is set.
 	 */
-	@Nullable
 	public String getViewName() {
 		return (this.view instanceof String ? (String) this.view : null);
 	}
@@ -110,7 +104,7 @@ public class ModelAndViewContainer {
 	 * Set a View object to be used by the DispatcherServlet.
 	 * Will override any pre-existing view name or View.
 	 */
-	public void setView(@Nullable Object view) {
+	public void setView(Object view) {
 		this.view = view;
 	}
 
@@ -118,7 +112,6 @@ public class ModelAndViewContainer {
 	 * Return the View object, or {@code null} if we using a view name
 	 * to be resolved by the DispatcherServlet via a ViewResolver.
 	 */
-	@Nullable
 	public Object getView() {
 		return this.view;
 	}
@@ -172,9 +165,9 @@ public class ModelAndViewContainer {
 
 	/**
 	 * Provide a separate model instance to use in a redirect scenario.
-	 * <p>The provided additional model however is not used unless
-	 * {@link #setRedirectModelScenario} gets set to {@code true}
-	 * to signal an actual redirect scenario.
+	 * The provided additional model however is not used unless
+	 * {@link #setRedirectModelScenario(boolean)} gets set to {@code true} to signal
+	 * a redirect scenario.
 	 */
 	public void setRedirectModel(ModelMap redirectModel) {
 		this.redirectModel = redirectModel;
@@ -193,7 +186,7 @@ public class ModelAndViewContainer {
 	 * {@code ModelAndView} used for view rendering purposes.
 	 * @since 4.3
 	 */
-	public void setStatus(@Nullable HttpStatusCode status) {
+	public void setStatus(HttpStatus status) {
 		this.status = status;
 	}
 
@@ -201,8 +194,7 @@ public class ModelAndViewContainer {
 	 * Return the configured HTTP status, if any.
 	 * @since 4.3
 	 */
-	@Nullable
-	public HttpStatusCode getStatus() {
+	public HttpStatus getStatus() {
 		return this.status;
 	}
 
@@ -271,7 +263,7 @@ public class ModelAndViewContainer {
 	 * Add the supplied attribute to the underlying model.
 	 * A shortcut for {@code getModel().addAttribute(String, Object)}.
 	 */
-	public ModelAndViewContainer addAttribute(String name, @Nullable Object value) {
+	public ModelAndViewContainer addAttribute(String name, Object value) {
 		getModel().addAttribute(name, value);
 		return this;
 	}
@@ -289,7 +281,7 @@ public class ModelAndViewContainer {
 	 * Copy all attributes to the underlying model.
 	 * A shortcut for {@code getModel().addAllAttributes(Map)}.
 	 */
-	public ModelAndViewContainer addAllAttributes(@Nullable Map<String, ?> attributes) {
+	public ModelAndViewContainer addAllAttributes(Map<String, ?> attributes) {
 		getModel().addAllAttributes(attributes);
 		return this;
 	}
@@ -299,7 +291,7 @@ public class ModelAndViewContainer {
 	 * the same name taking precedence (i.e. not getting replaced).
 	 * A shortcut for {@code getModel().mergeAttributes(Map<String, ?>)}.
 	 */
-	public ModelAndViewContainer mergeAttributes(@Nullable Map<String, ?> attributes) {
+	public ModelAndViewContainer mergeAttributes(Map<String, ?> attributes) {
 		getModel().mergeAttributes(attributes);
 		return this;
 	}
@@ -307,7 +299,7 @@ public class ModelAndViewContainer {
 	/**
 	 * Remove the given attributes from the model.
 	 */
-	public ModelAndViewContainer removeAttributes(@Nullable Map<String, ?> attributes) {
+	public ModelAndViewContainer removeAttributes(Map<String, ?> attributes) {
 		if (attributes != null) {
 			for (String key : attributes.keySet()) {
 				getModel().remove(key);
@@ -333,7 +325,7 @@ public class ModelAndViewContainer {
 		StringBuilder sb = new StringBuilder("ModelAndViewContainer: ");
 		if (!isRequestHandled()) {
 			if (isViewReference()) {
-				sb.append("reference to view with name '").append(this.view).append('\'');
+				sb.append("reference to view with name '").append(this.view).append("'");
 			}
 			else {
 				sb.append("View is [").append(this.view).append(']');

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,16 +21,14 @@ import java.lang.annotation.Annotation;
 import org.springframework.aop.ClassFilter;
 import org.springframework.aop.MethodMatcher;
 import org.springframework.aop.Pointcut;
-import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Simple {@link Pointcut} that looks for a specific annotation being present on a
- * {@linkplain #forClassAnnotation class} or {@linkplain #forMethodAnnotation method}.
+ * Simple Pointcut that looks for a specific Java 5 annotation
+ * being present on a {@link #forClassAnnotation class} or
+ * {@link #forMethodAnnotation method}.
  *
  * @author Juergen Hoeller
- * @author Sam Brannen
  * @since 2.0
  * @see AnnotationClassFilter
  * @see AnnotationMethodMatcher
@@ -63,45 +61,27 @@ public class AnnotationMatchingPointcut implements Pointcut {
 	}
 
 	/**
-	 * Create a new AnnotationMatchingPointcut for the given annotation types.
+	 * Create a new AnnotationMatchingPointcut for the given annotation type.
 	 * @param classAnnotationType the annotation type to look for at the class level
 	 * (can be {@code null})
 	 * @param methodAnnotationType the annotation type to look for at the method level
 	 * (can be {@code null})
 	 */
-	public AnnotationMatchingPointcut(@Nullable Class<? extends Annotation> classAnnotationType,
-			@Nullable Class<? extends Annotation> methodAnnotationType) {
-
-		this(classAnnotationType, methodAnnotationType, false);
-	}
-
-	/**
-	 * Create a new AnnotationMatchingPointcut for the given annotation types.
-	 * @param classAnnotationType the annotation type to look for at the class level
-	 * (can be {@code null})
-	 * @param methodAnnotationType the annotation type to look for at the method level
-	 * (can be {@code null})
-	 * @param checkInherited whether to also check the superclasses and interfaces
-	 * as well as meta-annotations for the annotation type
-	 * @since 5.0
-	 * @see AnnotationClassFilter#AnnotationClassFilter(Class, boolean)
-	 * @see AnnotationMethodMatcher#AnnotationMethodMatcher(Class, boolean)
-	 */
-	public AnnotationMatchingPointcut(@Nullable Class<? extends Annotation> classAnnotationType,
-			@Nullable Class<? extends Annotation> methodAnnotationType, boolean checkInherited) {
+	public AnnotationMatchingPointcut(
+			Class<? extends Annotation> classAnnotationType, Class<? extends Annotation> methodAnnotationType) {
 
 		Assert.isTrue((classAnnotationType != null || methodAnnotationType != null),
 				"Either Class annotation type or Method annotation type needs to be specified (or both)");
 
 		if (classAnnotationType != null) {
-			this.classFilter = new AnnotationClassFilter(classAnnotationType, checkInherited);
+			this.classFilter = new AnnotationClassFilter(classAnnotationType);
 		}
 		else {
-			this.classFilter = new AnnotationCandidateClassFilter(methodAnnotationType);
+			this.classFilter = ClassFilter.TRUE;
 		}
 
 		if (methodAnnotationType != null) {
-			this.methodMatcher = new AnnotationMethodMatcher(methodAnnotationType, checkInherited);
+			this.methodMatcher = new AnnotationMethodMatcher(methodAnnotationType);
 		}
 		else {
 			this.methodMatcher = MethodMatcher.TRUE;
@@ -120,13 +100,14 @@ public class AnnotationMatchingPointcut implements Pointcut {
 	}
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}
-		if (!(other instanceof AnnotationMatchingPointcut otherPointcut)) {
+		if (!(other instanceof AnnotationMatchingPointcut)) {
 			return false;
 		}
+		AnnotationMatchingPointcut otherPointcut = (AnnotationMatchingPointcut) other;
 		return (this.classFilter.equals(otherPointcut.classFilter) &&
 				this.methodMatcher.equals(otherPointcut.methodMatcher));
 	}
@@ -138,8 +119,9 @@ public class AnnotationMatchingPointcut implements Pointcut {
 
 	@Override
 	public String toString() {
-		return "AnnotationMatchingPointcut: " + this.classFilter + ", " + this.methodMatcher;
+		return "AnnotationMatchingPointcut: " + this.classFilter + ", " +this.methodMatcher;
 	}
+
 
 	/**
 	 * Factory method for an AnnotationMatchingPointcut that matches
@@ -161,48 +143,6 @@ public class AnnotationMatchingPointcut implements Pointcut {
 	public static AnnotationMatchingPointcut forMethodAnnotation(Class<? extends Annotation> annotationType) {
 		Assert.notNull(annotationType, "Annotation type must not be null");
 		return new AnnotationMatchingPointcut(null, annotationType);
-	}
-
-
-	/**
-	 * {@link ClassFilter} that delegates to {@link AnnotationUtils#isCandidateClass}
-	 * for filtering classes whose methods are not worth searching to begin with.
-	 * @since 5.2
-	 */
-	private static class AnnotationCandidateClassFilter implements ClassFilter {
-
-		private final Class<? extends Annotation> annotationType;
-
-		AnnotationCandidateClassFilter(Class<? extends Annotation> annotationType) {
-			this.annotationType = annotationType;
-		}
-
-		@Override
-		public boolean matches(Class<?> clazz) {
-			return AnnotationUtils.isCandidateClass(clazz, this.annotationType);
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) {
-				return true;
-			}
-			if (!(obj instanceof AnnotationCandidateClassFilter that)) {
-				return false;
-			}
-			return this.annotationType.equals(that.annotationType);
-		}
-
-		@Override
-		public int hashCode() {
-			return this.annotationType.hashCode();
-		}
-
-		@Override
-		public String toString() {
-			return getClass().getName() + ": " + this.annotationType;
-		}
-
 	}
 
 }

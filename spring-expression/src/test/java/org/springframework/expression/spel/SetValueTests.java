@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,7 @@ package org.springframework.expression.spel;
 import java.util.Collection;
 import java.util.Set;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.expression.EvaluationException;
 import org.springframework.expression.Expression;
@@ -27,8 +27,7 @@ import org.springframework.expression.ParseException;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.expression.spel.testresources.PlaceOfBirth;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * Tests set value expressions.
@@ -63,8 +62,7 @@ public class SetValueTests extends AbstractExpressionTests {
 
 	@Test
 	public void testSetElementOfNull() {
-		setValueExpectError("new org.springframework.expression.spel.testresources.Inventor().inventions[1]",
-				SpelMessage.CANNOT_INDEX_INTO_NULL_VALUE);
+		setValueExpectError("new org.springframework.expression.spel.testresources.Inventor().inventions[1]",SpelMessage.CANNOT_INDEX_INTO_NULL_VALUE);
 	}
 
 	@Test
@@ -81,37 +79,53 @@ public class SetValueTests extends AbstractExpressionTests {
 
 	@Test
 	public void testIsWritableForInvalidExpressions_SPR10610() {
+		Expression e = null;
 		StandardEvaluationContext lContext = TestScenarioCreator.getTestEvaluationContext();
 
 		// PROPERTYORFIELDREFERENCE
 		// Non existent field (or property):
-		Expression e1 = parser.parseExpression("arrayContainer.wibble");
-		assertThat(e1.isWritable(lContext)).as("Should not be writable!").isFalse();
+		e = parser.parseExpression("arrayContainer.wibble");
+		assertFalse("Should not be writable!",e.isWritable(lContext));
 
-		Expression e2 = parser.parseExpression("arrayContainer.wibble.foo");
-		assertThatExceptionOfType(SpelEvaluationException.class).isThrownBy(() ->
-				e2.isWritable(lContext));
+		e = parser.parseExpression("arrayContainer.wibble.foo");
+		try {
+			assertFalse("Should not be writable!",e.isWritable(lContext));
+			fail("Should have had an error because wibble does not really exist");
+		}
+		catch (SpelEvaluationException see) {
 //			org.springframework.expression.spel.SpelEvaluationException: EL1008E:(pos 15): Property or field 'wibble' cannot be found on object of type 'org.springframework.expression.spel.testresources.ArrayContainer' - maybe not public?
 //					at org.springframework.expression.spel.ast.PropertyOrFieldReference.readProperty(PropertyOrFieldReference.java:225)
+			// success!
+		}
 
 		// VARIABLE
 		// the variable does not exist (but that is OK, we should be writable)
-		Expression e3 = parser.parseExpression("#madeup1");
-		assertThat(e3.isWritable(lContext)).as("Should be writable!").isTrue();
+		e = parser.parseExpression("#madeup1");
+		assertTrue("Should be writable!",e.isWritable(lContext));
 
-		Expression e4 = parser.parseExpression("#madeup2.bar"); // compound expression
-		assertThat(e4.isWritable(lContext)).as("Should not be writable!").isFalse();
+		e = parser.parseExpression("#madeup2.bar"); // compound expression
+		assertFalse("Should not be writable!",e.isWritable(lContext));
 
 		// INDEXER
 		// non existent indexer (wibble made up)
-		Expression e5 = parser.parseExpression("arrayContainer.wibble[99]");
-		assertThatExceptionOfType(SpelEvaluationException.class).isThrownBy(() ->
-				e5.isWritable(lContext));
+		e = parser.parseExpression("arrayContainer.wibble[99]");
+		try {
+			assertFalse("Should not be writable!",e.isWritable(lContext));
+			fail("Should have had an error because wibble does not really exist");
+		}
+		catch (SpelEvaluationException see) {
+			// success!
+		}
 
 		// non existent indexer (index via a string)
-		Expression e6 = parser.parseExpression("arrayContainer.ints['abc']");
-		assertThatExceptionOfType(SpelEvaluationException.class).isThrownBy(() ->
-				e6.isWritable(lContext));
+		e = parser.parseExpression("arrayContainer.ints['abc']");
+		try {
+			assertFalse("Should not be writable!",e.isWritable(lContext));
+			fail("Should have had an error because wibble does not really exist");
+		}
+		catch (SpelEvaluationException see) {
+			// success!
+		}
 	}
 
 	@Test
@@ -184,8 +198,8 @@ public class SetValueTests extends AbstractExpressionTests {
 	public void testAssign() throws Exception {
 		StandardEvaluationContext eContext = TestScenarioCreator.getTestEvaluationContext();
 		Expression e = parse("publicName='Andy'");
-		assertThat(e.isWritable(eContext)).isFalse();
-		assertThat(e.getValue(eContext)).isEqualTo("Andy");
+		assertFalse(e.isWritable(eContext));
+		assertEquals("Andy",e.getValue(eContext));
 	}
 
 	/*
@@ -195,7 +209,7 @@ public class SetValueTests extends AbstractExpressionTests {
 	public void testSetGenericMapElementRequiresCoercion() throws Exception {
 		StandardEvaluationContext eContext = TestScenarioCreator.getTestEvaluationContext();
 		Expression e = parse("mapOfStringToBoolean[42]");
-		assertThat(e.getValue(eContext)).isNull();
+		assertNull(e.getValue(eContext));
 
 		// Key should be coerced to string representation of 42
 		e.setValue(eContext, "true");
@@ -203,18 +217,18 @@ public class SetValueTests extends AbstractExpressionTests {
 		// All keys should be strings
 		Set<?> ks = parse("mapOfStringToBoolean.keySet()").getValue(eContext, Set.class);
 		for (Object o: ks) {
-			assertThat(o.getClass()).isEqualTo(String.class);
+			assertEquals(String.class,o.getClass());
 		}
 
 		// All values should be booleans
 		Collection<?> vs = parse("mapOfStringToBoolean.values()").getValue(eContext, Collection.class);
 		for (Object o: vs) {
-			assertThat(o.getClass()).isEqualTo(Boolean.class);
+			assertEquals(Boolean.class, o.getClass());
 		}
 
 		// One final test check coercion on the key for a map lookup
 		Object o = e.getValue(eContext);
-		assertThat(o).isEqualTo(Boolean.TRUE);
+		assertEquals(Boolean.TRUE,o);
 	}
 
 
@@ -226,30 +240,48 @@ public class SetValueTests extends AbstractExpressionTests {
 	 * Call setValue() but expect it to fail.
 	 */
 	protected void setValueExpectError(String expression, Object value) {
-		Expression e = parser.parseExpression(expression);
-		assertThat(e).isNotNull();
-		if (DEBUG) {
-			SpelUtilities.printAbstractSyntaxTree(System.out, e);
+		try {
+			Expression e = parser.parseExpression(expression);
+			if (e == null) {
+				fail("Parser returned null for expression");
+			}
+			if (DEBUG) {
+				SpelUtilities.printAbstractSyntaxTree(System.out, e);
+			}
+			StandardEvaluationContext lContext = TestScenarioCreator.getTestEvaluationContext();
+			e.setValue(lContext, value);
+			fail("expected an error");
 		}
-		StandardEvaluationContext lContext = TestScenarioCreator.getTestEvaluationContext();
-		assertThatExceptionOfType(EvaluationException.class).isThrownBy(() ->
-				e.setValue(lContext, value));
+		catch (ParseException pe) {
+			pe.printStackTrace();
+			fail("Unexpected Exception: " + pe.getMessage());
+		}
+		catch (EvaluationException ee) {
+			// success!
+		}
 	}
 
 	protected void setValue(String expression, Object value) {
 		try {
 			Expression e = parser.parseExpression(expression);
-			assertThat(e).isNotNull();
+			if (e == null) {
+				fail("Parser returned null for expression");
+			}
 			if (DEBUG) {
 				SpelUtilities.printAbstractSyntaxTree(System.out, e);
 			}
 			StandardEvaluationContext lContext = TestScenarioCreator.getTestEvaluationContext();
-			assertThat(e.isWritable(lContext)).as("Expression is not writeable but should be").isTrue();
+			assertTrue("Expression is not writeable but should be", e.isWritable(lContext));
 			e.setValue(lContext, value);
-			assertThat(e.getValue(lContext,value.getClass())).as("Retrieved value was not equal to set value").isEqualTo(value);
+			assertEquals("Retrieved value was not equal to set value", value, e.getValue(lContext,value.getClass()));
 		}
-		catch (EvaluationException | ParseException ex) {
-			throw new AssertionError("Unexpected Exception: " + ex.getMessage(), ex);
+		catch (EvaluationException ee) {
+			ee.printStackTrace();
+			fail("Unexpected Exception: " + ee.getMessage());
+		}
+		catch (ParseException pe) {
+			pe.printStackTrace();
+			fail("Unexpected Exception: " + pe.getMessage());
 		}
 	}
 
@@ -260,19 +292,29 @@ public class SetValueTests extends AbstractExpressionTests {
 	protected void setValue(String expression, Object value, Object expectedValue) {
 		try {
 			Expression e = parser.parseExpression(expression);
-			assertThat(e).isNotNull();
+			if (e == null) {
+				fail("Parser returned null for expression");
+			}
 			if (DEBUG) {
 				SpelUtilities.printAbstractSyntaxTree(System.out, e);
 			}
 			StandardEvaluationContext lContext = TestScenarioCreator.getTestEvaluationContext();
-			assertThat(e.isWritable(lContext)).as("Expression is not writeable but should be").isTrue();
+			assertTrue("Expression is not writeable but should be", e.isWritable(lContext));
 			e.setValue(lContext, value);
 			Object a = expectedValue;
 			Object b = e.getValue(lContext);
-			assertThat(a).isEqualTo(b);
+			if (!a.equals(b)) {
+				fail("Not the same: ["+a+"] type="+a.getClass()+"  ["+b+"] type="+b.getClass());
+//				assertEquals("Retrieved value was not equal to set value", expectedValue, e.getValue(lContext));
+			}
 		}
-		catch (EvaluationException | ParseException ex) {
-			throw new AssertionError("Unexpected Exception: " + ex.getMessage(), ex);
+		catch (EvaluationException ee) {
+			ee.printStackTrace();
+			fail("Unexpected Exception: " + ee.getMessage());
+		}
+		catch (ParseException pe) {
+			pe.printStackTrace();
+			fail("Unexpected Exception: " + pe.getMessage());
 		}
 	}
 

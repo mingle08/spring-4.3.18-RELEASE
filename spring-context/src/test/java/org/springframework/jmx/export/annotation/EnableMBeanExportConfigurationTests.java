@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,9 +19,12 @@ package org.springframework.jmx.export.annotation;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
+import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -39,8 +42,7 @@ import org.springframework.jmx.support.ObjectNameManager;
 import org.springframework.jmx.support.RegistrationPolicy;
 import org.springframework.mock.env.MockEnvironment;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link EnableMBeanExport} and {@link MBeanExportConfiguration}.
@@ -51,16 +53,17 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  */
 public class EnableMBeanExportConfigurationTests {
 
+	@Rule
+	public final ExpectedException thrown = ExpectedException.none();
+
 	private AnnotationConfigApplicationContext ctx;
 
-
-	@AfterEach
+	@After
 	public void closeContext() {
 		if (this.ctx != null) {
 			this.ctx.close();
 		}
 	}
-
 
 	@Test
 	public void testLazyNaming() throws Exception {
@@ -81,19 +84,19 @@ public class EnableMBeanExportConfigurationTests {
 	@Test
 	@SuppressWarnings("resource")
 	public void testPackagePrivateExtensionCantBeExposed() {
-		assertThatExceptionOfType(InvalidMetadataException.class).isThrownBy(() ->
-				new AnnotationConfigApplicationContext(PackagePrivateConfiguration.class))
-			.withMessageContaining(PackagePrivateTestBean.class.getName())
-			.withMessageContaining("must be public");
+		this.thrown.expect(InvalidMetadataException.class);
+		this.thrown.expectMessage(PackagePrivateTestBean.class.getName());
+		this.thrown.expectMessage("must be public");
+		new AnnotationConfigApplicationContext(PackagePrivateConfiguration.class);
 	}
 
 	@Test
 	@SuppressWarnings("resource")
 	public void testPackagePrivateImplementationCantBeExposed() {
-		assertThatExceptionOfType(InvalidMetadataException.class).isThrownBy(() ->
-				new AnnotationConfigApplicationContext(PackagePrivateInterfaceImplementationConfiguration.class))
-			.withMessageContaining(PackagePrivateAnnotationTestBean.class.getName())
-			.withMessageContaining("must be public");
+		this.thrown.expect(InvalidMetadataException.class);
+		this.thrown.expectMessage(PackagePrivateAnnotationTestBean.class.getName());
+		this.thrown.expectMessage("must be public");
+		new AnnotationConfigApplicationContext(PackagePrivateInterfaceImplementationConfiguration.class);
 	}
 
 	@Test
@@ -145,9 +148,9 @@ public class EnableMBeanExportConfigurationTests {
 
 	private void validateMBeanAttribute(MBeanServer server, String objectName, String expected) throws Exception {
 		ObjectName oname = ObjectNameManager.getInstance(objectName);
-		assertThat(server.getObjectInstance(oname)).isNotNull();
+		assertNotNull(server.getObjectInstance(oname));
 		String name = (String) server.getAttribute(oname, "Name");
-		assertThat(name).as("Invalid name returned").isEqualTo(expected);
+		assertEquals("Invalid name returned", expected, name);
 	}
 
 
@@ -156,7 +159,7 @@ public class EnableMBeanExportConfigurationTests {
 	static class LazyNamingConfiguration {
 
 		@Bean
-		public MBeanServerFactoryBean server() {
+		public MBeanServerFactoryBean server() throws Exception {
 			return new MBeanServerFactoryBean();
 		}
 
@@ -175,7 +178,7 @@ public class EnableMBeanExportConfigurationTests {
 	static class ProxyConfiguration {
 
 		@Bean
-		public MBeanServerFactoryBean server() {
+		public MBeanServerFactoryBean server() throws Exception {
 			return new MBeanServerFactoryBean();
 		}
 
@@ -196,7 +199,7 @@ public class EnableMBeanExportConfigurationTests {
 	static class PlaceholderBasedConfiguration {
 
 		@Bean
-		public MBeanServerFactoryBean server() {
+		public MBeanServerFactoryBean server() throws Exception {
 			return new MBeanServerFactoryBean();
 		}
 
@@ -216,7 +219,12 @@ public class EnableMBeanExportConfigurationTests {
 	static class LazyAssemblingConfiguration {
 
 		@Bean
-		public MBeanServerFactoryBean server() {
+		public PropertyPlaceholderConfigurer ppc() {
+			return new PropertyPlaceholderConfigurer();
+		}
+
+		@Bean
+		public MBeanServerFactoryBean server() throws Exception {
 			return new MBeanServerFactoryBean();
 		}
 
@@ -230,7 +238,7 @@ public class EnableMBeanExportConfigurationTests {
 		}
 
 		@Bean("bean:name=testBean5")
-		public AnnotationTestBeanFactory testBean5() {
+		public AnnotationTestBeanFactory testBean5() throws Exception {
 			return new AnnotationTestBeanFactory();
 		}
 
@@ -251,18 +259,18 @@ public class EnableMBeanExportConfigurationTests {
 		@Bean
 		@Lazy
 		public Object notLoadable() throws Exception {
-			return Class.forName("does.not.exist").getDeclaredConstructor().newInstance();
+			return Class.forName("does.not.exist").newInstance();
 		}
 	}
 
 
 	@Configuration
-	@ComponentScan(excludeFilters = @ComponentScan.Filter(Configuration.class))
+	@ComponentScan(excludeFilters = @ComponentScan.Filter(value=Configuration.class))
 	@EnableMBeanExport(server = "server")
 	static class ComponentScanConfiguration {
 
 		@Bean
-		public MBeanServerFactoryBean server() {
+		public MBeanServerFactoryBean server() throws Exception {
 			return new MBeanServerFactoryBean();
 		}
 	}
@@ -272,7 +280,7 @@ public class EnableMBeanExportConfigurationTests {
 	static class PackagePrivateConfiguration {
 
 		@Bean
-		public MBeanServerFactoryBean server() {
+		public MBeanServerFactoryBean server() throws Exception {
 			return new MBeanServerFactoryBean();
 		}
 
@@ -304,7 +312,7 @@ public class EnableMBeanExportConfigurationTests {
 	static class PackagePrivateExtensionConfiguration {
 
 		@Bean
-		public MBeanServerFactoryBean server() {
+		public MBeanServerFactoryBean server() throws Exception {
 			return new MBeanServerFactoryBean();
 		}
 
@@ -325,7 +333,7 @@ public class EnableMBeanExportConfigurationTests {
 	static class PackagePrivateInterfaceImplementationConfiguration {
 
 		@Bean
-		public MBeanServerFactoryBean server() {
+		public MBeanServerFactoryBean server() throws Exception {
 			return new MBeanServerFactoryBean();
 		}
 
@@ -341,6 +349,7 @@ public class EnableMBeanExportConfigurationTests {
 
 		@Override
 		public void foo() {
+
 		}
 
 		@Override

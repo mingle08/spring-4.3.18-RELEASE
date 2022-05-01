@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,13 +16,13 @@
 
 package org.springframework.jms.support;
 
-import jakarta.jms.Message;
+import javax.jms.Message;
 
 import org.springframework.messaging.support.HeaderMapper;
 
 /**
  * Strategy interface for mapping {@link org.springframework.messaging.Message}
- * headers to an outbound JMS {@link jakarta.jms.Message} (e.g. to configure JMS
+ * headers to an outbound JMS {@link javax.jms.Message} (e.g. to configure JMS
  * properties) or extracting messaging header values from an inbound JMS Message.
  *
  * @author Mark Fisher

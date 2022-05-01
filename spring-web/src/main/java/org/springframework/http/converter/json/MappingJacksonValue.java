@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,8 +17,6 @@
 package org.springframework.http.converter.json;
 
 import com.fasterxml.jackson.databind.ser.FilterProvider;
-
-import org.springframework.lang.Nullable;
 
 /**
  * A simple holder for the POJO to serialize via
@@ -39,11 +37,11 @@ public class MappingJacksonValue {
 
 	private Object value;
 
-	@Nullable
 	private Class<?> serializationView;
 
-	@Nullable
 	private FilterProvider filters;
+
+	private String jsonpFunction;
 
 
 	/**
@@ -74,7 +72,7 @@ public class MappingJacksonValue {
 	 * @see com.fasterxml.jackson.databind.ObjectMapper#writerWithView(Class)
 	 * @see com.fasterxml.jackson.annotation.JsonView
 	 */
-	public void setSerializationView(@Nullable Class<?> serializationView) {
+	public void setSerializationView(Class<?> serializationView) {
 		this.serializationView = serializationView;
 	}
 
@@ -83,7 +81,6 @@ public class MappingJacksonValue {
 	 * @see com.fasterxml.jackson.databind.ObjectMapper#writerWithView(Class)
 	 * @see com.fasterxml.jackson.annotation.JsonView
 	 */
-	@Nullable
 	public Class<?> getSerializationView() {
 		return this.serializationView;
 	}
@@ -95,7 +92,7 @@ public class MappingJacksonValue {
 	 * @see com.fasterxml.jackson.annotation.JsonFilter
 	 * @see Jackson2ObjectMapperBuilder#filters(FilterProvider)
 	 */
-	public void setFilters(@Nullable FilterProvider filters) {
+	public void setFilters(FilterProvider filters) {
 		this.filters = filters;
 	}
 
@@ -105,9 +102,28 @@ public class MappingJacksonValue {
 	 * @see com.fasterxml.jackson.databind.ObjectMapper#writer(FilterProvider)
 	 * @see com.fasterxml.jackson.annotation.JsonFilter
 	 */
-	@Nullable
 	public FilterProvider getFilters() {
 		return this.filters;
+	}
+
+	/**
+	 * Set the name of the JSONP function name.
+	 * @deprecated Will be removed as of Spring Framework 5.1, use
+	 * <a href="https://docs.spring.io/spring/docs/4.3.x/spring-framework-reference/html/cors.html">CORS</a> instead.
+	 */
+	@Deprecated
+	public void setJsonpFunction(String functionName) {
+		this.jsonpFunction = functionName;
+	}
+
+	/**
+	 * Return the configured JSONP function name.
+	 * @deprecated Will be removed as of Spring Framework 5.1, use
+	 * <a href="https://docs.spring.io/spring/docs/4.3.x/spring-framework-reference/html/cors.html">CORS</a> instead.
+	 */
+	@Deprecated
+	public String getJsonpFunction() {
+		return this.jsonpFunction;
 	}
 
 }

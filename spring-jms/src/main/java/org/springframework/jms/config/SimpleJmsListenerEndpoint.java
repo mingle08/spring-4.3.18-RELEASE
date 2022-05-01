@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,11 +16,9 @@
 
 package org.springframework.jms.config;
 
-import jakarta.jms.MessageListener;
+import javax.jms.MessageListener;
 
 import org.springframework.jms.listener.MessageListenerContainer;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
 
 /**
  * A {@link JmsListenerEndpoint} simply providing the {@link MessageListener} to
@@ -31,7 +29,6 @@ import org.springframework.util.Assert;
  */
 public class SimpleJmsListenerEndpoint extends AbstractJmsListenerEndpoint {
 
-	@Nullable
 	private MessageListener messageListener;
 
 
@@ -39,7 +36,7 @@ public class SimpleJmsListenerEndpoint extends AbstractJmsListenerEndpoint {
 	 * Set the {@link MessageListener} to invoke when a message matching
 	 * the endpoint is received.
 	 */
-	public void setMessageListener(@Nullable MessageListener messageListener) {
+	public void setMessageListener(MessageListener messageListener) {
 		this.messageListener = messageListener;
 	}
 
@@ -47,7 +44,6 @@ public class SimpleJmsListenerEndpoint extends AbstractJmsListenerEndpoint {
 	 * Return the {@link MessageListener} to invoke when a message matching
 	 * the endpoint is received.
 	 */
-	@Nullable
 	public MessageListener getMessageListener() {
 		return this.messageListener;
 	}
@@ -55,15 +51,13 @@ public class SimpleJmsListenerEndpoint extends AbstractJmsListenerEndpoint {
 
 	@Override
 	protected MessageListener createMessageListener(MessageListenerContainer container) {
-		MessageListener listener = getMessageListener();
-		Assert.state(listener != null, "No MessageListener set");
-		return listener;
+		return getMessageListener();
 	}
 
 	@Override
 	protected StringBuilder getEndpointDescription() {
 		return super.getEndpointDescription()
-				.append(" | messageListener='").append(this.messageListener).append('\'');
+				.append(" | messageListener='").append(this.messageListener).append("'");
 	}
 
 }

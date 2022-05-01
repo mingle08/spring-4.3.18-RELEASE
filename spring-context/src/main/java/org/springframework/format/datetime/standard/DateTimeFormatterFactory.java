@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,10 +18,11 @@ package org.springframework.format.datetime.standard;
 
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.time.format.ResolverStyle;
 import java.util.TimeZone;
 
 import org.springframework.format.annotation.DateTimeFormat.ISO;
-import org.springframework.lang.Nullable;
+import org.springframework.lang.UsesJava8;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -33,7 +34,6 @@ import org.springframework.util.StringUtils;
  *
  * @author Juergen Hoeller
  * @author Phillip Webb
- * @author Sam Brannen
  * @since 4.0
  * @see #createDateTimeFormatter()
  * @see #createDateTimeFormatter(DateTimeFormatter)
@@ -44,21 +44,17 @@ import org.springframework.util.StringUtils;
  * @see #setDateTimeStyle
  * @see DateTimeFormatterFactoryBean
  */
+@UsesJava8
 public class DateTimeFormatterFactory {
 
-	@Nullable
 	private String pattern;
 
-	@Nullable
 	private ISO iso;
 
-	@Nullable
 	private FormatStyle dateStyle;
 
-	@Nullable
 	private FormatStyle timeStyle;
 
-	@Nullable
 	private TimeZone timeZone;
 
 
@@ -132,21 +128,20 @@ public class DateTimeFormatterFactory {
 	 * @param style two characters from the set {"S", "M", "L", "F", "-"}
 	 */
 	public void setStylePattern(String style) {
-		Assert.isTrue(style.length() == 2, "Style pattern must consist of two characters");
+		Assert.isTrue(style != null && style.length() == 2, "Style pattern must consist of two characters");
 		this.dateStyle = convertStyleCharacter(style.charAt(0));
 		this.timeStyle = convertStyleCharacter(style.charAt(1));
 	}
 
-	@Nullable
 	private FormatStyle convertStyleCharacter(char c) {
-		return switch (c) {
-			case 'S' -> FormatStyle.SHORT;
-			case 'M' -> FormatStyle.MEDIUM;
-			case 'L' -> FormatStyle.LONG;
-			case 'F' -> FormatStyle.FULL;
-			case '-' -> null;
-			default -> throw new IllegalArgumentException("Invalid style character '" + c + "'");
-		};
+		switch (c) {
+			case 'S': return FormatStyle.SHORT;
+			case 'M': return FormatStyle.MEDIUM;
+			case 'L': return FormatStyle.LONG;
+			case 'F': return FormatStyle.FULL;
+			case '-': return null;
+			default: throw new IllegalArgumentException("Invalid style character '" + c + "'");
+		}
 	}
 
 	/**
@@ -173,22 +168,36 @@ public class DateTimeFormatterFactory {
 	 * Create a new {@code DateTimeFormatter} using this factory.
 	 * <p>If no specific pattern or style has been defined,
 	 * the supplied {@code fallbackFormatter} will be used.
-	 * @param fallbackFormatter the fall-back formatter to use
-	 * when no specific factory properties have been set
+	 * @param fallbackFormatter the fall-back formatter to use when no specific
+	 * factory properties have been set (can be {@code null}).
 	 * @return a new date time formatter
 	 */
 	public DateTimeFormatter createDateTimeFormatter(DateTimeFormatter fallbackFormatter) {
 		DateTimeFormatter dateTimeFormatter = null;
 		if (StringUtils.hasLength(this.pattern)) {
-			dateTimeFormatter = DateTimeFormatterUtils.createStrictDateTimeFormatter(this.pattern);
+			// Using strict parsing to align with Joda-Time and standard DateFormat behavior:
+			// otherwise, an overflow like e.g. Feb 29 for a non-leap-year wouldn't get rejected.
+			// However, with strict parsing, a year digit needs to be specified as 'u'...
+			String patternToUse = this.pattern.replace("yy", "uu");
+			dateTimeFormatter = DateTimeFormatter.ofPattern(patternToUse).withResolverStyle(ResolverStyle.STRICT);
 		}
 		else if (this.iso != null && this.iso != ISO.NONE) {
-			dateTimeFormatter = switch (this.iso) {
-				case DATE -> DateTimeFormatter.ISO_DATE;
-				case TIME -> DateTimeFormatter.ISO_TIME;
-				case DATE_TIME -> DateTimeFormatter.ISO_DATE_TIME;
-				default -> throw new IllegalStateException("Unsupported ISO format: " + this.iso);
-			};
+			switch (this.iso) {
+				case DATE:
+					dateTimeFormatter = DateTimeFormatter.ISO_DATE;
+					break;
+				case TIME:
+					dateTimeFormatter = DateTimeFormatter.ISO_TIME;
+					break;
+				case DATE_TIME:
+					dateTimeFormatter = DateTimeFormatter.ISO_DATE_TIME;
+					break;
+				case NONE:
+					/* no-op */
+					break;
+				default:
+					throw new IllegalStateException("Unsupported ISO format: " + this.iso);
+			}
 		}
 		else if (this.dateStyle != null && this.timeStyle != null) {
 			dateTimeFormatter = DateTimeFormatter.ofLocalizedDateTime(this.dateStyle, this.timeStyle);

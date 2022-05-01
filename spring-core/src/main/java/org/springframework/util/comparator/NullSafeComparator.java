@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.util.comparator;
 
 import java.util.Comparator;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -28,7 +27,6 @@ import org.springframework.util.Assert;
  * @author Keith Donald
  * @author Juergen Hoeller
  * @since 1.2.2
- * @param <T> the type of objects that may be compared by this comparator
  * @see Comparable
  */
 public class NullSafeComparator<T> implements Comparator<T> {
@@ -36,19 +34,16 @@ public class NullSafeComparator<T> implements Comparator<T> {
 	/**
 	 * A shared default instance of this comparator, treating nulls lower
 	 * than non-null objects.
-	 * @see Comparators#nullsLow()
 	 */
 	@SuppressWarnings("rawtypes")
-	public static final NullSafeComparator NULLS_LOW = new NullSafeComparator<>(true);
+	public static final NullSafeComparator NULLS_LOW = new NullSafeComparator<Object>(true);
 
 	/**
 	 * A shared default instance of this comparator, treating nulls higher
 	 * than non-null objects.
-	 * @see Comparators#nullsHigh()
 	 */
 	@SuppressWarnings("rawtypes")
-	public static final NullSafeComparator NULLS_HIGH = new NullSafeComparator<>(false);
-
+	public static final NullSafeComparator NULLS_HIGH = new NullSafeComparator<Object>(false);
 
 	private final Comparator<T> nonNullComparator;
 
@@ -69,9 +64,9 @@ public class NullSafeComparator<T> implements Comparator<T> {
 	 * @see #NULLS_LOW
 	 * @see #NULLS_HIGH
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes"})
 	private NullSafeComparator(boolean nullsLow) {
-		this.nonNullComparator = ComparableComparator.INSTANCE;
+		this.nonNullComparator = new ComparableComparator();
 		this.nullsLow = nullsLow;
 	}
 
@@ -85,14 +80,14 @@ public class NullSafeComparator<T> implements Comparator<T> {
 	 * @param nullsLow whether to treat nulls lower or higher than non-null objects
 	 */
 	public NullSafeComparator(Comparator<T> comparator, boolean nullsLow) {
-		Assert.notNull(comparator, "Non-null Comparator is required");
+		Assert.notNull(comparator, "The non-null comparator is required");
 		this.nonNullComparator = comparator;
 		this.nullsLow = nullsLow;
 	}
 
 
 	@Override
-	public int compare(@Nullable T o1, @Nullable T o2) {
+	public int compare(T o1, T o2) {
 		if (o1 == o2) {
 			return 0;
 		}
@@ -105,23 +100,22 @@ public class NullSafeComparator<T> implements Comparator<T> {
 		return this.nonNullComparator.compare(o1, o2);
 	}
 
-
 	@Override
 	@SuppressWarnings("unchecked")
-	public boolean equals(@Nullable Object other) {
-		if (this == other) {
+	public boolean equals(Object obj) {
+		if (this == obj) {
 			return true;
 		}
-		if (!(other instanceof NullSafeComparator)) {
+		if (!(obj instanceof NullSafeComparator)) {
 			return false;
 		}
-		NullSafeComparator<T> otherComp = (NullSafeComparator<T>) other;
-		return (this.nonNullComparator.equals(otherComp.nonNullComparator) && this.nullsLow == otherComp.nullsLow);
+		NullSafeComparator<T> other = (NullSafeComparator<T>) obj;
+		return (this.nonNullComparator.equals(other.nonNullComparator) && this.nullsLow == other.nullsLow);
 	}
 
 	@Override
 	public int hashCode() {
-		return this.nonNullComparator.hashCode() * (this.nullsLow ? -1 : 1);
+		return (this.nullsLow ? -1 : 1) * this.nonNullComparator.hashCode();
 	}
 
 	@Override

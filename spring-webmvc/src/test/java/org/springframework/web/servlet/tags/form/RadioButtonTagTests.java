@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,28 +19,28 @@ package org.springframework.web.servlet.tags.form;
 import java.beans.PropertyEditorSupport;
 import java.io.StringReader;
 import java.util.Collections;
+import javax.servlet.jsp.JspException;
+import javax.servlet.jsp.tagext.Tag;
 
-import jakarta.servlet.jsp.JspException;
-import jakarta.servlet.jsp.tagext.Tag;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
-import org.junit.jupiter.api.Test;
 
-import org.springframework.beans.testfixture.beans.Pet;
-import org.springframework.beans.testfixture.beans.TestBean;
+import org.junit.Test;
+
+import org.springframework.tests.sample.beans.Pet;
+import org.springframework.tests.sample.beans.TestBean;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.*;
 
 /**
  * @author Rob Harrop
  * @author Juergen Hoeller
  * @author Jeremy Grelle
  */
-class RadioButtonTagTests extends AbstractFormTagTests {
+public class RadioButtonTagTests extends AbstractFormTagTests {
 
 	private RadioButtonTag tag;
 
@@ -59,7 +59,7 @@ class RadioButtonTagTests extends AbstractFormTagTests {
 	}
 
 	@Test
-	void withCheckedValue() throws Exception {
+	public void withCheckedValue() throws Exception {
 		String dynamicAttribute1 = "attr1";
 		String dynamicAttribute2 = "attr2";
 
@@ -69,7 +69,7 @@ class RadioButtonTagTests extends AbstractFormTagTests {
 		this.tag.setDynamicAttribute(null, dynamicAttribute2, dynamicAttribute2);
 
 		int result = this.tag.doStartTag();
-		assertThat(result).isEqualTo(Tag.SKIP_BODY);
+		assertEquals(Tag.SKIP_BODY, result);
 
 		String output = getOutput();
 		assertTagOpened(output);
@@ -83,11 +83,11 @@ class RadioButtonTagTests extends AbstractFormTagTests {
 	}
 
 	@Test
-	void withCheckedValueAndDynamicAttributes() throws Exception {
+	public void withCheckedValueAndDynamicAttributes() throws Exception {
 		this.tag.setPath("sex");
 		this.tag.setValue("M");
 		int result = this.tag.doStartTag();
-		assertThat(result).isEqualTo(Tag.SKIP_BODY);
+		assertEquals(Tag.SKIP_BODY, result);
 
 		String output = getOutput();
 		assertTagOpened(output);
@@ -99,11 +99,11 @@ class RadioButtonTagTests extends AbstractFormTagTests {
 	}
 
 	@Test
-	void withCheckedObjectValue() throws Exception {
+	public void withCheckedObjectValue() throws Exception {
 		this.tag.setPath("myFloat");
 		this.tag.setValue(getFloat());
 		int result = this.tag.doStartTag();
-		assertThat(result).isEqualTo(Tag.SKIP_BODY);
+		assertEquals(Tag.SKIP_BODY, result);
 
 		String output = getOutput();
 		assertTagOpened(output);
@@ -115,7 +115,7 @@ class RadioButtonTagTests extends AbstractFormTagTests {
 	}
 
 	@Test
-	void withCheckedObjectValueAndEditor() throws Exception {
+	public void withCheckedObjectValueAndEditor() throws Exception {
 		this.tag.setPath("myFloat");
 		this.tag.setValue("F12.99");
 
@@ -125,24 +125,24 @@ class RadioButtonTagTests extends AbstractFormTagTests {
 		getPageContext().getRequest().setAttribute(BindingResult.MODEL_KEY_PREFIX + COMMAND_NAME, bindingResult);
 
 		int result = this.tag.doStartTag();
-		assertThat(result).isEqualTo(Tag.SKIP_BODY);
+		assertEquals(Tag.SKIP_BODY, result);
 
 		String output = getOutput();
 		assertTagOpened(output);
 		assertTagClosed(output);
 		assertContainsAttribute(output, "name", "myFloat");
 		assertContainsAttribute(output, "type", "radio");
-		assertContainsAttribute(output, "value", "F" + getFloat());
+		assertContainsAttribute(output, "value", "F" + getFloat().toString());
 		assertContainsAttribute(output, "checked", "checked");
 	}
 
 	@Test
-	void withUncheckedObjectValue() throws Exception {
-		Float value = Float.valueOf("99.45");
+	public void withUncheckedObjectValue() throws Exception {
+		Float value = new Float("99.45");
 		this.tag.setPath("myFloat");
 		this.tag.setValue(value);
 		int result = this.tag.doStartTag();
-		assertThat(result).isEqualTo(Tag.SKIP_BODY);
+		assertEquals(Tag.SKIP_BODY, result);
 
 		String output = getOutput();
 		assertTagOpened(output);
@@ -154,11 +154,11 @@ class RadioButtonTagTests extends AbstractFormTagTests {
 	}
 
 	@Test
-	void withUncheckedValue() throws Exception {
+	public void withUncheckedValue() throws Exception {
 		this.tag.setPath("sex");
 		this.tag.setValue("F");
 		int result = this.tag.doStartTag();
-		assertThat(result).isEqualTo(Tag.SKIP_BODY);
+		assertEquals(Tag.SKIP_BODY, result);
 
 		String output = getOutput();
 		assertTagOpened(output);
@@ -170,12 +170,12 @@ class RadioButtonTagTests extends AbstractFormTagTests {
 	}
 
 	@Test
-	void collectionOfPets() throws Exception {
+	public void collectionOfPets() throws Exception {
 		this.tag.setPath("pets");
 		this.tag.setValue(new Pet("Rudiger"));
 
 		int result = this.tag.doStartTag();
-		assertThat(result).isEqualTo(Tag.SKIP_BODY);
+		assertEquals(Tag.SKIP_BODY, result);
 
 		String output = getOutput();
 
@@ -184,21 +184,21 @@ class RadioButtonTagTests extends AbstractFormTagTests {
 
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new StringReader(output));
-		Element checkboxElement = document.getRootElement().elements().get(0);
-		assertThat(checkboxElement.getName()).isEqualTo("input");
-		assertThat(checkboxElement.attribute("type").getValue()).isEqualTo("radio");
-		assertThat(checkboxElement.attribute("name").getValue()).isEqualTo("pets");
-		assertThat(checkboxElement.attribute("value").getValue()).isEqualTo("Rudiger");
-		assertThat(checkboxElement.attribute("checked").getValue()).isEqualTo("checked");
+		Element checkboxElement = (Element) document.getRootElement().elements().get(0);
+		assertEquals("input", checkboxElement.getName());
+		assertEquals("radio", checkboxElement.attribute("type").getValue());
+		assertEquals("pets", checkboxElement.attribute("name").getValue());
+		assertEquals("Rudiger", checkboxElement.attribute("value").getValue());
+		assertEquals("checked", checkboxElement.attribute("checked").getValue());
 	}
 
 	@Test
-	void collectionOfPetsNotSelected() throws Exception {
+	public void collectionOfPetsNotSelected() throws Exception {
 		this.tag.setPath("pets");
 		this.tag.setValue(new Pet("Santa's Little Helper"));
 
 		int result = this.tag.doStartTag();
-		assertThat(result).isEqualTo(Tag.SKIP_BODY);
+		assertEquals(Tag.SKIP_BODY, result);
 
 		String output = getOutput();
 
@@ -207,16 +207,16 @@ class RadioButtonTagTests extends AbstractFormTagTests {
 
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new StringReader(output));
-		Element checkboxElement = document.getRootElement().elements().get(0);
-		assertThat(checkboxElement.getName()).isEqualTo("input");
-		assertThat(checkboxElement.attribute("type").getValue()).isEqualTo("radio");
-		assertThat(checkboxElement.attribute("name").getValue()).isEqualTo("pets");
-		assertThat(checkboxElement.attribute("value").getValue()).isEqualTo("Santa's Little Helper");
-		assertThat(checkboxElement.attribute("checked")).isNull();
+		Element checkboxElement = (Element) document.getRootElement().elements().get(0);
+		assertEquals("input", checkboxElement.getName());
+		assertEquals("radio", checkboxElement.attribute("type").getValue());
+		assertEquals("pets", checkboxElement.attribute("name").getValue());
+		assertEquals("Santa's Little Helper", checkboxElement.attribute("value").getValue());
+		assertNull(checkboxElement.attribute("checked"));
 	}
 
 	@Test
-	void collectionOfPetsWithEditor() throws Exception {
+	public void collectionOfPetsWithEditor() throws Exception {
 		this.tag.setPath("pets");
 		this.tag.setValue(new ItemPet("Rudiger"));
 
@@ -226,7 +226,7 @@ class RadioButtonTagTests extends AbstractFormTagTests {
 		getPageContext().getRequest().setAttribute(BindingResult.MODEL_KEY_PREFIX + COMMAND_NAME, bindingResult);
 
 		int result = this.tag.doStartTag();
-		assertThat(result).isEqualTo(Tag.SKIP_BODY);
+		assertEquals(Tag.SKIP_BODY, result);
 
 		String output = getOutput();
 
@@ -235,31 +235,35 @@ class RadioButtonTagTests extends AbstractFormTagTests {
 
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new StringReader(output));
-		Element checkboxElement = document.getRootElement().elements().get(0);
-		assertThat(checkboxElement.getName()).isEqualTo("input");
-		assertThat(checkboxElement.attribute("type").getValue()).isEqualTo("radio");
-		assertThat(checkboxElement.attribute("name").getValue()).isEqualTo("pets");
-		assertThat(checkboxElement.attribute("value").getValue()).isEqualTo("Rudiger");
-		assertThat(checkboxElement.attribute("checked").getValue()).isEqualTo("checked");
+		Element checkboxElement = (Element) document.getRootElement().elements().get(0);
+		assertEquals("input", checkboxElement.getName());
+		assertEquals("radio", checkboxElement.attribute("type").getValue());
+		assertEquals("pets", checkboxElement.attribute("name").getValue());
+		assertEquals("Rudiger", checkboxElement.attribute("value").getValue());
+		assertEquals("checked", checkboxElement.attribute("checked").getValue());
 	}
 
 	@Test
-	void dynamicTypeAttribute() throws JspException {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				this.tag.setDynamicAttribute(null, "type", "email"))
-			.withMessage("Attribute type=\"email\" is not allowed");
+	public void dynamicTypeAttribute() throws JspException {
+		try {
+			this.tag.setDynamicAttribute(null, "type", "email");
+			fail("Expected exception");
+		}
+		catch (IllegalArgumentException e) {
+			assertEquals("Attribute type=\"email\" is not allowed", e.getMessage());
+		}
 	}
 
 	private void assertTagOpened(String output) {
-		assertThat(output.contains("<input ")).isTrue();
+		assertTrue(output.indexOf("<input ") > -1);
 	}
 
 	private void assertTagClosed(String output) {
-		assertThat(output.contains("/>")).isTrue();
+		assertTrue(output.indexOf("/>") > -1);
 	}
 
 	private Float getFloat() {
-		return Float.valueOf("12.99");
+		return new Float("12.99");
 	}
 
 	@Override

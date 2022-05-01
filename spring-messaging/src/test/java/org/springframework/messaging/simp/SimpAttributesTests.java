@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,33 +19,46 @@ package org.springframework.messaging.simp;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.mockito.Mockito;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
- * Unit tests for {@link SimpAttributes}.
+ * Unit tests for
+ * {@link org.springframework.messaging.simp.SimpAttributes}.
  *
  * @author Rossen Stoyanchev
  * @since 4.1
  */
 public class SimpAttributesTests {
 
-	private final Map<String, Object> map = new ConcurrentHashMap<>();
+	private SimpAttributes simpAttributes;
 
-	private final SimpAttributes simpAttributes = new SimpAttributes("session1", this.map);
+	private Map<String, Object> map;
+
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
+
+
+	@Before
+	public void setup() {
+		this.map = new ConcurrentHashMap<>();
+		this.simpAttributes = new SimpAttributes("session1", this.map);
+	}
 
 
 	@Test
 	public void getAttribute() {
 		this.simpAttributes.setAttribute("name1", "value1");
 
-		assertThat(this.simpAttributes.getAttribute("name1")).isEqualTo("value1");
-		assertThat(this.simpAttributes.getAttribute("name2")).isNull();
+		assertThat(this.simpAttributes.getAttribute("name1"), is("value1"));
+		assertThat(this.simpAttributes.getAttribute("name2"), nullValue());
 	}
 
 	@Test
@@ -54,40 +67,39 @@ public class SimpAttributesTests {
 		this.simpAttributes.setAttribute("name2", "value1");
 		this.simpAttributes.setAttribute("name3", "value1");
 
-		assertThat(this.simpAttributes.getAttributeNames())
-				.containsExactlyInAnyOrder("name1", "name2", "name3");
+		assertThat(this.simpAttributes.getAttributeNames(), arrayContainingInAnyOrder("name1", "name2", "name3"));
 	}
 
 	@Test
 	public void registerDestructionCallback() {
-		Runnable callback = mock(Runnable.class);
+		Runnable callback = Mockito.mock(Runnable.class);
 		this.simpAttributes.registerDestructionCallback("name1", callback);
 
 		assertThat(this.simpAttributes.getAttribute(
-				SimpAttributes.DESTRUCTION_CALLBACK_NAME_PREFIX + "name1")).isSameAs(callback);
+				SimpAttributes.DESTRUCTION_CALLBACK_NAME_PREFIX + "name1"), sameInstance(callback));
 	}
 
 	@Test
 	public void registerDestructionCallbackAfterSessionCompleted() {
 		this.simpAttributes.sessionCompleted();
-		assertThatIllegalStateException().isThrownBy(() ->
-				this.simpAttributes.registerDestructionCallback("name1", mock(Runnable.class)))
-			.withMessageContaining("already completed");
+		this.thrown.expect(IllegalStateException.class);
+		this.thrown.expectMessage(containsString("already completed"));
+		this.simpAttributes.registerDestructionCallback("name1", Mockito.mock(Runnable.class));
 	}
 
 	@Test
 	public void removeDestructionCallback() {
-		Runnable callback1 = mock(Runnable.class);
-		Runnable callback2 = mock(Runnable.class);
+		Runnable callback1 = Mockito.mock(Runnable.class);
+		Runnable callback2 = Mockito.mock(Runnable.class);
 		this.simpAttributes.registerDestructionCallback("name1", callback1);
 		this.simpAttributes.registerDestructionCallback("name2", callback2);
 
-		assertThat(this.simpAttributes.getAttributeNames().length).isEqualTo(2);
+		assertThat(this.simpAttributes.getAttributeNames().length, is(2));
 	}
 
 	@Test
 	public void getSessionMutex() {
-		assertThat(this.simpAttributes.getSessionMutex()).isSameAs(this.map);
+		assertThat(this.simpAttributes.getSessionMutex(), sameInstance(this.map));
 	}
 
 	@Test
@@ -95,13 +107,13 @@ public class SimpAttributesTests {
 		Object mutex = new Object();
 		this.simpAttributes.setAttribute(SimpAttributes.SESSION_MUTEX_NAME, mutex);
 
-		assertThat(this.simpAttributes.getSessionMutex()).isSameAs(mutex);
+		assertThat(this.simpAttributes.getSessionMutex(), sameInstance(mutex));
 	}
 
 	@Test
 	public void sessionCompleted() {
-		Runnable callback1 = mock(Runnable.class);
-		Runnable callback2 = mock(Runnable.class);
+		Runnable callback1 = Mockito.mock(Runnable.class);
+		Runnable callback2 = Mockito.mock(Runnable.class);
 		this.simpAttributes.registerDestructionCallback("name1", callback1);
 		this.simpAttributes.registerDestructionCallback("name2", callback2);
 
@@ -113,7 +125,7 @@ public class SimpAttributesTests {
 
 	@Test
 	public void sessionCompletedIsIdempotent() {
-		Runnable callback1 = mock(Runnable.class);
+		Runnable callback1 = Mockito.mock(Runnable.class);
 		this.simpAttributes.registerDestructionCallback("name1", callback1);
 
 		this.simpAttributes.sessionCompleted();

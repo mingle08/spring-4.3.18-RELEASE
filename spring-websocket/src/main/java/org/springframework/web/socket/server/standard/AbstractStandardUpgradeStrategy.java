@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,14 +21,14 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.websocket.Endpoint;
+import javax.websocket.Extension;
+import javax.websocket.WebSocketContainer;
+import javax.websocket.server.ServerContainer;
 
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.websocket.Endpoint;
-import jakarta.websocket.Extension;
-import jakarta.websocket.WebSocketContainer;
-import jakarta.websocket.server.ServerContainer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -37,7 +37,6 @@ import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.http.server.ServletServerHttpResponse;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.web.socket.WebSocketExtension;
 import org.springframework.web.socket.WebSocketHandler;
@@ -59,15 +58,14 @@ public abstract class AbstractStandardUpgradeStrategy implements RequestUpgradeS
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	@Nullable
 	private volatile List<WebSocketExtension> extensions;
 
 
 	protected ServerContainer getContainer(HttpServletRequest request) {
 		ServletContext servletContext = request.getServletContext();
-		String attrName = "jakarta.websocket.server.ServerContainer";
+		String attrName = "javax.websocket.server.ServerContainer";
 		ServerContainer container = (ServerContainer) servletContext.getAttribute(attrName);
-		Assert.notNull(container, "No 'jakarta.websocket.server.ServerContainer' ServletContext attribute. " +
+		Assert.notNull(container, "No 'javax.websocket.server.ServerContainer' ServletContext attribute. " +
 				"Are you running in a Servlet container that supports JSR-356?");
 		return container;
 	}
@@ -85,17 +83,15 @@ public abstract class AbstractStandardUpgradeStrategy implements RequestUpgradeS
 
 	@Override
 	public List<WebSocketExtension> getSupportedExtensions(ServerHttpRequest request) {
-		List<WebSocketExtension> extensions = this.extensions;
-		if (extensions == null) {
+		if (this.extensions == null) {
 			HttpServletRequest servletRequest = ((ServletServerHttpRequest) request).getServletRequest();
-			extensions = getInstalledExtensions(getContainer(servletRequest));
-			this.extensions = extensions;
+			this.extensions = getInstalledExtensions(getContainer(servletRequest));
 		}
-		return extensions;
+		return this.extensions;
 	}
 
 	protected List<WebSocketExtension> getInstalledExtensions(WebSocketContainer container) {
-		List<WebSocketExtension> result = new ArrayList<>();
+		List<WebSocketExtension> result = new ArrayList<WebSocketExtension>();
 		for (Extension extension : container.getInstalledExtensions()) {
 			result.add(new StandardToWebSocketExtensionAdapter(extension));
 		}
@@ -105,9 +101,8 @@ public abstract class AbstractStandardUpgradeStrategy implements RequestUpgradeS
 
 	@Override
 	public void upgrade(ServerHttpRequest request, ServerHttpResponse response,
-			@Nullable String selectedProtocol, List<WebSocketExtension> selectedExtensions,
-			@Nullable Principal user, WebSocketHandler wsHandler, Map<String, Object> attrs)
-			throws HandshakeFailureException {
+			String selectedProtocol, List<WebSocketExtension> selectedExtensions, Principal user,
+			WebSocketHandler wsHandler, Map<String, Object> attrs) throws HandshakeFailureException {
 
 		HttpHeaders headers = request.getHeaders();
 		InetSocketAddress localAddr = null;
@@ -128,7 +123,7 @@ public abstract class AbstractStandardUpgradeStrategy implements RequestUpgradeS
 		StandardWebSocketSession session = new StandardWebSocketSession(headers, attrs, localAddr, remoteAddr, user);
 		StandardWebSocketHandlerAdapter endpoint = new StandardWebSocketHandlerAdapter(wsHandler, session);
 
-		List<Extension> extensions = new ArrayList<>();
+		List<Extension> extensions = new ArrayList<Extension>();
 		for (WebSocketExtension extension : selectedExtensions) {
 			extensions.add(new WebSocketToStandardExtensionAdapter(extension));
 		}
@@ -137,7 +132,7 @@ public abstract class AbstractStandardUpgradeStrategy implements RequestUpgradeS
 	}
 
 	protected abstract void upgradeInternal(ServerHttpRequest request, ServerHttpResponse response,
-			@Nullable String selectedProtocol, List<Extension> selectedExtensions, Endpoint endpoint)
+			String selectedProtocol, List<Extension> selectedExtensions, Endpoint endpoint)
 			throws HandshakeFailureException;
 
 }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN 2.0//EN" "https://www.springframework.org/dtd/spring-beans-2.0.dtd">
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN 2.0//EN" "http://www.springframework.org/dtd/spring-beans-2.0.dtd">
 
 <beans>
 
@@ -7,15 +7,15 @@
 		<property name="beans">
 			<map>
 				<entry key="namingTest">
-					<ref bean="testBean"/>
+					<ref local="testBean"/>
 				</entry>
 			</map>
 		</property>
 		<property name="assembler">
-			<ref bean="metadataAssembler"/>
+			<ref local="metadataAssembler"/>
 		</property>
 		<property name="namingStrategy">
-			<ref bean="metadataNamingStrategy"/>
+			<ref local="metadataNamingStrategy"/>
 		</property>
 	</bean>
 

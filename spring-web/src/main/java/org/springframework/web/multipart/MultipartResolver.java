@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,18 +16,20 @@
 
 package org.springframework.web.multipart;
 
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * A strategy interface for multipart file upload resolution in accordance
- * with <a href="https://www.ietf.org/rfc/rfc1867.txt">RFC 1867</a>.
+ * with <a href="http://www.ietf.org/rfc/rfc1867.txt">RFC 1867</a>.
  * Implementations are typically usable both within an application context
  * and standalone.
  *
- * <p>Spring provides the following concrete implementation:
+ * <p>There are two concrete implementations included in Spring, as of Spring 3.1:
  * <ul>
+ * <li>{@link org.springframework.web.multipart.commons.CommonsMultipartResolver}
+ * for Apache Commons FileUpload
  * <li>{@link org.springframework.web.multipart.support.StandardServletMultipartResolver}
- * for the Servlet Part API
+ * for the Servlet 3.0+ Part API
  * </ul>
  *
  * <p>There is no default resolver implementation used for Spring
@@ -40,7 +42,7 @@ import jakarta.servlet.http.HttpServletRequest;
  *
  * <p>If a {@link org.springframework.web.servlet.DispatcherServlet} detects a
  * multipart request, it will resolve it via the configured {@link MultipartResolver}
- * and pass on a wrapped {@link jakarta.servlet.http.HttpServletRequest}. Controllers
+ * and pass on a wrapped {@link javax.servlet.http.HttpServletRequest}. Controllers
  * can then cast their given request to the {@link MultipartHttpServletRequest}
  * interface, which allows for access to any {@link MultipartFile MultipartFiles}.
  * Note that this cast is only supported in case of an actual multipart request.
@@ -75,6 +77,7 @@ import jakarta.servlet.http.HttpServletRequest;
  * @since 29.09.2003
  * @see MultipartHttpServletRequest
  * @see MultipartFile
+ * @see org.springframework.web.multipart.commons.CommonsMultipartResolver
  * @see org.springframework.web.multipart.support.ByteArrayMultipartFileEditor
  * @see org.springframework.web.multipart.support.StringMultipartFileEditor
  * @see org.springframework.web.servlet.DispatcherServlet
@@ -103,9 +106,9 @@ public interface MultipartResolver {
 	 * @see MultipartHttpServletRequest#getFile
 	 * @see MultipartHttpServletRequest#getFileNames
 	 * @see MultipartHttpServletRequest#getFileMap
-	 * @see jakarta.servlet.http.HttpServletRequest#getParameter
-	 * @see jakarta.servlet.http.HttpServletRequest#getParameterNames
-	 * @see jakarta.servlet.http.HttpServletRequest#getParameterMap
+	 * @see javax.servlet.http.HttpServletRequest#getParameter
+	 * @see javax.servlet.http.HttpServletRequest#getParameterNames
+	 * @see javax.servlet.http.HttpServletRequest#getParameterMap
 	 */
 	MultipartHttpServletRequest resolveMultipart(HttpServletRequest request) throws MultipartException;
 

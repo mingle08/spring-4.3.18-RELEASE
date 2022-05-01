@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,8 +24,6 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.aop.DynamicIntroductionAdvice;
 import org.springframework.aop.IntroductionInterceptor;
 import org.springframework.aop.ProxyMethodInvocation;
-import org.springframework.lang.Nullable;
-import org.springframework.util.ReflectionUtils;
 
 /**
  * Convenient implementation of the
@@ -59,11 +57,11 @@ public class DelegatePerTargetObjectIntroductionInterceptor extends Introduction
 	/**
 	 * Hold weak references to keys as we don't want to interfere with garbage collection..
 	 */
-	private final Map<Object, Object> delegateMap = new WeakHashMap<>();
+	private final Map<Object, Object> delegateMap = new WeakHashMap<Object, Object>();
 
-	private final Class<?> defaultImplType;
+	private Class<?> defaultImplType;
 
-	private final Class<?> interfaceType;
+	private Class<?> interfaceType;
 
 
 	public DelegatePerTargetObjectIntroductionInterceptor(Class<?> defaultImplType, Class<?> interfaceType) {
@@ -86,7 +84,6 @@ public class DelegatePerTargetObjectIntroductionInterceptor extends Introduction
 	 * method, which handles introduced interfaces and forwarding to the target.
 	 */
 	@Override
-	@Nullable
 	public Object invoke(MethodInvocation mi) throws Throwable {
 		if (isMethodOnIntroducedInterface(mi)) {
 			Object delegate = getIntroductionDelegateFor(mi.getThis());
@@ -114,13 +111,12 @@ public class DelegatePerTargetObjectIntroductionInterceptor extends Introduction
 	 * that it is introduced into. This method is <strong>never</strong> called for
 	 * {@link MethodInvocation MethodInvocations} on the introduced interfaces.
 	 */
-	@Nullable
 	protected Object doProceed(MethodInvocation mi) throws Throwable {
 		// If we get here, just pass the invocation on.
 		return mi.proceed();
 	}
 
-	private Object getIntroductionDelegateFor(@Nullable Object targetObject) {
+	private Object getIntroductionDelegateFor(Object targetObject) {
 		synchronized (this.delegateMap) {
 			if (this.delegateMap.containsKey(targetObject)) {
 				return this.delegateMap.get(targetObject);
@@ -135,7 +131,7 @@ public class DelegatePerTargetObjectIntroductionInterceptor extends Introduction
 
 	private Object createNewDelegate() {
 		try {
-			return ReflectionUtils.accessibleConstructor(this.defaultImplType).newInstance();
+			return this.defaultImplType.newInstance();
 		}
 		catch (Throwable ex) {
 			throw new IllegalArgumentException("Cannot create default implementation for '" +

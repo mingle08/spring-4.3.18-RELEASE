@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,24 +19,22 @@ package org.springframework.aop.aspectj;
 import java.lang.reflect.Method;
 
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.aop.MethodBeforeAdvice;
 import org.springframework.beans.factory.BeanNameAware;
-import org.springframework.beans.testfixture.beans.ITestBean;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.Ordered;
-import org.springframework.lang.Nullable;
+import org.springframework.tests.sample.beans.ITestBean;
+
+import static org.junit.Assert.*;
 
 /**
  * @author Adrian Colyer
  * @author Chris Beams
  */
-class AspectAndAdvicePrecedenceTests {
-
-	private ClassPathXmlApplicationContext ctx;
+public final class AspectAndAdvicePrecedenceTests {
 
 	private PrecedenceTestAspect highPrecedenceAspect;
 
@@ -49,9 +47,10 @@ class AspectAndAdvicePrecedenceTests {
 	private ITestBean testBean;
 
 
-	@BeforeEach
-	void setup() {
-		this.ctx = new ClassPathXmlApplicationContext(getClass().getSimpleName() + ".xml", getClass());
+	@Before
+	public void setUp() {
+		ClassPathXmlApplicationContext ctx =
+			new ClassPathXmlApplicationContext(getClass().getSimpleName() + ".xml", getClass());
 		highPrecedenceAspect = (PrecedenceTestAspect) ctx.getBean("highPrecedenceAspect");
 		lowPrecedenceAspect = (PrecedenceTestAspect) ctx.getBean("lowPrecedenceAspect");
 		highPrecedenceSpringAdvice = (SimpleSpringBeforeAdvice) ctx.getBean("highPrecedenceSpringAdvice");
@@ -59,14 +58,10 @@ class AspectAndAdvicePrecedenceTests {
 		testBean = (ITestBean) ctx.getBean("testBean");
 	}
 
-	@AfterEach
-	void tearDown() {
-		this.ctx.close();
-	}
-
+	// ========== end of test case set up, start of tests proper ===================
 
 	@Test
-	void testAdviceOrder() {
+	public void testAdviceOrder() {
 		PrecedenceTestAspect.Collaborator collaborator = new PrecedenceVerifyingCollaborator();
 		this.highPrecedenceAspect.setCollaborator(collaborator);
 		this.lowPrecedenceAspect.setCollaborator(collaborator);
@@ -81,24 +76,24 @@ class AspectAndAdvicePrecedenceTests {
 		private static final String[] EXPECTED = {
 			// this order confirmed by running the same aspects (minus the Spring AOP advisors)
 			// through AspectJ...
-			"beforeAdviceOne(highPrecedenceAspect)",				// 1
-			"beforeAdviceTwo(highPrecedenceAspect)",				// 2
-			"aroundAdviceOne(highPrecedenceAspect)",				// 3,  before proceed
-				"aroundAdviceTwo(highPrecedenceAspect)",			// 4,  before proceed
-					"beforeAdviceOne(highPrecedenceSpringAdvice)",	// 5
-					"beforeAdviceOne(lowPrecedenceSpringAdvice)",	// 6
-					"beforeAdviceOne(lowPrecedenceAspect)",			// 7
-					"beforeAdviceTwo(lowPrecedenceAspect)",			// 8
-					"aroundAdviceOne(lowPrecedenceAspect)",			// 9,  before proceed
-				"aroundAdviceTwo(lowPrecedenceAspect)",				// 10, before proceed
-				"aroundAdviceTwo(lowPrecedenceAspect)",				// 11, after proceed
-					"aroundAdviceOne(lowPrecedenceAspect)",			// 12, after proceed
-					"afterAdviceOne(lowPrecedenceAspect)",			// 13
-					"afterAdviceTwo(lowPrecedenceAspect)",			// 14
-				"aroundAdviceTwo(highPrecedenceAspect)",			// 15, after proceed
-			"aroundAdviceOne(highPrecedenceAspect)",				// 16, after proceed
-			"afterAdviceOne(highPrecedenceAspect)",					// 17
-			"afterAdviceTwo(highPrecedenceAspect)"					// 18
+			"beforeAdviceOne(highPrecedenceAspect)",  	       // 1
+			"beforeAdviceTwo(highPrecedenceAspect)",           // 2
+			"aroundAdviceOne(highPrecedenceAspect)",           // 3, before proceed
+			  "aroundAdviceTwo(highPrecedenceAspect)",         // 4, before proceed
+			    "beforeAdviceOne(highPrecedenceSpringAdvice)", // 5
+			    "beforeAdviceOne(lowPrecedenceSpringAdvice)",  // 6
+			    "beforeAdviceOne(lowPrecedenceAspect)",        // 7
+			    "beforeAdviceTwo(lowPrecedenceAspect)",        // 8
+			    "aroundAdviceOne(lowPrecedenceAspect)",        // 9, before proceed
+			      "aroundAdviceTwo(lowPrecedenceAspect)",      // 10, before proceed
+			      "aroundAdviceTwo(lowPrecedenceAspect)",      // 11, after proceed
+			    "aroundAdviceOne(lowPrecedenceAspect)",        // 12, after proceed
+			    "afterAdviceOne(lowPrecedenceAspect)",         // 13
+			    "afterAdviceTwo(lowPrecedenceAspect)",         // 14
+			  "aroundAdviceTwo(highPrecedenceAspect)",         // 15, after proceed
+			"aroundAdviceOne(highPrecedenceAspect)",           // 16, after proceed
+			"afterAdviceOne(highPrecedenceAspect)",            // 17
+			"afterAdviceTwo(highPrecedenceAspect)"             // 18
 		};
 
 		private int adviceInvocationNumber = 0;
@@ -106,12 +101,12 @@ class AspectAndAdvicePrecedenceTests {
 		private void checkAdvice(String whatJustHappened) {
 			//System.out.println("[" + adviceInvocationNumber + "] " + whatJustHappened + " ==> " + EXPECTED[adviceInvocationNumber]);
 			if (adviceInvocationNumber > (EXPECTED.length - 1)) {
-				throw new AssertionError("Too many advice invocations, expecting " + EXPECTED.length
+				fail("Too many advice invocations, expecting " + EXPECTED.length
 						+ " but had " + adviceInvocationNumber);
 			}
 			String expecting = EXPECTED[adviceInvocationNumber++];
 			if (!whatJustHappened.equals(expecting)) {
-				throw new AssertionError("Expecting '" + expecting + "' on advice invocation " + adviceInvocationNumber +
+				fail("Expecting '" + expecting + "' on advice invocation " + adviceInvocationNumber +
 						" but got '" + whatJustHappened + "'");
 			}
 		}
@@ -242,7 +237,7 @@ class SimpleSpringBeforeAdvice implements MethodBeforeAdvice, BeanNameAware {
 	 * @see org.springframework.aop.MethodBeforeAdvice#before(java.lang.reflect.Method, java.lang.Object[], java.lang.Object)
 	 */
 	@Override
-	public void before(Method method, Object[] args, @Nullable Object target)
+	public void before(Method method, Object[] args, Object target)
 			throws Throwable {
 		this.collaborator.beforeAdviceOne(this.name);
 	}

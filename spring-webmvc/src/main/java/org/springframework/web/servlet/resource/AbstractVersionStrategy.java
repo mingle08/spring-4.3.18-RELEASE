@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,6 @@ import java.util.regex.Pattern;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -61,7 +60,6 @@ public abstract class AbstractVersionStrategy implements VersionStrategy {
 
 
 	@Override
-	@Nullable
 	public String extractVersion(String requestPath) {
 		return this.pathStrategy.extractVersion(requestPath);
 	}
@@ -86,12 +84,11 @@ public abstract class AbstractVersionStrategy implements VersionStrategy {
 		private final String prefix;
 
 		public PrefixVersionPathStrategy(String version) {
-			Assert.hasText(version, "Version must not be empty");
+			Assert.hasText(version, "'version' must not be empty");
 			this.prefix = version;
 		}
 
 		@Override
-		@Nullable
 		public String extractVersion(String requestPath) {
 			return (requestPath.startsWith(this.prefix) ? this.prefix : null);
 		}
@@ -123,7 +120,6 @@ public abstract class AbstractVersionStrategy implements VersionStrategy {
 		private static final Pattern pattern = Pattern.compile("-(\\S*)\\.");
 
 		@Override
-		@Nullable
 		public String extractVersion(String requestPath) {
 			Matcher matcher = pattern.matcher(requestPath);
 			if (matcher.find()) {

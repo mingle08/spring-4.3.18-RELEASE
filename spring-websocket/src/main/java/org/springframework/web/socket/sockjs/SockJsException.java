@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@
 package org.springframework.web.socket.sockjs;
 
 import org.springframework.core.NestedRuntimeException;
-import org.springframework.lang.Nullable;
 
 /**
  * Base class for exceptions raised while processing SockJS HTTP requests.
@@ -28,7 +27,6 @@ import org.springframework.lang.Nullable;
 @SuppressWarnings("serial")
 public class SockJsException extends NestedRuntimeException {
 
-	@Nullable
 	private final String sessionId;
 
 
@@ -37,7 +35,7 @@ public class SockJsException extends NestedRuntimeException {
 	 * @param message the exception message
 	 * @param cause the root cause
 	 */
-	public SockJsException(String message, @Nullable Throwable cause) {
+	public SockJsException(String message, Throwable cause) {
 		this(message, null, cause);
 	}
 
@@ -47,7 +45,7 @@ public class SockJsException extends NestedRuntimeException {
 	 * @param sessionId the SockJS session id
 	 * @param cause the root cause
 	 */
-	public SockJsException(String message, @Nullable String sessionId, @Nullable Throwable cause) {
+	public SockJsException(String message, String sessionId, Throwable cause) {
 		super(message, cause);
 		this.sessionId = sessionId;
 	}
@@ -56,7 +54,6 @@ public class SockJsException extends NestedRuntimeException {
 	/**
 	 * Return the SockJS session id.
 	 */
-	@Nullable
 	public String getSockJsSessionId() {
 		return this.sessionId;
 	}

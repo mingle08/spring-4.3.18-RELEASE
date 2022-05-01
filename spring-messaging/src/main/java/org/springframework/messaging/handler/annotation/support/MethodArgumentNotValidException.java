@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,9 +17,7 @@
 package org.springframework.messaging.handler.annotation.support;
 
 import org.springframework.core.MethodParameter;
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
-import org.springframework.messaging.handler.invocation.MethodArgumentResolutionException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
 
@@ -31,11 +29,10 @@ import org.springframework.validation.ObjectError;
  * @author Rossen Stoyanchev
  * @since 4.0.1
  */
-@SuppressWarnings("serial")
-public class MethodArgumentNotValidException extends MethodArgumentResolutionException {
+@SuppressWarnings({"serial", "deprecation"})
+public class MethodArgumentNotValidException extends AbstractMethodArgumentResolutionException {
 
-	@Nullable
-	private final BindingResult bindingResult;
+	private BindingResult bindingResult;
 
 
 	/**
@@ -43,7 +40,6 @@ public class MethodArgumentNotValidException extends MethodArgumentResolutionExc
 	 */
 	public MethodArgumentNotValidException(Message<?> message, MethodParameter parameter) {
 		super(message, parameter);
-		this.bindingResult = null;
 	}
 
 	/**
@@ -60,7 +56,6 @@ public class MethodArgumentNotValidException extends MethodArgumentResolutionExc
 	 * Return the BindingResult if the failure is validation-related,
 	 * or {@code null} if none.
 	 */
-	@Nullable
 	public final BindingResult getBindingResult() {
 		return this.bindingResult;
 	}
@@ -70,7 +65,7 @@ public class MethodArgumentNotValidException extends MethodArgumentResolutionExc
 		StringBuilder sb = new StringBuilder();
 		sb.append(bindingResult.getErrorCount()).append(" error(s): ");
 		for (ObjectError error : bindingResult.getAllErrors()) {
-			sb.append('[').append(error).append("] ");
+			sb.append("[").append(error).append("] ");
 		}
 		return sb.toString();
 	}

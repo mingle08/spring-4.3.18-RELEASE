@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,10 +20,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * @author Colin Sampaleanu
@@ -31,10 +32,14 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  * @author Sam Brannen
  * @since 21.11.2003
  */
-class MethodInvokerTests {
+public class MethodInvokerTests {
+
+	@Rule
+	public final ExpectedException exception = ExpectedException.none();
+
 
 	@Test
-	void plainMethodInvoker() throws Exception {
+	public void plainMethodInvoker() throws Exception {
 		// sanity check: singleton, non-static should work
 		TestClass1 tc1 = new TestClass1();
 		MethodInvoker mi = new MethodInvoker();
@@ -42,7 +47,7 @@ class MethodInvokerTests {
 		mi.setTargetMethod("method1");
 		mi.prepare();
 		Integer i = (Integer) mi.invoke();
-		assertThat(i.intValue()).isEqualTo(1);
+		assertEquals(1, i.intValue());
 
 		// defensive check: singleton, non-static should work with null array
 		tc1 = new TestClass1();
@@ -52,7 +57,7 @@ class MethodInvokerTests {
 		mi.setArguments((Object[]) null);
 		mi.prepare();
 		i = (Integer) mi.invoke();
-		assertThat(i.intValue()).isEqualTo(1);
+		assertEquals(1, i.intValue());
 
 		// sanity check: check that argument count matching works
 		mi = new MethodInvoker();
@@ -60,14 +65,14 @@ class MethodInvokerTests {
 		mi.setTargetMethod("supertypes");
 		mi.setArguments(new ArrayList<>(), new ArrayList<>(), "hello");
 		mi.prepare();
-		assertThat(mi.invoke()).isEqualTo("hello");
+		assertEquals("hello", mi.invoke());
 
 		mi = new MethodInvoker();
 		mi.setTargetClass(TestClass1.class);
 		mi.setTargetMethod("supertypes2");
 		mi.setArguments(new ArrayList<>(), new ArrayList<>(), "hello", "bogus");
 		mi.prepare();
-		assertThat(mi.invoke()).isEqualTo("hello");
+		assertEquals("hello", mi.invoke());
 
 		// Sanity check: check that argument conversion doesn't work with plain MethodInvoker
 		mi = new MethodInvoker();
@@ -75,85 +80,85 @@ class MethodInvokerTests {
 		mi.setTargetMethod("supertypes2");
 		mi.setArguments(new ArrayList<>(), new ArrayList<>(), "hello", Boolean.TRUE);
 
-		assertThatExceptionOfType(NoSuchMethodException.class).isThrownBy(
-				mi::prepare);
+		exception.expect(NoSuchMethodException.class);
+		mi.prepare();
 	}
 
 	@Test
-	void stringWithMethodInvoker() throws Exception {
+	public void stringWithMethodInvoker() throws Exception {
 		MethodInvoker methodInvoker = new MethodInvoker();
 		methodInvoker.setTargetObject(new Greeter());
 		methodInvoker.setTargetMethod("greet");
 		methodInvoker.setArguments("no match");
 
-		assertThatExceptionOfType(NoSuchMethodException.class).isThrownBy(
-				methodInvoker::prepare);
+		exception.expect(NoSuchMethodException.class);
+		methodInvoker.prepare();
 	}
 
 	@Test
-	void purchaserWithMethodInvoker() throws Exception {
+	public void purchaserWithMethodInvoker() throws Exception {
 		MethodInvoker methodInvoker = new MethodInvoker();
 		methodInvoker.setTargetObject(new Greeter());
 		methodInvoker.setTargetMethod("greet");
 		methodInvoker.setArguments(new Purchaser());
 		methodInvoker.prepare();
 		String greeting = (String) methodInvoker.invoke();
-		assertThat(greeting).isEqualTo("purchaser: hello");
+		assertEquals("purchaser: hello", greeting);
 	}
 
 	@Test
-	void shopperWithMethodInvoker() throws Exception {
+	public void shopperWithMethodInvoker() throws Exception {
 		MethodInvoker methodInvoker = new MethodInvoker();
 		methodInvoker.setTargetObject(new Greeter());
 		methodInvoker.setTargetMethod("greet");
 		methodInvoker.setArguments(new Shopper());
 		methodInvoker.prepare();
 		String greeting = (String) methodInvoker.invoke();
-		assertThat(greeting).isEqualTo("purchaser: may I help you?");
+		assertEquals("purchaser: may I help you?", greeting);
 	}
 
 	@Test
-	void salesmanWithMethodInvoker() throws Exception {
+	public void salesmanWithMethodInvoker() throws Exception {
 		MethodInvoker methodInvoker = new MethodInvoker();
 		methodInvoker.setTargetObject(new Greeter());
 		methodInvoker.setTargetMethod("greet");
 		methodInvoker.setArguments(new Salesman());
 		methodInvoker.prepare();
 		String greeting = (String) methodInvoker.invoke();
-		assertThat(greeting).isEqualTo("greetable: how are sales?");
+		assertEquals("greetable: how are sales?", greeting);
 	}
 
 	@Test
-	void customerWithMethodInvoker() throws Exception {
+	public void customerWithMethodInvoker() throws Exception {
 		MethodInvoker methodInvoker = new MethodInvoker();
 		methodInvoker.setTargetObject(new Greeter());
 		methodInvoker.setTargetMethod("greet");
 		methodInvoker.setArguments(new Customer());
 		methodInvoker.prepare();
 		String greeting = (String) methodInvoker.invoke();
-		assertThat(greeting).isEqualTo("customer: good day");
+		assertEquals("customer: good day", greeting);
 	}
 
 	@Test
-	void regularWithMethodInvoker() throws Exception {
+	public void regularWithMethodInvoker() throws Exception {
 		MethodInvoker methodInvoker = new MethodInvoker();
 		methodInvoker.setTargetObject(new Greeter());
 		methodInvoker.setTargetMethod("greet");
 		methodInvoker.setArguments(new Regular("Kotter"));
 		methodInvoker.prepare();
 		String greeting = (String) methodInvoker.invoke();
-		assertThat(greeting).isEqualTo("regular: welcome back Kotter");
+		assertEquals("regular: welcome back Kotter", greeting);
 	}
 
 	@Test
-	void vipWithMethodInvoker() throws Exception {
+	public void vipWithMethodInvoker() throws Exception {
 		MethodInvoker methodInvoker = new MethodInvoker();
 		methodInvoker.setTargetObject(new Greeter());
 		methodInvoker.setTargetMethod("greet");
 		methodInvoker.setArguments(new VIP("Fonzie"));
 		methodInvoker.prepare();
 		String greeting = (String) methodInvoker.invoke();
-		assertThat(greeting).isEqualTo("regular: whassup dude?");
+		assertEquals("regular: whassup dude?", greeting);
 	}
 
 

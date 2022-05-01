@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,6 @@
 
 package org.springframework.messaging.core;
 
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessagingException;
 
@@ -26,8 +25,8 @@ import org.springframework.messaging.MessagingException;
  * @author Mark Fisher
  * @author Rossen Stoyanchev
  * @since 4.0
- * @param <D> the type of destination
  * @see GenericMessagingTemplate
+ * @param <D> the type of destination to receive messages from
  */
 public interface MessageReceivingOperations<D> {
 
@@ -36,7 +35,6 @@ public interface MessageReceivingOperations<D> {
 	 * @return the received message, possibly {@code null} if the message could not
 	 * be received, for example due to a timeout
 	 */
-	@Nullable
 	Message<?> receive() throws MessagingException;
 
 	/**
@@ -45,7 +43,6 @@ public interface MessageReceivingOperations<D> {
 	 * @return the received message, possibly {@code null} if the message could not
 	 * be received, for example due to a timeout
 	 */
-	@Nullable
 	Message<?> receive(D destination) throws MessagingException;
 
 	/**
@@ -55,7 +52,6 @@ public interface MessageReceivingOperations<D> {
 	 * @return the converted payload of the reply message, possibly {@code null} if
 	 * the message could not be received, for example due to a timeout
 	 */
-	@Nullable
 	<T> T receiveAndConvert(Class<T> targetClass) throws MessagingException;
 
 	/**
@@ -66,7 +62,6 @@ public interface MessageReceivingOperations<D> {
 	 * @return the converted payload of the reply message, possibly {@code null} if
 	 * the message could not be received, for example due to a timeout
 	 */
-	@Nullable
 	<T> T receiveAndConvert(D destination, Class<T> targetClass) throws MessagingException;
 
 }

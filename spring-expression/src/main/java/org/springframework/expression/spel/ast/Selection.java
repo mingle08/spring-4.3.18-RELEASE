@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.expression.EvaluationException;
 import org.springframework.expression.TypedValue;
 import org.springframework.expression.spel.ExpressionState;
@@ -31,7 +30,6 @@ import org.springframework.expression.spel.SpelEvaluationException;
 import org.springframework.expression.spel.SpelMessage;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
 /**
@@ -49,28 +47,20 @@ import org.springframework.util.ObjectUtils;
  */
 public class Selection extends SpelNodeImpl {
 
-	/**
-	 * All items ({@code ?[]}).
-	 */
-	public static final int ALL = 0;
+	public static final int ALL = 0; // ?[]
 
-	/**
-	 * The first item ({@code ^[]}).
-	 */
-	public static final int FIRST = 1;
+	public static final int FIRST = 1; // ^[]
 
-	/**
-	 * The last item ({@code $[]}).
-	 */
-	public static final int LAST = 2;
+	public static final int LAST = 2; // $[]
 
 	private final int variant;
 
 	private final boolean nullSafe;
 
 
-	public Selection(boolean nullSafe, int variant, int startPos, int endPos, SpelNodeImpl expression) {
-		super(startPos, endPos, expression);
+	public Selection(boolean nullSafe, int variant, int pos, SpelNodeImpl expression) {
+		super(pos, expression);
+		Assert.notNull(expression, "Expression must not be null");
 		this.nullSafe = nullSafe;
 		this.variant = variant;
 	}
@@ -90,7 +80,7 @@ public class Selection extends SpelNodeImpl {
 		if (operand instanceof Map) {
 			Map<?, ?> mapdata = (Map<?, ?>) operand;
 			// TODO don't lose generic info for the new map
-			Map<Object, Object> result = new HashMap<>();
+			Map<Object, Object> result = new HashMap<Object, Object>();
 			Object lastKey = null;
 
 			for (Map.Entry<?, ?> entry : mapdata.entrySet()) {
@@ -125,7 +115,7 @@ public class Selection extends SpelNodeImpl {
 			}
 
 			if (this.variant == LAST) {
-				Map<Object, Object> resultMap = new HashMap<>();
+				Map<Object, Object> resultMap = new HashMap<Object, Object>();
 				Object lastValue = result.get(lastKey);
 				resultMap.put(lastKey,lastValue);
 				return new ValueRef.TypedValueHolderValueRef(new TypedValue(resultMap),this);
@@ -138,7 +128,7 @@ public class Selection extends SpelNodeImpl {
 			Iterable<?> data = (operand instanceof Iterable ?
 					(Iterable<?>) operand : Arrays.asList(ObjectUtils.toObjectArray(operand)));
 
-			List<Object> result = new ArrayList<>();
+			List<Object> result = new ArrayList<Object>();
 			int index = 0;
 			for (Object element : data) {
 				try {
@@ -170,51 +160,44 @@ public class Selection extends SpelNodeImpl {
 			}
 
 			if (this.variant == LAST) {
-				return new ValueRef.TypedValueHolderValueRef(new TypedValue(CollectionUtils.lastElement(result)), this);
+				return new ValueRef.TypedValueHolderValueRef(new TypedValue(result.get(result.size() - 1)), this);
 			}
 
 			if (operand instanceof Iterable) {
 				return new ValueRef.TypedValueHolderValueRef(new TypedValue(result), this);
 			}
 
-			Class<?> elementType = null;
-			TypeDescriptor typeDesc = op.getTypeDescriptor();
-			if (typeDesc != null) {
-				TypeDescriptor elementTypeDesc = typeDesc.getElementTypeDescriptor();
-				if (elementTypeDesc != null) {
-					elementType = ClassUtils.resolvePrimitiveIfNecessary(elementTypeDesc.getType());
-				}
-			}
-			Assert.state(elementType != null, "Unresolvable element type");
-
+			Class<?> elementType = ClassUtils.resolvePrimitiveIfNecessary(
+					op.getTypeDescriptor().getElementTypeDescriptor().getType());
 			Object resultArray = Array.newInstance(elementType, result.size());
 			System.arraycopy(result.toArray(), 0, resultArray, 0, result.size());
 			return new ValueRef.TypedValueHolderValueRef(new TypedValue(resultArray), this);
 		}
-
 		if (operand == null) {
 			if (this.nullSafe) {
 				return ValueRef.NullValueRef.INSTANCE;
 			}
 			throw new SpelEvaluationException(getStartPosition(), SpelMessage.INVALID_TYPE_FOR_SELECTION, "null");
 		}
-
 		throw new SpelEvaluationException(getStartPosition(), SpelMessage.INVALID_TYPE_FOR_SELECTION,
 				operand.getClass().getName());
 	}
 
 	@Override
 	public String toStringAST() {
-		return prefix() + getChild(0).toStringAST() + "]";
-	}
-
-	private String prefix() {
-		return switch (this.variant) {
-			case ALL -> "?[";
-			case FIRST -> "^[";
-			case LAST -> "$[";
-			default -> "";
-		};
+		StringBuilder sb = new StringBuilder();
+		switch (this.variant) {
+			case ALL:
+				sb.append("?[");
+				break;
+			case FIRST:
+				sb.append("^[");
+				break;
+			case LAST:
+				sb.append("$[");
+				break;
+		}
+		return sb.append(getChild(0).toStringAST()).append("]").toString();
 	}
 
 }

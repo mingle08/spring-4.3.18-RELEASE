@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,7 +23,6 @@ import java.util.Collections;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -32,26 +31,16 @@ import org.springframework.util.Assert;
  * invocation context.
  *
  * @author Stephane Nicoll
- * @author Juergen Hoeller
  * @since 4.1
  */
 public abstract class AbstractCacheResolver implements CacheResolver, InitializingBean {
 
-	@Nullable
 	private CacheManager cacheManager;
 
 
-	/**
-	 * Construct a new {@code AbstractCacheResolver}.
-	 * @see #setCacheManager
-	 */
 	protected AbstractCacheResolver() {
 	}
 
-	/**
-	 * Construct a new {@code AbstractCacheResolver} for the given {@link CacheManager}.
-	 * @param cacheManager the CacheManager to use
-	 */
 	protected AbstractCacheResolver(CacheManager cacheManager) {
 		this.cacheManager = cacheManager;
 	}
@@ -68,7 +57,6 @@ public abstract class AbstractCacheResolver implements CacheResolver, Initializi
 	 * Return the {@link CacheManager} that this instance uses.
 	 */
 	public CacheManager getCacheManager() {
-		Assert.state(this.cacheManager != null, "No CacheManager set");
 		return this.cacheManager;
 	}
 
@@ -84,16 +72,18 @@ public abstract class AbstractCacheResolver implements CacheResolver, Initializi
 		if (cacheNames == null) {
 			return Collections.emptyList();
 		}
-		Collection<Cache> result = new ArrayList<>(cacheNames.size());
-		for (String cacheName : cacheNames) {
-			Cache cache = getCacheManager().getCache(cacheName);
-			if (cache == null) {
-				throw new IllegalArgumentException("Cannot find cache named '" +
-						cacheName + "' for " + context.getOperation());
+		else {
+			Collection<Cache> result = new ArrayList<Cache>();
+			for (String cacheName : cacheNames) {
+				Cache cache = getCacheManager().getCache(cacheName);
+				if (cache == null) {
+					throw new IllegalArgumentException("Cannot find cache named '" +
+							cacheName + "' for " + context.getOperation());
+				}
+				result.add(cache);
 			}
-			result.add(cache);
+			return result;
 		}
-		return result;
 	}
 
 	/**
@@ -103,7 +93,6 @@ public abstract class AbstractCacheResolver implements CacheResolver, Initializi
 	 * @param context the context of the particular invocation
 	 * @return the cache name(s) to resolve, or {@code null} if no cache should be resolved
 	 */
-	@Nullable
 	protected abstract Collection<String> getCacheNames(CacheOperationInvocationContext<?> context);
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,6 @@ package org.springframework.beans.propertyeditors;
 import java.beans.PropertyEditorSupport;
 import java.text.NumberFormat;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.NumberUtils;
 import org.springframework.util.StringUtils;
 
@@ -47,7 +46,6 @@ public class CustomNumberEditor extends PropertyEditorSupport {
 
 	private final Class<? extends Number> numberClass;
 
-	@Nullable
 	private final NumberFormat numberFormat;
 
 	private final boolean allowEmpty;
@@ -60,7 +58,7 @@ public class CustomNumberEditor extends PropertyEditorSupport {
 	 * <p>The "allowEmpty" parameter states if an empty String should
 	 * be allowed for parsing, i.e. get interpreted as {@code null} value.
 	 * Else, an IllegalArgumentException gets thrown in that case.
-	 * @param numberClass the Number subclass to generate
+	 * @param numberClass Number subclass to generate
 	 * @param allowEmpty if empty strings should be allowed
 	 * @throws IllegalArgumentException if an invalid numberClass has been specified
 	 * @see org.springframework.util.NumberUtils#parseNumber(String, Class)
@@ -77,8 +75,8 @@ public class CustomNumberEditor extends PropertyEditorSupport {
 	 * <p>The allowEmpty parameter states if an empty String should
 	 * be allowed for parsing, i.e. get interpreted as {@code null} value.
 	 * Else, an IllegalArgumentException gets thrown in that case.
-	 * @param numberClass the Number subclass to generate
-	 * @param numberFormat the NumberFormat to use for parsing and rendering
+	 * @param numberClass Number subclass to generate
+	 * @param numberFormat NumberFormat to use for parsing and rendering
 	 * @param allowEmpty if empty strings should be allowed
 	 * @throws IllegalArgumentException if an invalid numberClass has been specified
 	 * @see org.springframework.util.NumberUtils#parseNumber(String, Class, java.text.NumberFormat)
@@ -86,9 +84,9 @@ public class CustomNumberEditor extends PropertyEditorSupport {
 	 * @see java.text.NumberFormat#format
 	 */
 	public CustomNumberEditor(Class<? extends Number> numberClass,
-			@Nullable NumberFormat numberFormat, boolean allowEmpty) throws IllegalArgumentException {
+			NumberFormat numberFormat, boolean allowEmpty) throws IllegalArgumentException {
 
-		if (!Number.class.isAssignableFrom(numberClass)) {
+		if (numberClass == null || !Number.class.isAssignableFrom(numberClass)) {
 			throw new IllegalArgumentException("Property class must be a subclass of Number");
 		}
 		this.numberClass = numberClass;
@@ -120,7 +118,7 @@ public class CustomNumberEditor extends PropertyEditorSupport {
 	 * Coerce a Number value into the required target class, if necessary.
 	 */
 	@Override
-	public void setValue(@Nullable Object value) {
+	public void setValue(Object value) {
 		if (value instanceof Number) {
 			super.setValue(NumberUtils.convertNumberToTargetClass((Number) value, this.numberClass));
 		}

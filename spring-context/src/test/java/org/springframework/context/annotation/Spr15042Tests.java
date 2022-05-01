@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,7 @@
 
 package org.springframework.context.annotation;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.aop.target.CommonsPool2TargetSource;
@@ -24,12 +24,11 @@ import org.springframework.aop.target.CommonsPool2TargetSource;
 /**
  * @author Juergen Hoeller
  */
-class Spr15042Tests {
+public class Spr15042Tests {
 
 	@Test
-	void poolingTargetSource() {
-		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(PoolingTargetSourceConfig.class);
-		context.close();
+	public void poolingTargetSource() {
+		new AnnotationConfigApplicationContext(PoolingTargetSourceConfig.class);
 	}
 
 
@@ -37,7 +36,7 @@ class Spr15042Tests {
 	static class PoolingTargetSourceConfig {
 
 		@Bean
-		@Scope(scopeName = "request", proxyMode = ScopedProxyMode.TARGET_CLASS)
+		@Scope(value = "request", proxyMode = ScopedProxyMode.TARGET_CLASS)
 		public ProxyFactoryBean myObject() {
 			ProxyFactoryBean pfb = new ProxyFactoryBean();
 			pfb.setTargetSource(poolTargetSource());

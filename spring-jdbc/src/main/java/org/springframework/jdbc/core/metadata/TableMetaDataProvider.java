@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.List;
 
-import org.springframework.lang.Nullable;
+import org.springframework.jdbc.support.nativejdbc.NativeJdbcExtractor;
 
 /**
  * Interface specifying the API to be implemented by a class providing table meta-data.
@@ -47,80 +47,79 @@ public interface TableMetaDataProvider {
 	 * @param tableName name of the table
 	 * @throws SQLException in case of initialization failure
 	 */
-	void initializeWithTableColumnMetaData(DatabaseMetaData databaseMetaData, @Nullable String catalogName,
-			@Nullable String schemaName, @Nullable String tableName) throws SQLException;
+	void initializeWithTableColumnMetaData(DatabaseMetaData databaseMetaData, String catalogName,
+			String schemaName, String tableName) throws SQLException;
 
 	/**
 	 * Get the table name formatted based on meta-data information.
 	 * This could include altering the case.
 	 */
-	@Nullable
-	String tableNameToUse(@Nullable String tableName);
+	String tableNameToUse(String tableName);
 
 	/**
 	 * Get the catalog name formatted based on meta-data information.
 	 * This could include altering the case.
 	 */
-	@Nullable
-	String catalogNameToUse(@Nullable String catalogName);
+	String catalogNameToUse(String catalogName);
 
 	/**
 	 * Get the schema name formatted based on meta-data information.
 	 * This could include altering the case.
 	 */
-	@Nullable
-	String schemaNameToUse(@Nullable String schemaName);
+	String schemaNameToUse(String schemaName);
 
 	/**
 	 * Provide any modification of the catalog name passed in to match the meta-data currently used.
 	 * The returned value will be used for meta-data lookups.
 	 * This could include altering the case used or providing a base catalog if none is provided.
 	 */
-	@Nullable
-	String metaDataCatalogNameToUse(@Nullable String catalogName) ;
+	String metaDataCatalogNameToUse(String catalogName) ;
 
 	/**
 	 * Provide any modification of the schema name passed in to match the meta-data currently used.
 	 * The returned value will be used for meta-data lookups.
 	 * This could include altering the case used or providing a base schema if none is provided.
 	 */
-	@Nullable
-	String metaDataSchemaNameToUse(@Nullable String schemaName) ;
+	String metaDataSchemaNameToUse(String schemaName) ;
 
 	/**
 	 * Are we using the meta-data for the table columns?
 	 */
-	boolean isTableColumnMetaDataUsed();
+ 	boolean isTableColumnMetaDataUsed();
 
 	/**
 	 * Does this database support the JDBC 3.0 feature of retrieving generated keys:
 	 * {@link java.sql.DatabaseMetaData#supportsGetGeneratedKeys()}?
 	 */
-	boolean isGetGeneratedKeysSupported();
+ 	boolean isGetGeneratedKeysSupported();
 
 	/**
 	 * Does this database support a simple query to retrieve the generated key when
 	 * the JDBC 3.0 feature of retrieving generated keys is not supported?
 	 * @see #isGetGeneratedKeysSupported()
 	 */
-	boolean isGetGeneratedKeysSimulated();
+ 	boolean isGetGeneratedKeysSimulated();
 
 	/**
 	 * Get the simple query to retrieve a generated key.
 	 */
-	@Nullable
 	String getSimpleQueryForGetGeneratedKey(String tableName, String keyColumnName);
 
 	/**
 	 * Does this database support a column name String array for retrieving generated keys:
 	 * {@link java.sql.Connection#createStruct(String, Object[])}?
 	 */
-	boolean isGeneratedKeysColumnNameArraySupported();
+ 	boolean isGeneratedKeysColumnNameArraySupported();
 
 	/**
 	 * Get the table parameter meta-data that is currently used.
-	 * @return a List of {@link TableParameterMetaData}
+	 * @return List of {@link TableParameterMetaData}
 	 */
 	List<TableParameterMetaData> getTableParameterMetaData();
+
+	/**
+	 * Set the {@link NativeJdbcExtractor} to use to retrieve the native connection if necessary
+	 */
+	void setNativeJdbcExtractor(NativeJdbcExtractor nativeJdbcExtractor);
 
 }

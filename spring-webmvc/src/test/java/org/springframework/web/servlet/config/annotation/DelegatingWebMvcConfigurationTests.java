@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,17 +16,18 @@
 
 package org.springframework.web.servlet.config.annotation;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.BiConsumer;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 
+import org.springframework.core.convert.ConversionService;
 import org.springframework.format.support.FormattingConversionService;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
@@ -34,34 +35,28 @@ import org.springframework.util.PathMatcher;
 import org.springframework.validation.DefaultMessageCodesResolver;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.web.bind.support.ConfigurableWebBindingInitializer;
-import org.springframework.web.context.support.GenericWebApplicationContext;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.HandlerMethodReturnValueHandler;
 import org.springframework.web.servlet.HandlerExceptionResolver;
-import org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping;
 import org.springframework.web.servlet.handler.HandlerExceptionResolverComposite;
-import org.springframework.web.servlet.handler.SimpleUrlHandlerMapping;
 import org.springframework.web.servlet.mvc.annotation.ResponseStatusExceptionResolver;
 import org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver;
-import org.springframework.web.testfixture.servlet.MockServletContext;
 import org.springframework.web.util.UrlPathHelper;
-import org.springframework.web.util.pattern.PathPatternParser;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * A test fixture for {@link DelegatingWebMvcConfiguration} tests.
  *
  * @author Rossen Stoyanchev
  */
-@ExtendWith(MockitoExtension.class)
 public class DelegatingWebMvcConfigurationTests {
+
+	private DelegatingWebMvcConfiguration delegatingConfig;
 
 	@Mock
 	private WebMvcConfigurer webMvcConfigurer;
@@ -87,19 +82,22 @@ public class DelegatingWebMvcConfigurationTests {
 	@Captor
 	private ArgumentCaptor<List<HandlerExceptionResolver>> exceptionResolvers;
 
-	private final DelegatingWebMvcConfiguration webMvcConfig = new DelegatingWebMvcConfiguration();
+
+	@Before
+	public void setUp() {
+		MockitoAnnotations.initMocks(this);
+		delegatingConfig = new DelegatingWebMvcConfiguration();
+	}
 
 
 	@Test
-	public void requestMappingHandlerAdapter() {
-		webMvcConfig.setConfigurers(Collections.singletonList(webMvcConfigurer));
-		RequestMappingHandlerAdapter adapter = this.webMvcConfig.requestMappingHandlerAdapter(
-				this.webMvcConfig.mvcContentNegotiationManager(),
-				this.webMvcConfig.mvcConversionService(),
-				this.webMvcConfig.mvcValidator());
+	public void requestMappingHandlerAdapter() throws Exception {
+		delegatingConfig.setConfigurers(Collections.singletonList(webMvcConfigurer));
+		RequestMappingHandlerAdapter adapter = delegatingConfig.requestMappingHandlerAdapter();
 
-		ConfigurableWebBindingInitializer initializer =
-				(ConfigurableWebBindingInitializer) adapter.getWebBindingInitializer();
+		ConfigurableWebBindingInitializer initializer = (ConfigurableWebBindingInitializer) adapter.getWebBindingInitializer();
+		ConversionService initializerConversionService = initializer.getConversionService();
+		assertTrue(initializer.getValidator() instanceof LocalValidatorFactoryBean);
 
 		verify(webMvcConfigurer).configureMessageConverters(converters.capture());
 		verify(webMvcConfigurer).configureContentNegotiation(contentNegotiationConfigurer.capture());
@@ -108,49 +106,43 @@ public class DelegatingWebMvcConfigurationTests {
 		verify(webMvcConfigurer).addReturnValueHandlers(handlers.capture());
 		verify(webMvcConfigurer).configureAsyncSupport(asyncConfigurer.capture());
 
-		assertThat(initializer).isNotNull();
-		assertThat(initializer.getConversionService()).isSameAs(conversionService.getValue());
-		boolean condition = initializer.getValidator() instanceof LocalValidatorFactoryBean;
-		assertThat(condition).isTrue();
-		assertThat(resolvers.getValue().size()).isEqualTo(0);
-		assertThat(handlers.getValue().size()).isEqualTo(0);
-		assertThat(adapter.getMessageConverters()).isEqualTo(converters.getValue());
-		assertThat(asyncConfigurer).isNotNull();
+		assertSame(conversionService.getValue(), initializerConversionService);
+		assertEquals(0, resolvers.getValue().size());
+		assertEquals(0, handlers.getValue().size());
+		assertEquals(converters.getValue(), adapter.getMessageConverters());
+		assertNotNull(asyncConfigurer);
 	}
 
 	@Test
 	public void configureMessageConverters() {
-		HttpMessageConverter<?> customConverter = mock(HttpMessageConverter.class);
-		StringHttpMessageConverter stringConverter = new StringHttpMessageConverter();
-		WebMvcConfigurer configurer = new WebMvcConfigurer() {
+		final HttpMessageConverter customConverter = mock(HttpMessageConverter.class);
+		final StringHttpMessageConverter stringConverter = new StringHttpMessageConverter();
+		List<WebMvcConfigurer> configurers = new ArrayList<WebMvcConfigurer>();
+		configurers.add(new WebMvcConfigurerAdapter() {
 			@Override
 			public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
 				converters.add(stringConverter);
 			}
-
 			@Override
 			public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
 				converters.add(0, customConverter);
 			}
-		};
-		webMvcConfig.setConfigurers(Collections.singletonList(configurer));
+		});
+		delegatingConfig = new DelegatingWebMvcConfiguration();
+		delegatingConfig.setConfigurers(configurers);
 
-		RequestMappingHandlerAdapter adapter = webMvcConfig.requestMappingHandlerAdapter(
-				this.webMvcConfig.mvcContentNegotiationManager(),
-				this.webMvcConfig.mvcConversionService(),
-				this.webMvcConfig.mvcValidator());
-
-		assertThat(adapter.getMessageConverters().size()).as("One custom converter expected").isEqualTo(2);
-		assertThat(adapter.getMessageConverters().get(0)).isSameAs(customConverter);
-		assertThat(adapter.getMessageConverters().get(1)).isSameAs(stringConverter);
+		RequestMappingHandlerAdapter adapter = delegatingConfig.requestMappingHandlerAdapter();
+		assertEquals("Only one custom converter should be registered", 2, adapter.getMessageConverters().size());
+		assertSame(customConverter, adapter.getMessageConverters().get(0));
+		assertSame(stringConverter, adapter.getMessageConverters().get(1));
 	}
 
 	@Test
 	public void getCustomValidator() {
 		given(webMvcConfigurer.getValidator()).willReturn(new LocalValidatorFactoryBean());
 
-		webMvcConfig.setConfigurers(Collections.singletonList(webMvcConfigurer));
-		webMvcConfig.mvcValidator();
+		delegatingConfig.setConfigurers(Collections.singletonList(webMvcConfigurer));
+		delegatingConfig.mvcValidator();
 
 		verify(webMvcConfigurer).getValidator();
 	}
@@ -159,191 +151,73 @@ public class DelegatingWebMvcConfigurationTests {
 	public void getCustomMessageCodesResolver() {
 		given(webMvcConfigurer.getMessageCodesResolver()).willReturn(new DefaultMessageCodesResolver());
 
-		webMvcConfig.setConfigurers(Collections.singletonList(webMvcConfigurer));
-		webMvcConfig.getMessageCodesResolver();
+		delegatingConfig.setConfigurers(Collections.singletonList(webMvcConfigurer));
+		delegatingConfig.getMessageCodesResolver();
 
 		verify(webMvcConfigurer).getMessageCodesResolver();
 	}
 
 	@Test
-	public void handlerExceptionResolver() {
-		webMvcConfig.setConfigurers(Collections.singletonList(webMvcConfigurer));
-		webMvcConfig.handlerExceptionResolver(webMvcConfig.mvcContentNegotiationManager());
+	public void handlerExceptionResolver() throws Exception {
+		delegatingConfig.setConfigurers(Collections.singletonList(webMvcConfigurer));
+		delegatingConfig.handlerExceptionResolver();
 
 		verify(webMvcConfigurer).configureMessageConverters(converters.capture());
 		verify(webMvcConfigurer).configureContentNegotiation(contentNegotiationConfigurer.capture());
 		verify(webMvcConfigurer).configureHandlerExceptionResolvers(exceptionResolvers.capture());
 
-		assertThat(exceptionResolvers.getValue().size()).isEqualTo(3);
-		boolean condition2 = exceptionResolvers.getValue().get(0) instanceof ExceptionHandlerExceptionResolver;
-		assertThat(condition2).isTrue();
-		boolean condition1 = exceptionResolvers.getValue().get(1) instanceof ResponseStatusExceptionResolver;
-		assertThat(condition1).isTrue();
-		boolean condition = exceptionResolvers.getValue().get(2) instanceof DefaultHandlerExceptionResolver;
-		assertThat(condition).isTrue();
-		assertThat(converters.getValue().size() > 0).isTrue();
+		assertEquals(3, exceptionResolvers.getValue().size());
+		assertTrue(exceptionResolvers.getValue().get(0) instanceof ExceptionHandlerExceptionResolver);
+		assertTrue(exceptionResolvers.getValue().get(1) instanceof ResponseStatusExceptionResolver);
+		assertTrue(exceptionResolvers.getValue().get(2) instanceof DefaultHandlerExceptionResolver);
+		assertTrue(converters.getValue().size() > 0);
 	}
 
 	@Test
-	public void configureExceptionResolvers() {
-		WebMvcConfigurer configurer = new WebMvcConfigurer() {
+	public void configureExceptionResolvers() throws Exception {
+		List<WebMvcConfigurer> configurers = new ArrayList<WebMvcConfigurer>();
+		configurers.add(new WebMvcConfigurerAdapter() {
 			@Override
-			public void configureHandlerExceptionResolvers(List<HandlerExceptionResolver> resolvers) {
-				resolvers.add(new DefaultHandlerExceptionResolver());
+			public void configureHandlerExceptionResolvers(List<HandlerExceptionResolver> exceptionResolvers) {
+				exceptionResolvers.add(new DefaultHandlerExceptionResolver());
 			}
-		};
-		webMvcConfig.setConfigurers(Collections.singletonList(configurer));
+		});
+		delegatingConfig.setConfigurers(configurers);
 
 		HandlerExceptionResolverComposite composite =
-				(HandlerExceptionResolverComposite) webMvcConfig
-						.handlerExceptionResolver(webMvcConfig.mvcContentNegotiationManager());
-
-		assertThat(composite.getExceptionResolvers().size())
-				.as("Only one custom converter is expected")
-				.isEqualTo(1);
+				(HandlerExceptionResolverComposite) delegatingConfig.handlerExceptionResolver();
+		assertEquals("Only one custom converter is expected", 1, composite.getExceptionResolvers().size());
 	}
 
 	@Test
-	@SuppressWarnings("deprecation")
-	public void configurePathMatcher() {
-		PathMatcher pathMatcher = mock(PathMatcher.class);
-		UrlPathHelper pathHelper = mock(UrlPathHelper.class);
+	public void configurePathMatch() throws Exception {
+		final PathMatcher pathMatcher = mock(PathMatcher.class);
+		final UrlPathHelper pathHelper = mock(UrlPathHelper.class);
 
-		WebMvcConfigurer configurer = new WebMvcConfigurer() {
+		List<WebMvcConfigurer> configurers = new ArrayList<WebMvcConfigurer>();
+		configurers.add(new WebMvcConfigurerAdapter() {
 			@Override
-			@SuppressWarnings("deprecation")
 			public void configurePathMatch(PathMatchConfigurer configurer) {
 				configurer.setUseRegisteredSuffixPatternMatch(true)
 						.setUseTrailingSlashMatch(false)
 						.setUrlPathHelper(pathHelper)
 						.setPathMatcher(pathMatcher);
 			}
-			@Override
-			public void addViewControllers(ViewControllerRegistry registry) {
-				registry.addViewController("/").setViewName("home");
-			}
-			@Override
-			public void addResourceHandlers(ResourceHandlerRegistry registry) {
-				registry.addResourceHandler("/resources/**").addResourceLocations("/");
-			}
-		};
+		});
+		delegatingConfig.setConfigurers(configurers);
 
-		MockServletContext servletContext = new MockServletContext();
-		webMvcConfig.setConfigurers(Collections.singletonList(configurer));
-		webMvcConfig.setServletContext(servletContext);
-		webMvcConfig.setApplicationContext(new GenericWebApplicationContext(servletContext));
-
-
-		BiConsumer<UrlPathHelper, PathMatcher> configAssertion = (helper, matcher) -> {
-			assertThat(helper).isSameAs(pathHelper);
-			assertThat(matcher).isSameAs(pathMatcher);
-		};
-
-		RequestMappingHandlerMapping annotationsMapping = webMvcConfig.requestMappingHandlerMapping(
-				webMvcConfig.mvcContentNegotiationManager(),
-				webMvcConfig.mvcConversionService(),
-				webMvcConfig.mvcResourceUrlProvider());
-
-		assertThat(annotationsMapping).isNotNull();
-		assertThat(annotationsMapping.useRegisteredSuffixPatternMatch()).isTrue();
-		assertThat(annotationsMapping.useSuffixPatternMatch()).isTrue();
-		assertThat(annotationsMapping.useTrailingSlashMatch()).isFalse();
-		configAssertion.accept(annotationsMapping.getUrlPathHelper(), annotationsMapping.getPathMatcher());
-
-		SimpleUrlHandlerMapping mapping = (SimpleUrlHandlerMapping) webMvcConfig.viewControllerHandlerMapping(
-				webMvcConfig.mvcConversionService(),
-				webMvcConfig.mvcResourceUrlProvider());
-
-		assertThat(mapping).isNotNull();
-		configAssertion.accept(mapping.getUrlPathHelper(), mapping.getPathMatcher());
-
-		mapping = (SimpleUrlHandlerMapping) webMvcConfig.resourceHandlerMapping(
-				webMvcConfig.mvcContentNegotiationManager(),
-				webMvcConfig.mvcConversionService(),
-				webMvcConfig.mvcResourceUrlProvider());
-
-		assertThat(mapping).isNotNull();
-		configAssertion.accept(mapping.getUrlPathHelper(), mapping.getPathMatcher());
-
-		configAssertion.accept(
-				webMvcConfig.mvcResourceUrlProvider().getUrlPathHelper(),
-				webMvcConfig.mvcResourceUrlProvider().getPathMatcher());
-
-		configAssertion.accept(webMvcConfig.mvcUrlPathHelper(), webMvcConfig.mvcPathMatcher());
-	}
-
-	@Test
-	public void configurePathPatternParser() {
-		PathPatternParser patternParser = new PathPatternParser();
-		PathMatcher pathMatcher = mock(PathMatcher.class);
-		UrlPathHelper pathHelper = mock(UrlPathHelper.class);
-
-		WebMvcConfigurer configurer = new WebMvcConfigurer() {
-			@Override
-			public void configurePathMatch(PathMatchConfigurer configurer) {
-				configurer.setPatternParser(patternParser)
-						.setUrlPathHelper(pathHelper)
-						.setPathMatcher(pathMatcher);
-			}
-			@Override
-			public void addViewControllers(ViewControllerRegistry registry) {
-				registry.addViewController("/").setViewName("home");
-			}
-			@Override
-			public void addResourceHandlers(ResourceHandlerRegistry registry) {
-				registry.addResourceHandler("/resources/**").addResourceLocations("/");
-			}
-		};
-
-		MockServletContext servletContext = new MockServletContext();
-		webMvcConfig.setConfigurers(Collections.singletonList(configurer));
-		webMvcConfig.setServletContext(servletContext);
-		webMvcConfig.setApplicationContext(new GenericWebApplicationContext(servletContext));
-
-
-		BiConsumer<UrlPathHelper, PathMatcher> configAssertion = (helper, matcher) -> {
-			assertThat(helper).isNotSameAs(pathHelper);
-			assertThat(matcher).isNotSameAs(pathMatcher);
-		};
-
-		RequestMappingHandlerMapping annotationsMapping = webMvcConfig.requestMappingHandlerMapping(
-				webMvcConfig.mvcContentNegotiationManager(),
-				webMvcConfig.mvcConversionService(),
-				webMvcConfig.mvcResourceUrlProvider());
-
-		assertThat(annotationsMapping).isNotNull();
-		assertThat(annotationsMapping.getPatternParser())
-				.isSameAs(patternParser)
-				.isSameAs(webMvcConfig.mvcPatternParser());
-		configAssertion.accept(annotationsMapping.getUrlPathHelper(), annotationsMapping.getPathMatcher());
-
-		SimpleUrlHandlerMapping mapping = (SimpleUrlHandlerMapping) webMvcConfig.viewControllerHandlerMapping(
-				webMvcConfig.mvcConversionService(),
-				webMvcConfig.mvcResourceUrlProvider());
-
-		assertThat(mapping).isNotNull();
-		assertThat(mapping.getPatternParser()).isSameAs(patternParser);
-		configAssertion.accept(mapping.getUrlPathHelper(), mapping.getPathMatcher());
-
-		mapping = (SimpleUrlHandlerMapping) webMvcConfig.resourceHandlerMapping(
-				webMvcConfig.mvcContentNegotiationManager(),
-				webMvcConfig.mvcConversionService(),
-				webMvcConfig.mvcResourceUrlProvider());
-
-		assertThat(mapping).isNotNull();
-		assertThat(mapping.getPatternParser()).isSameAs(patternParser);
-		configAssertion.accept(mapping.getUrlPathHelper(), mapping.getPathMatcher());
-
-		BeanNameUrlHandlerMapping beanNameMapping = webMvcConfig.beanNameHandlerMapping(
-				webMvcConfig.mvcConversionService(),
-				webMvcConfig.mvcResourceUrlProvider());
-
-		assertThat(beanNameMapping).isNotNull();
-		assertThat(beanNameMapping.getPatternParser()).isSameAs(patternParser);
-		configAssertion.accept(beanNameMapping.getUrlPathHelper(), beanNameMapping.getPathMatcher());
-
-		assertThat(webMvcConfig.mvcResourceUrlProvider().getUrlPathHelper()).isSameAs(pathHelper);
-		assertThat(webMvcConfig.mvcResourceUrlProvider().getPathMatcher()).isSameAs(pathMatcher);
+		RequestMappingHandlerMapping handlerMapping = delegatingConfig.requestMappingHandlerMapping();
+		assertNotNull(handlerMapping);
+		assertEquals("PathMatchConfigurer should configure RegisteredSuffixPatternMatch",
+				true, handlerMapping.useRegisteredSuffixPatternMatch());
+		assertEquals("PathMatchConfigurer should configure SuffixPatternMatch",
+				true, handlerMapping.useSuffixPatternMatch());
+		assertEquals("PathMatchConfigurer should configure TrailingSlashMatch",
+				false, handlerMapping.useTrailingSlashMatch());
+		assertEquals("PathMatchConfigurer should configure UrlPathHelper",
+				pathHelper, handlerMapping.getUrlPathHelper());
+		assertEquals("PathMatchConfigurer should configure PathMatcher",
+				pathMatcher, handlerMapping.getPathMatcher());
 	}
 
 }

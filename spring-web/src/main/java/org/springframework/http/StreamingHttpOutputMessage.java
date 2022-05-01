@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Represents an HTTP output message that allows for setting a streaming body.
+ * Represents a HTTP output message that allows for setting a streaming body.
  * Note that such messages typically do not support {@link #getBody()} access.
  *
  * @author Arjen Poutsma
@@ -41,7 +41,6 @@ public interface StreamingHttpOutputMessage extends HttpOutputMessage {
 	 * {@link OutputStream}. Useful with HTTP client libraries that provide
 	 * indirect access to an {@link OutputStream} via a callback mechanism.
 	 */
-	@FunctionalInterface
 	interface Body {
 
 		/**

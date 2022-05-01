@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,16 +16,16 @@
 
 package org.springframework.test.web.servlet;
 
-import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.List;
-
-import jakarta.servlet.Filter;
-import jakarta.servlet.ServletException;
+import javax.servlet.Filter;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 
 import org.springframework.core.NestedRuntimeException;
-import org.springframework.lang.Nullable;
 import org.springframework.mock.web.MockServletConfig;
 import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.servlet.DispatcherServlet;
 
 /**
  * Base class for MockMvc builder implementations, providing the capability to
@@ -38,32 +38,26 @@ import org.springframework.web.context.WebApplicationContext;
  * @author Rossen Stoyanchev
  * @author Rob Winch
  * @author Stephane Nicoll
- * @author Sam Brannen
  * @since 3.2
  */
 public abstract class MockMvcBuilderSupport {
 
-	/**
-	 * Delegates to {@link #createMockMvc(Filter[], MockServletConfig, WebApplicationContext, RequestBuilder, List, List, List)}
-	 * for creation of the {@link MockMvc} instance and configures that instance
-	 * with the supplied {@code defaultResponseCharacterEncoding}.
-	 * @since 5.3.10
-	 */
+	@Deprecated
 	protected final MockMvc createMockMvc(Filter[] filters, MockServletConfig servletConfig,
-			WebApplicationContext webAppContext, @Nullable RequestBuilder defaultRequestBuilder,
-			@Nullable Charset defaultResponseCharacterEncoding,
+			WebApplicationContext webAppContext, RequestBuilder defaultRequestBuilder,
 			List<ResultMatcher> globalResultMatchers, List<ResultHandler> globalResultHandlers,
-			@Nullable List<DispatcherServletCustomizer> dispatcherServletCustomizers) {
-
-		MockMvc mockMvc = createMockMvc(filters, servletConfig, webAppContext, defaultRequestBuilder, globalResultMatchers, globalResultHandlers, dispatcherServletCustomizers);
-		mockMvc.setDefaultResponseCharacterEncoding(defaultResponseCharacterEncoding);
-		return mockMvc;
+			Boolean dispatchOptions) {
+		return createMockMvc(filters, servletConfig, webAppContext, defaultRequestBuilder,
+				globalResultMatchers, globalResultHandlers,
+				Collections.<DispatcherServletCustomizer>singletonList(new DispatchOptionsDispatcherServletCustomizer(dispatchOptions)));
 	}
 
 	protected final MockMvc createMockMvc(Filter[] filters, MockServletConfig servletConfig,
-			WebApplicationContext webAppContext, @Nullable RequestBuilder defaultRequestBuilder,
+			WebApplicationContext webAppContext, RequestBuilder defaultRequestBuilder,
 			List<ResultMatcher> globalResultMatchers, List<ResultHandler> globalResultHandlers,
-			@Nullable List<DispatcherServletCustomizer> dispatcherServletCustomizers) {
+			List<DispatcherServletCustomizer> dispatcherServletCustomizers) {
+
+		ServletContext servletContext = webAppContext.getServletContext();
 
 		TestDispatcherServlet dispatcherServlet = new TestDispatcherServlet(webAppContext);
 		if (dispatcherServletCustomizers != null) {
@@ -79,7 +73,7 @@ public abstract class MockMvcBuilderSupport {
 			throw new MockMvcBuildException("Failed to initialize TestDispatcherServlet", ex);
 		}
 
-		MockMvc mockMvc = new MockMvc(dispatcherServlet, filters);
+		MockMvc mockMvc = new MockMvc(dispatcherServlet, filters, servletContext);
 		mockMvc.setDefaultRequest(defaultRequestBuilder);
 		mockMvc.setGlobalResultMatchers(globalResultMatchers);
 		mockMvc.setGlobalResultHandlers(globalResultHandlers);
@@ -87,12 +81,25 @@ public abstract class MockMvcBuilderSupport {
 		return mockMvc;
 	}
 
-
 	@SuppressWarnings("serial")
 	private static class MockMvcBuildException extends NestedRuntimeException {
 
 		public MockMvcBuildException(String msg, Throwable cause) {
 			super(msg, cause);
+		}
+	}
+
+	private static class DispatchOptionsDispatcherServletCustomizer
+			implements DispatcherServletCustomizer {
+		private final Boolean dispatchOptions;
+
+		private DispatchOptionsDispatcherServletCustomizer(Boolean dispatchOptions) {
+			this.dispatchOptions = dispatchOptions;
+		}
+
+		@Override
+		public void customize(DispatcherServlet dispatcherServlet) {
+			dispatcherServlet.setDispatchOptionsRequest(this.dispatchOptions);
 		}
 	}
 

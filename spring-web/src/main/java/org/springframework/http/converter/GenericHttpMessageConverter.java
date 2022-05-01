@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,6 @@ import java.lang.reflect.Type;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.MediaType;
-import org.springframework.lang.Nullable;
 
 /**
  * A specialization of {@link HttpMessageConverter} that can convert an HTTP request
@@ -33,7 +32,6 @@ import org.springframework.lang.Nullable;
  * @author Rossen Stoyanchev
  * @author Sebastien Deleuze
  * @since 3.2
- * @param <T> the converted object type
  * @see org.springframework.core.ParameterizedTypeReference
  */
 public interface GenericHttpMessageConverter<T> extends HttpMessageConverter<T> {
@@ -50,7 +48,7 @@ public interface GenericHttpMessageConverter<T> extends HttpMessageConverter<T> 
 	 * Typically the value of a {@code Content-Type} header.
 	 * @return {@code true} if readable; {@code false} otherwise
 	 */
-	boolean canRead(Type type, @Nullable Class<?> contextClass, @Nullable MediaType mediaType);
+	boolean canRead(Type type, Class<?> contextClass, MediaType mediaType);
 
 	/**
 	 * Read an object of the given type form the given input message, and returns it.
@@ -64,7 +62,7 @@ public interface GenericHttpMessageConverter<T> extends HttpMessageConverter<T> 
 	 * @throws IOException in case of I/O errors
 	 * @throws HttpMessageNotReadableException in case of conversion errors
 	 */
-	T read(Type type, @Nullable Class<?> contextClass, HttpInputMessage inputMessage)
+	T read(Type type, Class<?> contextClass, HttpInputMessage inputMessage)
 			throws IOException, HttpMessageNotReadableException;
 
 	/**
@@ -80,7 +78,7 @@ public interface GenericHttpMessageConverter<T> extends HttpMessageConverter<T> 
 	 * @return {@code true} if writable; {@code false} otherwise
 	 * @since 4.2
 	 */
-	boolean canWrite(@Nullable Type type, Class<?> clazz, @Nullable MediaType mediaType);
+	boolean canWrite(Type type, Class<?> clazz, MediaType mediaType);
 
 	/**
 	 * Write an given object to the given output message.
@@ -100,7 +98,7 @@ public interface GenericHttpMessageConverter<T> extends HttpMessageConverter<T> 
 	 * @throws HttpMessageNotWritableException in case of conversion errors
 	 * @since 4.2
 	 */
-	void write(T t, @Nullable Type type, @Nullable MediaType contentType, HttpOutputMessage outputMessage)
+	void write(T t, Type type, MediaType contentType, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException;
 
 }

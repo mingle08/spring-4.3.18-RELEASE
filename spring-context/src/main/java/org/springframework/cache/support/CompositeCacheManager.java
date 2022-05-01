@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,7 +27,6 @@ import java.util.Set;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.lang.Nullable;
 
 /**
  * Composite {@link CacheManager} implementation that iterates over
@@ -53,7 +52,7 @@ import org.springframework.lang.Nullable;
  */
 public class CompositeCacheManager implements CacheManager, InitializingBean {
 
-	private final List<CacheManager> cacheManagers = new ArrayList<>();
+	private final List<CacheManager> cacheManagers = new ArrayList<CacheManager>();
 
 	private boolean fallbackToNoOpCache = false;
 
@@ -99,7 +98,6 @@ public class CompositeCacheManager implements CacheManager, InitializingBean {
 
 
 	@Override
-	@Nullable
 	public Cache getCache(String name) {
 		for (CacheManager cacheManager : this.cacheManagers) {
 			Cache cache = cacheManager.getCache(name);
@@ -112,7 +110,7 @@ public class CompositeCacheManager implements CacheManager, InitializingBean {
 
 	@Override
 	public Collection<String> getCacheNames() {
-		Set<String> names = new LinkedHashSet<>();
+		Set<String> names = new LinkedHashSet<String>();
 		for (CacheManager manager : this.cacheManagers) {
 			names.addAll(manager.getCacheNames());
 		}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,8 +19,6 @@ package org.springframework.util;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-
-import org.springframework.lang.Nullable;
 
 /**
  * Helper class that allows for specifying a method to invoke in a declarative
@@ -38,26 +36,17 @@ import org.springframework.lang.Nullable;
  */
 public class MethodInvoker {
 
-	private static final Object[] EMPTY_ARGUMENTS = new Object[0];
+	private Class<?> targetClass;
 
-
-	@Nullable
-	protected Class<?> targetClass;
-
-	@Nullable
 	private Object targetObject;
 
-	@Nullable
 	private String targetMethod;
 
-	@Nullable
 	private String staticMethod;
 
-	@Nullable
 	private Object[] arguments;
 
-	/** The method we will call. */
-	@Nullable
+	/** The method we will call */
 	private Method methodObject;
 
 
@@ -68,14 +57,13 @@ public class MethodInvoker {
 	 * @see #setTargetObject
 	 * @see #setTargetMethod
 	 */
-	public void setTargetClass(@Nullable Class<?> targetClass) {
+	public void setTargetClass(Class<?> targetClass) {
 		this.targetClass = targetClass;
 	}
 
 	/**
 	 * Return the target class on which to call the target method.
 	 */
-	@Nullable
 	public Class<?> getTargetClass() {
 		return this.targetClass;
 	}
@@ -87,7 +75,7 @@ public class MethodInvoker {
 	 * @see #setTargetClass
 	 * @see #setTargetMethod
 	 */
-	public void setTargetObject(@Nullable Object targetObject) {
+	public void setTargetObject(Object targetObject) {
 		this.targetObject = targetObject;
 		if (targetObject != null) {
 			this.targetClass = targetObject.getClass();
@@ -97,7 +85,6 @@ public class MethodInvoker {
 	/**
 	 * Return the target object on which to call the target method.
 	 */
-	@Nullable
 	public Object getTargetObject() {
 		return this.targetObject;
 	}
@@ -109,14 +96,13 @@ public class MethodInvoker {
 	 * @see #setTargetClass
 	 * @see #setTargetObject
 	 */
-	public void setTargetMethod(@Nullable String targetMethod) {
+	public void setTargetMethod(String targetMethod) {
 		this.targetMethod = targetMethod;
 	}
 
 	/**
 	 * Return the name of the method to be invoked.
 	 */
-	@Nullable
 	public String getTargetMethod() {
 		return this.targetMethod;
 	}
@@ -144,7 +130,7 @@ public class MethodInvoker {
 	 * Return the arguments for the method invocation.
 	 */
 	public Object[] getArguments() {
-		return (this.arguments != null ? this.arguments : EMPTY_ARGUMENTS);
+		return (this.arguments != null ? this.arguments : new Object[0]);
 	}
 
 
@@ -211,22 +197,19 @@ public class MethodInvoker {
 	 * @see #getTargetMethod()
 	 * @see #getArguments()
 	 */
-	@Nullable
 	protected Method findMatchingMethod() {
 		String targetMethod = getTargetMethod();
 		Object[] arguments = getArguments();
 		int argCount = arguments.length;
 
-		Class<?> targetClass = getTargetClass();
-		Assert.state(targetClass != null, "No target class set");
-		Method[] candidates = ReflectionUtils.getAllDeclaredMethods(targetClass);
+		Method[] candidates = ReflectionUtils.getAllDeclaredMethods(getTargetClass());
 		int minTypeDiffWeight = Integer.MAX_VALUE;
 		Method matchingMethod = null;
 
 		for (Method candidate : candidates) {
 			if (candidate.getName().equals(targetMethod)) {
-				if (candidate.getParameterCount() == argCount) {
-					Class<?>[] paramTypes = candidate.getParameterTypes();
+				Class<?>[] paramTypes = candidate.getParameterTypes();
+				if (paramTypes.length == argCount) {
 					int typeDiffWeight = getTypeDifferenceWeight(paramTypes, arguments);
 					if (typeDiffWeight < minTypeDiffWeight) {
 						minTypeDiffWeight = typeDiffWeight;
@@ -271,7 +254,6 @@ public class MethodInvoker {
 	 * @throws IllegalAccessException if the target method couldn't be accessed
 	 * @see #prepare
 	 */
-	@Nullable
 	public Object invoke() throws InvocationTargetException, IllegalAccessException {
 		// In the static case, target will simply be {@code null}.
 		Object targetObject = getTargetObject();
@@ -288,7 +270,7 @@ public class MethodInvoker {
 	 * Algorithm that judges the match between the declared parameter types of a candidate method
 	 * and a specific list of arguments that this method is supposed to be invoked with.
 	 * <p>Determines a weight that represents the class hierarchy difference between types and
-	 * arguments. A direct match, i.e. type Integer &rarr; arg of class Integer, does not increase
+	 * arguments. A direct match, i.e. type Integer -> arg of class Integer, does not increase
 	 * the result - all direct matches means weight 0. A match between type Object and arg of
 	 * class Integer would increase the weight by 2, due to the superclass 2 steps up in the
 	 * hierarchy (i.e. Object) being the last one that still matches the required type Object.

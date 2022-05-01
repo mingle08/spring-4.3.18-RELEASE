@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,19 +16,18 @@
 
 package org.springframework.web.context.request;
 
-import org.springframework.lang.Nullable;
-
 /**
  * Abstraction for accessing attribute objects associated with a request.
  * Supports access to request-scoped attributes as well as to session-scoped
  * attributes, with the optional notion of a "global session".
  *
  * <p>Can be implemented for any kind of request/session mechanism,
- * in particular for servlet requests.
+ * in particular for servlet requests and portlet requests.
  *
  * @author Juergen Hoeller
  * @since 2.0
  * @see ServletRequestAttributes
+ * @see org.springframework.web.portlet.context.PortletRequestAttributes
  */
 public interface RequestAttributes {
 
@@ -40,10 +39,18 @@ public interface RequestAttributes {
 	/**
 	 * Constant that indicates session scope.
 	 * <p>This preferably refers to a locally isolated session, if such
-	 * a distinction is available.
+	 * a distinction is available (for example, in a Portlet environment).
 	 * Else, it simply refers to the common session.
 	 */
 	int SCOPE_SESSION = 1;
+
+	/**
+	 * Constant that indicates global session scope.
+	 * <p>This explicitly refers to a globally shared session, if such
+	 * a distinction is available (for example, in a Portlet environment).
+	 * Else, it simply refers to the common session.
+	 */
+	int SCOPE_GLOBAL_SESSION = 2;
 
 
 	/**
@@ -65,7 +72,6 @@ public interface RequestAttributes {
 	 * @param scope the scope identifier
 	 * @return the current attribute value, or {@code null} if not found
 	 */
-	@Nullable
 	Object getAttribute(String name, int scope);
 
 	/**
@@ -120,12 +126,11 @@ public interface RequestAttributes {
 
 	/**
 	 * Resolve the contextual reference for the given key, if any.
-	 * <p>At a minimum: the HttpServletRequest reference for key "request", and
-	 * the HttpSession reference for key "session".
+	 * <p>At a minimum: the HttpServletRequest/PortletRequest reference for key
+	 * "request", and the HttpSession/PortletSession reference for key "session".
 	 * @param key the contextual key
 	 * @return the corresponding object, or {@code null} if none found
 	 */
-	@Nullable
 	Object resolveReference(String key);
 
 	/**

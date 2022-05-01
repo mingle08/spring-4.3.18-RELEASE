@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,6 @@
 
 package org.springframework.core.env;
 
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -26,7 +25,6 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.support.ConfigurableConversionService;
 import org.springframework.core.convert.support.DefaultConversionService;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.PropertyPlaceholderHelper;
@@ -43,13 +41,10 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	@Nullable
 	private volatile ConfigurableConversionService conversionService;
 
-	@Nullable
 	private PropertyPlaceholderHelper nonStrictHelper;
 
-	@Nullable
 	private PropertyPlaceholderHelper strictHelper;
 
 	private boolean ignoreUnresolvableNestedPlaceholders = false;
@@ -58,27 +53,23 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 
 	private String placeholderSuffix = SystemPropertyUtils.PLACEHOLDER_SUFFIX;
 
-	@Nullable
 	private String valueSeparator = SystemPropertyUtils.VALUE_SEPARATOR;
 
-	private final Set<String> requiredProperties = new LinkedHashSet<>();
+	private final Set<String> requiredProperties = new LinkedHashSet<String>();
 
 
 	@Override
 	public ConfigurableConversionService getConversionService() {
 		// Need to provide an independent DefaultConversionService, not the
 		// shared DefaultConversionService used by PropertySourcesPropertyResolver.
-		ConfigurableConversionService cs = this.conversionService;
-		if (cs == null) {
+		if (this.conversionService == null) {
 			synchronized (this) {
-				cs = this.conversionService;
-				if (cs == null) {
-					cs = new DefaultConversionService();
-					this.conversionService = cs;
+				if (this.conversionService == null) {
+					this.conversionService = new DefaultConversionService();
 				}
 			}
 		}
-		return cs;
+		return conversionService;
 	}
 
 	@Override
@@ -117,7 +108,7 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 	 * @see org.springframework.util.SystemPropertyUtils#VALUE_SEPARATOR
 	 */
 	@Override
-	public void setValueSeparator(@Nullable String valueSeparator) {
+	public void setValueSeparator(String valueSeparator) {
 		this.valueSeparator = valueSeparator;
 	}
 
@@ -137,7 +128,11 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 
 	@Override
 	public void setRequiredProperties(String... requiredProperties) {
-		Collections.addAll(this.requiredProperties, requiredProperties);
+		if (requiredProperties != null) {
+			for (String key : requiredProperties) {
+				this.requiredProperties.add(key);
+			}
+		}
 	}
 
 	@Override
@@ -159,7 +154,6 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 	}
 
 	@Override
-	@Nullable
 	public String getProperty(String key) {
 		return getProperty(key, String.class);
 	}
@@ -174,6 +168,12 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 	public <T> T getProperty(String key, Class<T> targetType, T defaultValue) {
 		T value = getProperty(key, targetType);
 		return (value != null ? value : defaultValue);
+	}
+
+	@Override
+	@Deprecated
+	public <T> Class<T> getPropertyAsClass(String key, Class<T> targetValueType) {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -216,16 +216,13 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 	 * unresolvable placeholders should raise an exception or be ignored.
 	 * <p>Invoked from {@link #getProperty} and its variants, implicitly resolving
 	 * nested placeholders. In contrast, {@link #resolvePlaceholders} and
-	 * {@link #resolveRequiredPlaceholders} do <i>not</i> delegate
+	 * {@link #resolveRequiredPlaceholders} do <emphasis>not</emphasis> delegate
 	 * to this method but rather perform their own handling of unresolvable
 	 * placeholders, as specified by each of those methods.
 	 * @since 3.2
 	 * @see #setIgnoreUnresolvableNestedPlaceholders
 	 */
 	protected String resolveNestedPlaceholders(String value) {
-		if (value.isEmpty()) {
-			return value;
-		}
 		return (this.ignoreUnresolvableNestedPlaceholders ?
 				resolvePlaceholders(value) : resolveRequiredPlaceholders(value));
 	}
@@ -236,7 +233,12 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 	}
 
 	private String doResolvePlaceholders(String text, PropertyPlaceholderHelper helper) {
-		return helper.replacePlaceholders(text, this::getPropertyAsRawString);
+		return helper.replacePlaceholders(text, new PropertyPlaceholderHelper.PlaceholderResolver() {
+			@Override
+			public String resolvePlaceholder(String placeholderName) {
+				return getPropertyAsRawString(placeholderName);
+			}
+		});
 	}
 
 	/**
@@ -248,8 +250,7 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 	 * @since 4.3.5
 	 */
 	@SuppressWarnings("unchecked")
-	@Nullable
-	protected <T> T convertValueIfNecessary(Object value, @Nullable Class<T> targetType) {
+	protected <T> T convertValueIfNecessary(Object value, Class<T> targetType) {
 		if (targetType == null) {
 			return (T) value;
 		}
@@ -272,7 +273,6 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 	 * @param key the property name to resolve
 	 * @return the property value or {@code null} if none found
 	 */
-	@Nullable
 	protected abstract String getPropertyAsRawString(String key);
 
 }

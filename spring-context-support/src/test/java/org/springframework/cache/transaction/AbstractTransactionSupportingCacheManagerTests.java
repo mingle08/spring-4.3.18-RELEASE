@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,33 +16,28 @@
 
 package org.springframework.cache.transaction;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
 
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 /**
  * Shared tests for {@link CacheManager} that inherit from
  * {@link AbstractTransactionSupportingCacheManager}.
  *
  * @author Stephane Nicoll
- * @author Sam Brannen
  */
 public abstract class AbstractTransactionSupportingCacheManagerTests<T extends CacheManager> {
 
 	public static final String CACHE_NAME = "testCacheManager";
 
-
-	protected String cacheName;
-
-	@BeforeEach
-	void trackCacheName(TestInfo testInfo) {
-		this.cacheName = testInfo.getTestMethod().get().getName();
-	}
+	@Rule
+	public final TestName name = new TestName();
 
 
 	/**
@@ -72,48 +67,51 @@ public abstract class AbstractTransactionSupportingCacheManagerTests<T extends C
 
 	@Test
 	public void getOnExistingCache() {
-		assertThat(getCacheManager(false).getCache(CACHE_NAME)).isInstanceOf(getCacheType());
+		assertThat(getCacheManager(false).getCache(CACHE_NAME), is(instanceOf(getCacheType())));
 	}
 
 	@Test
 	public void getOnNewCache() {
 		T cacheManager = getCacheManager(false);
-		addNativeCache(this.cacheName);
-		assertThat(cacheManager.getCacheNames().contains(this.cacheName)).isFalse();
+		String cacheName = name.getMethodName();
+		addNativeCache(cacheName);
+		assertFalse(cacheManager.getCacheNames().contains(cacheName));
 		try {
-			assertThat(cacheManager.getCache(this.cacheName)).isInstanceOf(getCacheType());
-			assertThat(cacheManager.getCacheNames().contains(this.cacheName)).isTrue();
+			assertThat(cacheManager.getCache(cacheName), is(instanceOf(getCacheType())));
+			assertTrue(cacheManager.getCacheNames().contains(cacheName));
 		}
 		finally {
-			removeNativeCache(this.cacheName);
+			removeNativeCache(cacheName);
 		}
 	}
 
 	@Test
 	public void getOnUnknownCache() {
 		T cacheManager = getCacheManager(false);
-		assertThat(cacheManager.getCacheNames().contains(this.cacheName)).isFalse();
-		assertThat(cacheManager.getCache(this.cacheName)).isNull();
+		String cacheName = name.getMethodName();
+		assertFalse(cacheManager.getCacheNames().contains(cacheName));
+		assertThat(cacheManager.getCache(cacheName), nullValue());
 	}
 
 	@Test
 	public void getTransactionalOnExistingCache() {
-		assertThat(getCacheManager(true).getCache(CACHE_NAME))
-				.isInstanceOf(TransactionAwareCacheDecorator.class);
+		assertThat(getCacheManager(true).getCache(CACHE_NAME),
+				is(instanceOf(TransactionAwareCacheDecorator.class)));
 	}
 
 	@Test
 	public void getTransactionalOnNewCache() {
+		String cacheName = name.getMethodName();
 		T cacheManager = getCacheManager(true);
-		assertThat(cacheManager.getCacheNames().contains(this.cacheName)).isFalse();
-		addNativeCache(this.cacheName);
+		assertFalse(cacheManager.getCacheNames().contains(cacheName));
+		addNativeCache(cacheName);
 		try {
-			assertThat(cacheManager.getCache(this.cacheName))
-					.isInstanceOf(TransactionAwareCacheDecorator.class);
-			assertThat(cacheManager.getCacheNames().contains(this.cacheName)).isTrue();
+			assertThat(cacheManager.getCache(cacheName),
+					is(instanceOf(TransactionAwareCacheDecorator.class)));
+			assertTrue(cacheManager.getCacheNames().contains(cacheName));
 		}
 		finally {
-			removeNativeCache(this.cacheName);
+			removeNativeCache(cacheName);
 		}
 	}
 

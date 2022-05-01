@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,7 +28,6 @@ import java.util.Set;
 import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.converter.ConditionalGenericConverter;
-import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ConcurrentReferenceHashMap;
 import org.springframework.util.ReflectionUtils;
@@ -67,7 +66,7 @@ final class ObjectToObjectConverter implements ConditionalGenericConverter {
 
 	// Cache for the latest to-method resolved on a given Class
 	private static final Map<Class<?>, Member> conversionMemberCache =
-			new ConcurrentReferenceHashMap<>(32);
+			new ConcurrentReferenceHashMap<Class<?>, Member>(32);
 
 
 	@Override
@@ -82,8 +81,7 @@ final class ObjectToObjectConverter implements ConditionalGenericConverter {
 	}
 
 	@Override
-	@Nullable
-	public Object convert(@Nullable Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
+	public Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
 		if (source == null) {
 			return null;
 		}
@@ -92,7 +90,8 @@ final class ObjectToObjectConverter implements ConditionalGenericConverter {
 		Member member = getValidatedMember(targetClass, sourceClass);
 
 		try {
-			if (member instanceof Method method) {
+			if (member instanceof Method) {
+				Method method = (Method) member;
 				ReflectionUtils.makeAccessible(method);
 				if (!Modifier.isStatic(method.getModifiers())) {
 					return method.invoke(source);
@@ -128,7 +127,6 @@ final class ObjectToObjectConverter implements ConditionalGenericConverter {
 		return (getValidatedMember(targetClass, sourceClass) != null);
 	}
 
-	@Nullable
 	private static Member getValidatedMember(Class<?> targetClass, Class<?> sourceClass) {
 		Member member = conversionMemberCache.get(targetClass);
 		if (isApplicable(member, sourceClass)) {
@@ -151,7 +149,8 @@ final class ObjectToObjectConverter implements ConditionalGenericConverter {
 	}
 
 	private static boolean isApplicable(Member member, Class<?> sourceClass) {
-		if (member instanceof Method method) {
+		if (member instanceof Method) {
+			Method method = (Method) member;
 			return (!Modifier.isStatic(method.getModifiers()) ?
 					ClassUtils.isAssignable(method.getDeclaringClass(), sourceClass) :
 					method.getParameterTypes()[0] == sourceClass);
@@ -165,7 +164,6 @@ final class ObjectToObjectConverter implements ConditionalGenericConverter {
 		}
 	}
 
-	@Nullable
 	private static Method determineToMethod(Class<?> targetClass, Class<?> sourceClass) {
 		if (String.class == targetClass || String.class == sourceClass) {
 			// Do not accept a toString() method or any to methods on String itself
@@ -177,7 +175,6 @@ final class ObjectToObjectConverter implements ConditionalGenericConverter {
 				ClassUtils.isAssignable(targetClass, method.getReturnType()) ? method : null);
 	}
 
-	@Nullable
 	private static Method determineFactoryMethod(Class<?> targetClass, Class<?> sourceClass) {
 		if (String.class == targetClass) {
 			// Do not accept the String.valueOf(Object) method
@@ -194,7 +191,6 @@ final class ObjectToObjectConverter implements ConditionalGenericConverter {
 		return method;
 	}
 
-	@Nullable
 	private static Constructor<?> determineFactoryConstructor(Class<?> targetClass, Class<?> sourceClass) {
 		return ClassUtils.getConstructorIfAvailable(targetClass, sourceClass);
 	}

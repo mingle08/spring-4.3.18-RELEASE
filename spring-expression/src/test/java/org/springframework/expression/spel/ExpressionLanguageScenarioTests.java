@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,12 +17,13 @@
 package org.springframework.expression.spel;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.expression.AccessException;
 import org.springframework.expression.EvaluationContext;
@@ -34,8 +35,7 @@ import org.springframework.expression.TypedValue;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 ///CLOVER:OFF
 
@@ -77,11 +77,16 @@ public class ExpressionLanguageScenarioTests extends AbstractExpressionTests {
 			// They are reusable
 			value = expr.getValue();
 
-			assertThat(value).isEqualTo("hello world");
-			assertThat(value.getClass()).isEqualTo(String.class);
+			assertEquals("hello world", value);
+			assertEquals(String.class, value.getClass());
 		}
-		catch (EvaluationException | ParseException ex) {
-			throw new AssertionError(ex.getMessage(), ex);
+		catch (EvaluationException ee) {
+			ee.printStackTrace();
+			fail("Unexpected Exception: " + ee.getMessage());
+		}
+		catch (ParseException pe) {
+			pe.printStackTrace();
+			fail("Unexpected Exception: " + pe.getMessage());
 		}
 	}
 
@@ -95,21 +100,22 @@ public class ExpressionLanguageScenarioTests extends AbstractExpressionTests {
 		// Use the standard evaluation context
 		StandardEvaluationContext ctx = new StandardEvaluationContext();
 		ctx.setVariable("favouriteColour","blue");
-		List<Integer> primes = Arrays.asList(2, 3, 5, 7, 11, 13, 17);
+		List<Integer> primes = new ArrayList<Integer>();
+		primes.addAll(Arrays.asList(2,3,5,7,11,13,17));
 		ctx.setVariable("primes",primes);
 
 		Expression expr = parser.parseRaw("#favouriteColour");
 		Object value = expr.getValue(ctx);
-		assertThat(value).isEqualTo("blue");
+		assertEquals("blue", value);
 
 		expr = parser.parseRaw("#primes.get(1)");
 		value = expr.getValue(ctx);
-		assertThat(value).isEqualTo(3);
+		assertEquals(3, value);
 
 		// all prime numbers > 10 from the list (using selection ?{...})
 		expr = parser.parseRaw("#primes.?[#this>10]");
 		value = expr.getValue(ctx);
-		assertThat(value.toString()).isEqualTo("[11, 13, 17]");
+		assertEquals("[11, 13, 17]", value.toString());
 	}
 
 
@@ -138,30 +144,30 @@ public class ExpressionLanguageScenarioTests extends AbstractExpressionTests {
 		// read it, set it, read it again
 		Expression expr = parser.parseRaw("str");
 		Object value = expr.getValue(ctx);
-		assertThat(value).isEqualTo("wibble");
+		assertEquals("wibble", value);
 		expr = parser.parseRaw("str");
 		expr.setValue(ctx, "wobble");
 		expr = parser.parseRaw("str");
 		value = expr.getValue(ctx);
-		assertThat(value).isEqualTo("wobble");
+		assertEquals("wobble", value);
 		// or using assignment within the expression
 		expr = parser.parseRaw("str='wabble'");
 		value = expr.getValue(ctx);
 		expr = parser.parseRaw("str");
 		value = expr.getValue(ctx);
-		assertThat(value).isEqualTo("wabble");
+		assertEquals("wabble", value);
 
 		// private property will be accessed through getter()
 		expr = parser.parseRaw("property");
 		value = expr.getValue(ctx);
-		assertThat(value).isEqualTo(42);
+		assertEquals(42, value);
 
 		// ... and set through setter
 		expr = parser.parseRaw("property=4");
 		value = expr.getValue(ctx);
 		expr = parser.parseRaw("property");
 		value = expr.getValue(ctx);
-		assertThat(value).isEqualTo(4);
+		assertEquals(4,value);
 	}
 
 	public static String repeat(String s) { return s+s; }
@@ -180,11 +186,16 @@ public class ExpressionLanguageScenarioTests extends AbstractExpressionTests {
 
 			Expression expr = parser.parseRaw("#repeat('hello')");
 			Object value = expr.getValue(ctx);
-			assertThat(value).isEqualTo("hellohello");
+			assertEquals("hellohello", value);
 
 		}
-		catch (EvaluationException | ParseException ex) {
-			throw new AssertionError(ex.getMessage(), ex);
+		catch (EvaluationException ee) {
+			ee.printStackTrace();
+			fail("Unexpected Exception: " + ee.getMessage());
+		}
+		catch (ParseException pe) {
+			pe.printStackTrace();
+			fail("Unexpected Exception: " + pe.getMessage());
 		}
 	}
 
@@ -201,10 +212,15 @@ public class ExpressionLanguageScenarioTests extends AbstractExpressionTests {
 		ctx.addPropertyAccessor(new FruitColourAccessor());
 		Expression expr = parser.parseRaw("orange");
 		Object value = expr.getValue(ctx);
-		assertThat(value).isEqualTo(Color.orange);
-		assertThatExceptionOfType(SpelEvaluationException.class).isThrownBy(() ->
-				expr.setValue(ctx, Color.blue))
-			.satisfies(ex -> assertThat(ex.getMessageCode()).isEqualTo(SpelMessage.PROPERTY_OR_FIELD_NOT_WRITABLE_ON_NULL));
+		assertEquals(Color.orange, value);
+
+		try {
+			expr.setValue(ctx, Color.blue);
+			fail("Should not be allowed to set oranges to be blue !");
+		}
+		catch (SpelEvaluationException ee) {
+			assertEquals(ee.getMessageCode(), SpelMessage.PROPERTY_OR_FIELD_NOT_WRITABLE_ON_NULL);
+		}
 	}
 
 	@Test
@@ -217,11 +233,15 @@ public class ExpressionLanguageScenarioTests extends AbstractExpressionTests {
 		ctx.addPropertyAccessor(new VegetableColourAccessor());
 		Expression expr = parser.parseRaw("pea");
 		Object value = expr.getValue(ctx);
-		assertThat(value).isEqualTo(Color.green);
+		assertEquals(Color.green, value);
 
-		assertThatExceptionOfType(SpelEvaluationException.class).isThrownBy(() ->
-				expr.setValue(ctx, Color.blue))
-			.satisfies(ex -> assertThat(ex.getMessageCode()).isEqualTo(SpelMessage.PROPERTY_OR_FIELD_NOT_WRITABLE_ON_NULL));
+		try {
+			expr.setValue(ctx, Color.blue);
+			fail("Should not be allowed to set peas to be blue !");
+		}
+		catch (SpelEvaluationException ee) {
+			assertEquals(ee.getMessageCode(), SpelMessage.PROPERTY_OR_FIELD_NOT_WRITABLE_ON_NULL);
+		}
 	}
 
 
@@ -231,7 +251,7 @@ public class ExpressionLanguageScenarioTests extends AbstractExpressionTests {
 	 */
 	private static class FruitColourAccessor implements PropertyAccessor {
 
-		private static Map<String,Color> propertyMap = new HashMap<>();
+		private static Map<String,Color> propertyMap = new HashMap<String,Color>();
 
 		static {
 			propertyMap.put("banana",Color.yellow);
@@ -276,7 +296,7 @@ public class ExpressionLanguageScenarioTests extends AbstractExpressionTests {
 	 */
 	private static class VegetableColourAccessor implements PropertyAccessor {
 
-		private static Map<String,Color> propertyMap = new HashMap<>();
+		private static Map<String,Color> propertyMap = new HashMap<String,Color>();
 
 		static {
 			propertyMap.put("carrot",Color.orange);
@@ -311,5 +331,4 @@ public class ExpressionLanguageScenarioTests extends AbstractExpressionTests {
 		}
 
 	}
-
 }

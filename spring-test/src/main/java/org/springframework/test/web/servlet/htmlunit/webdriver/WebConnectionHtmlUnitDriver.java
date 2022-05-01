@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,11 +34,13 @@ import org.springframework.util.Assert;
  *
  * @author Rob Winch
  * @author Sam Brannen
- * @author Juergen Hoeller
  * @since 4.2
  * @see MockMvcHtmlUnitDriverBuilder
  */
 public class WebConnectionHtmlUnitDriver extends HtmlUnitDriver {
+
+	private WebClient webClient;
+
 
 	public WebConnectionHtmlUnitDriver() {
 	}
@@ -68,7 +70,9 @@ public class WebConnectionHtmlUnitDriver extends HtmlUnitDriver {
 	 */
 	@Override
 	protected final WebClient modifyWebClient(WebClient webClient) {
-		return modifyWebClientInternal(super.modifyWebClient(webClient));
+		this.webClient = super.modifyWebClient(webClient);
+		this.webClient = modifyWebClientInternal(this.webClient);
+		return this.webClient;
 	}
 
 	/**
@@ -84,12 +88,12 @@ public class WebConnectionHtmlUnitDriver extends HtmlUnitDriver {
 	}
 
 	/**
-	 * Return the current {@link WebClient} in a public fashion.
+	 * Return the current {@link WebClient}.
 	 * @since 4.3
 	 */
 	@Override
 	public WebClient getWebClient() {
-		return super.getWebClient();
+		return this.webClient;
 	}
 
 	/**
@@ -98,7 +102,7 @@ public class WebConnectionHtmlUnitDriver extends HtmlUnitDriver {
 	 */
 	public void setWebConnection(WebConnection webConnection) {
 		Assert.notNull(webConnection, "WebConnection must not be null");
-		getWebClient().setWebConnection(webConnection);
+		this.webClient.setWebConnection(webConnection);
 	}
 
 	/**
@@ -106,7 +110,7 @@ public class WebConnectionHtmlUnitDriver extends HtmlUnitDriver {
 	 * @return the current {@code WebConnection}
 	 */
 	public WebConnection getWebConnection() {
-		return getWebClient().getWebConnection();
+		return this.webClient.getWebConnection();
 	}
 
 }

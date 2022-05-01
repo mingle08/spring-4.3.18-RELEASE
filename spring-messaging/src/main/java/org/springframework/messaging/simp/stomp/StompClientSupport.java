@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,9 +17,10 @@
 package org.springframework.messaging.simp.stomp;
 
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 
-import org.springframework.lang.Nullable;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.springframework.messaging.converter.MessageConverter;
 import org.springframework.messaging.converter.SimpleMessageConverter;
 import org.springframework.scheduling.TaskScheduler;
@@ -29,8 +30,8 @@ import org.springframework.util.Assert;
  * Base class for STOMP client implementations.
  *
  * <p>Subclasses can connect over WebSocket or TCP using any library. When creating
- * a new connection, a subclass can create an instance of {@link DefaultStompSession}
- * which implements {@link org.springframework.messaging.tcp.TcpConnectionHandler}
+ * a new connection, a subclass can create an instance of @link DefaultStompSession}
+ * which extends {@link org.springframework.messaging.tcp.TcpConnectionHandler}
  * whose lifecycle methods the subclass must then invoke.
  *
  * <p>In effect, {@code TcpConnectionHandler} and {@code TcpConnection} are the
@@ -42,14 +43,15 @@ import org.springframework.util.Assert;
  */
 public abstract class StompClientSupport {
 
+	protected Log logger = LogFactory.getLog(getClass());
+
 	private MessageConverter messageConverter = new SimpleMessageConverter();
 
-	@Nullable
 	private TaskScheduler taskScheduler;
 
 	private long[] defaultHeartbeat = new long[] {10000, 10000};
 
-	private long receiptTimeLimit = TimeUnit.SECONDS.toMillis(15);
+	private long receiptTimeLimit = 15 * 1000;
 
 
 	/**
@@ -78,14 +80,13 @@ public abstract class StompClientSupport {
 	 * Receipts however, if needed, do require a TaskScheduler to be configured.
 	 * <p>By default, this is not set.
 	 */
-	public void setTaskScheduler(@Nullable TaskScheduler taskScheduler) {
+	public void setTaskScheduler(TaskScheduler taskScheduler) {
 		this.taskScheduler = taskScheduler;
 	}
 
 	/**
 	 * The configured TaskScheduler.
 	 */
-	@Nullable
 	public TaskScheduler getTaskScheduler() {
 		return this.taskScheduler;
 	}
@@ -98,20 +99,12 @@ public abstract class StompClientSupport {
 	 * <p>By default this is set to "10000,10000" but subclasses may override
 	 * that default and for example set it to "0,0" if they require a
 	 * TaskScheduler to be configured first.
-	 * <p><strong>Note:</strong> that a heartbeat is sent only in case of
-	 * inactivity, i.e. when no other messages are sent. This can present a
-	 * challenge when using an external broker since messages with a non-broker
-	 * destination represent activity but aren't actually forwarded to the broker.
-	 * In that case you can configure a `TaskScheduler` through the
-	 * {@link org.springframework.messaging.simp.config.StompBrokerRelayRegistration}
-	 * which ensures a heartbeat is forwarded to the broker also when only
-	 * messages with a non-broker destination are sent.
 	 * @param heartbeat the value for the CONNECT "heart-beat" header
-	 * @see <a href="https://stomp.github.io/stomp-specification-1.2.html#Heart-beating">
-	 * https://stomp.github.io/stomp-specification-1.2.html#Heart-beating</a>
+	 * @see <a href="http://stomp.github.io/stomp-specification-1.2.html#Heart-beating">
+	 * http://stomp.github.io/stomp-specification-1.2.html#Heart-beating</a>
 	 */
 	public void setDefaultHeartbeat(long[] heartbeat) {
-		if (heartbeat.length != 2 || heartbeat[0] < 0 || heartbeat[1] < 0) {
+		if (heartbeat == null || heartbeat.length != 2 || heartbeat[0] < 0 || heartbeat[1] < 0) {
 			throw new IllegalArgumentException("Invalid heart-beat: " + Arrays.toString(heartbeat));
 		}
 		this.defaultHeartbeat = heartbeat;
@@ -157,9 +150,7 @@ public abstract class StompClientSupport {
 	 * @param handler the handler for the STOMP session
 	 * @return the created session
 	 */
-	protected ConnectionHandlingStompSession createSession(
-			@Nullable StompHeaders connectHeaders, StompSessionHandler handler) {
-
+	protected ConnectionHandlingStompSession createSession(StompHeaders connectHeaders, StompSessionHandler handler) {
 		connectHeaders = processConnectHeaders(connectHeaders);
 		DefaultStompSession session = new DefaultStompSession(handler, connectHeaders);
 		session.setMessageConverter(getMessageConverter());
@@ -174,7 +165,7 @@ public abstract class StompClientSupport {
 	 * @param connectHeaders the headers to modify
 	 * @return the modified headers
 	 */
-	protected StompHeaders processConnectHeaders(@Nullable StompHeaders connectHeaders) {
+	protected StompHeaders processConnectHeaders(StompHeaders connectHeaders) {
 		connectHeaders = (connectHeaders != null ? connectHeaders : new StompHeaders());
 		if (connectHeaders.getHeartbeat() == null) {
 			connectHeaders.setHeartbeat(getDefaultHeartbeat());

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,14 +17,14 @@
 package org.springframework.web.servlet.i18n;
 
 import java.util.Locale;
+import javax.servlet.http.HttpSession;
 
-import jakarta.servlet.http.HttpSession;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
-import org.springframework.web.testfixture.servlet.MockHttpServletResponse;
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.mock.web.test.MockHttpServletResponse;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Juergen Hoeller
@@ -37,7 +37,7 @@ public class SessionLocaleResolverTests {
 		request.getSession().setAttribute(SessionLocaleResolver.LOCALE_SESSION_ATTRIBUTE_NAME, Locale.GERMAN);
 
 		SessionLocaleResolver resolver = new SessionLocaleResolver();
-		assertThat(resolver.resolveLocale(request)).isEqualTo(Locale.GERMAN);
+		assertEquals(Locale.GERMAN, resolver.resolveLocale(request));
 	}
 
 	@Test
@@ -47,14 +47,14 @@ public class SessionLocaleResolverTests {
 
 		SessionLocaleResolver resolver = new SessionLocaleResolver();
 		resolver.setLocale(request, response, Locale.GERMAN);
-		assertThat(resolver.resolveLocale(request)).isEqualTo(Locale.GERMAN);
+		assertEquals(Locale.GERMAN, resolver.resolveLocale(request));
 
 		HttpSession session = request.getSession();
 		request = new MockHttpServletRequest();
 		request.setSession(session);
 		resolver = new SessionLocaleResolver();
 
-		assertThat(resolver.resolveLocale(request)).isEqualTo(Locale.GERMAN);
+		assertEquals(Locale.GERMAN, resolver.resolveLocale(request));
 	}
 
 	@Test
@@ -64,7 +64,7 @@ public class SessionLocaleResolverTests {
 
 		SessionLocaleResolver resolver = new SessionLocaleResolver();
 
-		assertThat(resolver.resolveLocale(request)).isEqualTo(request.getLocale());
+		assertEquals(request.getLocale(), resolver.resolveLocale(request));
 	}
 
 	@Test
@@ -75,7 +75,7 @@ public class SessionLocaleResolverTests {
 		SessionLocaleResolver resolver = new SessionLocaleResolver();
 		resolver.setDefaultLocale(Locale.GERMAN);
 
-		assertThat(resolver.resolveLocale(request)).isEqualTo(Locale.GERMAN);
+		assertEquals(Locale.GERMAN, resolver.resolveLocale(request));
 	}
 
 	@Test
@@ -88,14 +88,14 @@ public class SessionLocaleResolverTests {
 		SessionLocaleResolver resolver = new SessionLocaleResolver();
 		resolver.setLocale(request, response, null);
 		Locale locale = (Locale) request.getSession().getAttribute(SessionLocaleResolver.LOCALE_SESSION_ATTRIBUTE_NAME);
-		assertThat(locale).isNull();
+		assertNull(locale);
 
 		HttpSession session = request.getSession();
 		request = new MockHttpServletRequest();
 		request.addPreferredLocale(Locale.TAIWAN);
 		request.setSession(session);
 		resolver = new SessionLocaleResolver();
-		assertThat(resolver.resolveLocale(request)).isEqualTo(Locale.TAIWAN);
+		assertEquals(Locale.TAIWAN, resolver.resolveLocale(request));
 	}
 
 }

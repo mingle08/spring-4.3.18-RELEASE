@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,10 +22,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import jakarta.jms.Destination;
-import jakarta.jms.JMSException;
-import jakarta.jms.Message;
+import javax.jms.Destination;
+import javax.jms.JMSException;
+import javax.jms.Message;
 
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.support.AbstractHeaderMapper;
@@ -56,12 +55,12 @@ import org.springframework.util.StringUtils;
  */
 public class SimpleJmsHeaderMapper extends AbstractHeaderMapper<Message> implements JmsHeaderMapper {
 
-	private static final Set<Class<?>> SUPPORTED_PROPERTY_TYPES = new HashSet<>(Arrays.asList(
-			Boolean.class, Byte.class, Double.class, Float.class, Integer.class, Long.class, Short.class, String.class));
+	private static final Set<Class<?>> SUPPORTED_PROPERTY_TYPES = new HashSet<Class<?>>(Arrays.asList(new Class<?>[] {
+			Boolean.class, Byte.class, Double.class, Float.class, Integer.class, Long.class, Short.class, String.class}));
 
 
 	@Override
-	public void fromHeaders(MessageHeaders headers, jakarta.jms.Message jmsMessage) {
+	public void fromHeaders(MessageHeaders headers, javax.jms.Message jmsMessage) {
 		try {
 			Object jmsCorrelationId = headers.get(JmsHeaders.CORRELATION_ID);
 			if (jmsCorrelationId instanceof Number) {
@@ -72,7 +71,7 @@ public class SimpleJmsHeaderMapper extends AbstractHeaderMapper<Message> impleme
 					jmsMessage.setJMSCorrelationID((String) jmsCorrelationId);
 				}
 				catch (Exception ex) {
-					logger.debug("Failed to set JMSCorrelationID - skipping", ex);
+					logger.info("Failed to set JMSCorrelationID - skipping", ex);
 				}
 			}
 			Destination jmsReplyTo = getHeaderIfAvailable(headers, JmsHeaders.REPLY_TO, Destination.class);
@@ -81,7 +80,7 @@ public class SimpleJmsHeaderMapper extends AbstractHeaderMapper<Message> impleme
 					jmsMessage.setJMSReplyTo(jmsReplyTo);
 				}
 				catch (Exception ex) {
-					logger.debug("Failed to set JMSReplyTo - skipping", ex);
+					logger.info("Failed to set JMSReplyTo - skipping", ex);
 				}
 			}
 			String jmsType = getHeaderIfAvailable(headers, JmsHeaders.TYPE, String.class);
@@ -90,13 +89,13 @@ public class SimpleJmsHeaderMapper extends AbstractHeaderMapper<Message> impleme
 					jmsMessage.setJMSType(jmsType);
 				}
 				catch (Exception ex) {
-					logger.debug("Failed to set JMSType - skipping", ex);
+					logger.info("Failed to set JMSType - skipping", ex);
 				}
 			}
-			for (Map.Entry<String, Object> entry : headers.entrySet()) {
-				String headerName = entry.getKey();
+			Set<String> headerNames = headers.keySet();
+			for (String headerName : headerNames) {
 				if (StringUtils.hasText(headerName) && !headerName.startsWith(JmsHeaders.PREFIX)) {
-					Object value = entry.getValue();
+					Object value = headers.get(headerName);
 					if (value != null && SUPPORTED_PROPERTY_TYPES.contains(value.getClass())) {
 						try {
 							String propertyName = this.fromHeaderName(headerName);
@@ -109,8 +108,8 @@ public class SimpleJmsHeaderMapper extends AbstractHeaderMapper<Message> impleme
 											"' since it cannot be set by client");
 								}
 							}
-							else if (logger.isDebugEnabled()) {
-								logger.debug("Failed to map message header '" + headerName + "' to JMS property", ex);
+							else if (logger.isWarnEnabled()) {
+								logger.warn("Failed to map message header '" + headerName + "' to JMS property", ex);
 							}
 						}
 					}
@@ -118,15 +117,15 @@ public class SimpleJmsHeaderMapper extends AbstractHeaderMapper<Message> impleme
 			}
 		}
 		catch (Exception ex) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Error occurred while mapping from MessageHeaders to JMS properties", ex);
+			if (logger.isWarnEnabled()) {
+				logger.warn("Error occurred while mapping from MessageHeaders to JMS properties", ex);
 			}
 		}
 	}
 
 	@Override
-	public MessageHeaders toHeaders(jakarta.jms.Message jmsMessage) {
-		Map<String, Object> headers = new HashMap<>();
+	public MessageHeaders toHeaders(javax.jms.Message jmsMessage) {
+		Map<String, Object> headers = new HashMap<String, Object>();
 		try {
 			try {
 				String correlationId = jmsMessage.getJMSCorrelationID();
@@ -135,7 +134,7 @@ public class SimpleJmsHeaderMapper extends AbstractHeaderMapper<Message> impleme
 				}
 			}
 			catch (Exception ex) {
-				logger.debug("Failed to read JMSCorrelationID property - skipping", ex);
+				logger.info("Failed to read JMSCorrelationID property - skipping", ex);
 			}
 			try {
 				Destination destination = jmsMessage.getJMSDestination();
@@ -144,21 +143,21 @@ public class SimpleJmsHeaderMapper extends AbstractHeaderMapper<Message> impleme
 				}
 			}
 			catch (Exception ex) {
-				logger.debug("Failed to read JMSDestination property - skipping", ex);
+				logger.info("Failed to read JMSDestination property - skipping", ex);
 			}
 			try {
 				int deliveryMode = jmsMessage.getJMSDeliveryMode();
 				headers.put(JmsHeaders.DELIVERY_MODE, deliveryMode);
 			}
 			catch (Exception ex) {
-				logger.debug("Failed to read JMSDeliveryMode property - skipping", ex);
+				logger.info("Failed to read JMSDeliveryMode property - skipping", ex);
 			}
 			try {
 				long expiration = jmsMessage.getJMSExpiration();
 				headers.put(JmsHeaders.EXPIRATION, expiration);
 			}
 			catch (Exception ex) {
-				logger.debug("Failed to read JMSExpiration property - skipping", ex);
+				logger.info("Failed to read JMSExpiration property - skipping", ex);
 			}
 			try {
 				String messageId = jmsMessage.getJMSMessageID();
@@ -167,13 +166,13 @@ public class SimpleJmsHeaderMapper extends AbstractHeaderMapper<Message> impleme
 				}
 			}
 			catch (Exception ex) {
-				logger.debug("Failed to read JMSMessageID property - skipping", ex);
+				logger.info("Failed to read JMSMessageID property - skipping", ex);
 			}
 			try {
 				headers.put(JmsHeaders.PRIORITY, jmsMessage.getJMSPriority());
 			}
 			catch (Exception ex) {
-				logger.debug("Failed to read JMSPriority property - skipping", ex);
+				logger.info("Failed to read JMSPriority property - skipping", ex);
 			}
 			try {
 				Destination replyTo = jmsMessage.getJMSReplyTo();
@@ -182,13 +181,13 @@ public class SimpleJmsHeaderMapper extends AbstractHeaderMapper<Message> impleme
 				}
 			}
 			catch (Exception ex) {
-				logger.debug("Failed to read JMSReplyTo property - skipping", ex);
+				logger.info("Failed to read JMSReplyTo property - skipping", ex);
 			}
 			try {
 				headers.put(JmsHeaders.REDELIVERED, jmsMessage.getJMSRedelivered());
 			}
 			catch (Exception ex) {
-				logger.debug("Failed to read JMSRedelivered property - skipping", ex);
+				logger.info("Failed to read JMSRedelivered property - skipping", ex);
 			}
 			try {
 				String type = jmsMessage.getJMSType();
@@ -197,13 +196,13 @@ public class SimpleJmsHeaderMapper extends AbstractHeaderMapper<Message> impleme
 				}
 			}
 			catch (Exception ex) {
-				logger.debug("Failed to read JMSType property - skipping", ex);
+				logger.info("Failed to read JMSType property - skipping", ex);
 			}
 			try {
 				headers.put(JmsHeaders.TIMESTAMP, jmsMessage.getJMSTimestamp());
 			}
 			catch (Exception ex) {
-				logger.debug("Failed to read JMSTimestamp property - skipping", ex);
+				logger.info("Failed to read JMSTimestamp property - skipping", ex);
 			}
 
 			Enumeration<?> jmsPropertyNames = jmsMessage.getPropertyNames();
@@ -215,8 +214,8 @@ public class SimpleJmsHeaderMapper extends AbstractHeaderMapper<Message> impleme
 						headers.put(headerName, jmsMessage.getObjectProperty(propertyName));
 					}
 					catch (Exception ex) {
-						if (logger.isDebugEnabled()) {
-							logger.debug("Error occurred while mapping JMS property '" + propertyName +
+						if (logger.isWarnEnabled()) {
+							logger.warn("Error occurred while mapping JMS property '" + propertyName +
 									"' to Message header", ex);
 						}
 					}
@@ -224,8 +223,8 @@ public class SimpleJmsHeaderMapper extends AbstractHeaderMapper<Message> impleme
 			}
 		}
 		catch (JMSException ex) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Error occurred while mapping from JMS properties to MessageHeaders", ex);
+			if (logger.isWarnEnabled()) {
+				logger.warn("Error occurred while mapping from JMS properties to MessageHeaders", ex);
 			}
 		}
 		return new MessageHeaders(headers);

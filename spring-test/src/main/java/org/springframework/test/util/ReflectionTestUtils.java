@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,6 @@ import java.lang.reflect.Method;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.MethodInvoker;
@@ -45,20 +44,18 @@ import org.springframework.util.StringUtils;
  * {@code public} setter methods for properties in a domain entity.</li>
  * <li>Spring's support for annotations such as
  * {@link org.springframework.beans.factory.annotation.Autowired @Autowired},
- * {@link jakarta.inject.Inject @Inject}, and
- * {@link jakarta.annotation.Resource @Resource} which provides dependency
+ * {@link javax.inject.Inject @Inject}, and
+ * {@link javax.annotation.Resource @Resource} which provides dependency
  * injection for {@code private} or {@code protected} fields, setter methods,
  * and configuration methods.</li>
- * <li>Use of annotations such as {@link jakarta.annotation.PostConstruct @PostConstruct}
- * and {@link jakarta.annotation.PreDestroy @PreDestroy} for lifecycle callback
+ * <li>Use of annotations such as {@link javax.annotation.PostConstruct @PostConstruct}
+ * and {@link javax.annotation.PreDestroy @PreDestroy} for lifecycle callback
  * methods.</li>
  * </ul>
  *
  * <p>In addition, several methods in this class provide support for {@code static}
- * fields and {@code static} methods &mdash; for example,
- * {@link #setField(Class, String, Object)}, {@link #getField(Class, String)},
- * {@link #invokeMethod(Class, String, Object...)},
- * {@link #invokeMethod(Object, Class, String, Object...)}, etc.
+ * fields &mdash; for example, {@link #setField(Class, String, Object)},
+ * {@link #getField(Class, String)}, etc.
  *
  * @author Sam Brannen
  * @author Juergen Hoeller
@@ -87,7 +84,7 @@ public abstract class ReflectionTestUtils {
 	 * @param name the name of the field to set; never {@code null}
 	 * @param value the value to set
 	 */
-	public static void setField(Object targetObject, String name, @Nullable Object value) {
+	public static void setField(Object targetObject, String name, Object value) {
 		setField(targetObject, name, value, null);
 	}
 
@@ -103,7 +100,7 @@ public abstract class ReflectionTestUtils {
 	 * @param type the type of the field to set; may be {@code null} if
 	 * {@code name} is specified
 	 */
-	public static void setField(Object targetObject, @Nullable String name, @Nullable Object value, @Nullable Class<?> type) {
+	public static void setField(Object targetObject, String name, Object value, Class<?> type) {
 		setField(targetObject, null, name, value, type);
 	}
 
@@ -112,14 +109,13 @@ public abstract class ReflectionTestUtils {
 	 * the provided {@code targetClass} to the supplied {@code value}.
 	 * <p>This method delegates to {@link #setField(Object, Class, String, Object, Class)},
 	 * supplying {@code null} for the {@code targetObject} and {@code type} arguments.
-	 * <p>This method does not support setting {@code static final} fields.
 	 * @param targetClass the target class on which to set the static field;
 	 * never {@code null}
 	 * @param name the name of the field to set; never {@code null}
 	 * @param value the value to set
 	 * @since 4.2
 	 */
-	public static void setField(Class<?> targetClass, String name, @Nullable Object value) {
+	public static void setField(Class<?> targetClass, String name, Object value) {
 		setField(null, targetClass, name, value, null);
 	}
 
@@ -129,7 +125,6 @@ public abstract class ReflectionTestUtils {
 	 * the supplied {@code value}.
 	 * <p>This method delegates to {@link #setField(Object, Class, String, Object, Class)},
 	 * supplying {@code null} for the {@code targetObject} argument.
-	 * <p>This method does not support setting {@code static final} fields.
 	 * @param targetClass the target class on which to set the static field;
 	 * never {@code null}
 	 * @param name the name of the field to set; may be {@code null} if
@@ -139,9 +134,7 @@ public abstract class ReflectionTestUtils {
 	 * {@code name} is specified
 	 * @since 4.2
 	 */
-	public static void setField(
-			Class<?> targetClass, @Nullable String name, @Nullable Object value, @Nullable Class<?> type) {
-
+	public static void setField(Class<?> targetClass, String name, Object value, Class<?> type) {
 		setField(null, targetClass, name, value, type);
 	}
 
@@ -156,7 +149,6 @@ public abstract class ReflectionTestUtils {
 	 * field. In addition, an attempt will be made to make non-{@code public}
 	 * fields <em>accessible</em>, thus allowing one to set {@code protected},
 	 * {@code private}, and <em>package-private</em> fields.
-	 * <p>This method does not support setting {@code static final} fields.
 	 * @param targetObject the target object on which to set the field; may be
 	 * {@code null} if the field is static
 	 * @param targetClass the target class on which to set the field; may
@@ -172,11 +164,9 @@ public abstract class ReflectionTestUtils {
 	 * @see ReflectionUtils#setField(Field, Object, Object)
 	 * @see AopTestUtils#getUltimateTargetObject(Object)
 	 */
-	public static void setField(@Nullable Object targetObject, @Nullable Class<?> targetClass,
-			@Nullable String name, @Nullable Object value, @Nullable Class<?> type) {
-
+	public static void setField(Object targetObject, Class<?> targetClass, String name, Object value, Class<?> type) {
 		Assert.isTrue(targetObject != null || targetClass != null,
-				"Either targetObject or targetClass for the field must be specified");
+			"Either targetObject or targetClass for the field must be specified");
 
 		if (targetObject != null && springAopPresent) {
 			targetObject = AopTestUtils.getUltimateTargetObject(targetObject);
@@ -212,7 +202,6 @@ public abstract class ReflectionTestUtils {
 	 * @return the field's current value
 	 * @see #getField(Class, String)
 	 */
-	@Nullable
 	public static Object getField(Object targetObject, String name) {
 		return getField(targetObject, null, name);
 	}
@@ -229,7 +218,6 @@ public abstract class ReflectionTestUtils {
 	 * @since 4.2
 	 * @see #getField(Object, String)
 	 */
-	@Nullable
 	public static Object getField(Class<?> targetClass, String name) {
 		return getField(null, targetClass, name);
 	}
@@ -258,8 +246,7 @@ public abstract class ReflectionTestUtils {
 	 * @see ReflectionUtils#getField(Field, Object)
 	 * @see AopTestUtils#getUltimateTargetObject(Object)
 	 */
-	@Nullable
-	public static Object getField(@Nullable Object targetObject, @Nullable Class<?> targetClass, String name) {
+	public static Object getField(Object targetObject, Class<?> targetClass, String name) {
 		Assert.isTrue(targetObject != null || targetClass != null,
 			"Either targetObject or targetClass for the field must be specified");
 
@@ -329,7 +316,7 @@ public abstract class ReflectionTestUtils {
 	 * @see ReflectionUtils#makeAccessible(Method)
 	 * @see ReflectionUtils#invokeMethod(Method, Object, Object[])
 	 */
-	public static void invokeSetterMethod(Object target, String name, @Nullable Object value, @Nullable Class<?> type) {
+	public static void invokeSetterMethod(Object target, String name, Object value, Class<?> type) {
 		Assert.notNull(target, "Target object must not be null");
 		Assert.hasText(name, "Method name must not be empty");
 		Class<?>[] paramTypes = (type != null ? new Class<?>[] {type} : null);
@@ -379,7 +366,6 @@ public abstract class ReflectionTestUtils {
 	 * @see ReflectionUtils#makeAccessible(Method)
 	 * @see ReflectionUtils#invokeMethod(Method, Object, Object[])
 	 */
-	@Nullable
 	public static Object invokeGetterMethod(Object target, String name) {
 		Assert.notNull(target, "Target object must not be null");
 		Assert.hasText(name, "Method name must not be empty");
@@ -408,92 +394,34 @@ public abstract class ReflectionTestUtils {
 	/**
 	 * Invoke the method with the given {@code name} on the supplied target
 	 * object with the supplied arguments.
-	 * <p>This method delegates to {@link #invokeMethod(Object, Class, String, Object...)},
-	 * supplying {@code null} for the {@code targetClass} argument.
-	 * @param target the target object on which to invoke the specified method
-	 * @param name the name of the method to invoke
-	 * @param args the arguments to provide to the method
-	 * @return the invocation result, if any
-	 * @see #invokeMethod(Class, String, Object...)
-	 * @see #invokeMethod(Object, Class, String, Object...)
-	 * @see MethodInvoker
-	 * @see ReflectionUtils#makeAccessible(Method)
-	 * @see ReflectionUtils#invokeMethod(Method, Object, Object[])
-	 * @see ReflectionUtils#handleReflectionException(Exception)
-	 */
-	@Nullable
-	public static <T> T invokeMethod(Object target, String name, Object... args) {
-		Assert.notNull(target, "Target object must not be null");
-		return invokeMethod(target, null, name, args);
-	}
-
-	/**
-	 * Invoke the static method with the given {@code name} on the supplied target
-	 * class with the supplied arguments.
-	 * <p>This method delegates to {@link #invokeMethod(Object, Class, String, Object...)},
-	 * supplying {@code null} for the {@code targetObject} argument.
-	 * @param targetClass the target class on which to invoke the specified method
-	 * @param name the name of the method to invoke
-	 * @param args the arguments to provide to the method
-	 * @return the invocation result, if any
-	 * @since 5.2
-	 * @see #invokeMethod(Object, String, Object...)
-	 * @see #invokeMethod(Object, Class, String, Object...)
-	 * @see MethodInvoker
-	 * @see ReflectionUtils#makeAccessible(Method)
-	 * @see ReflectionUtils#invokeMethod(Method, Object, Object[])
-	 * @see ReflectionUtils#handleReflectionException(Exception)
-	 */
-	@Nullable
-	public static <T> T invokeMethod(Class<?> targetClass, String name, Object... args) {
-		Assert.notNull(targetClass, "Target class must not be null");
-		return invokeMethod(null, targetClass, name, args);
-	}
-
-	/**
-	 * Invoke the method with the given {@code name} on the provided
-	 * {@code targetObject}/{@code targetClass} with the supplied arguments.
 	 * <p>This method traverses the class hierarchy in search of the desired
 	 * method. In addition, an attempt will be made to make non-{@code public}
 	 * methods <em>accessible</em>, thus allowing one to invoke {@code protected},
 	 * {@code private}, and <em>package-private</em> methods.
-	 * @param targetObject the target object on which to invoke the method; may
-	 * be {@code null} if the method is static
-	 * @param targetClass the target class on which to invoke the method; may
-	 * be {@code null} if the method is an instance method
+	 * @param target the target object on which to invoke the specified method
 	 * @param name the name of the method to invoke
 	 * @param args the arguments to provide to the method
 	 * @return the invocation result, if any
-	 * @since 5.2
-	 * @see #invokeMethod(Object, String, Object...)
-	 * @see #invokeMethod(Class, String, Object...)
 	 * @see MethodInvoker
 	 * @see ReflectionUtils#makeAccessible(Method)
 	 * @see ReflectionUtils#invokeMethod(Method, Object, Object[])
 	 * @see ReflectionUtils#handleReflectionException(Exception)
 	 */
 	@SuppressWarnings("unchecked")
-	@Nullable
-	public static <T> T invokeMethod(@Nullable Object targetObject, @Nullable Class<?> targetClass, String name,
-			Object... args) {
-
-		Assert.isTrue(targetObject != null || targetClass != null,
-				"Either 'targetObject' or 'targetClass' for the method must be specified");
+	public static <T> T invokeMethod(Object target, String name, Object... args) {
+		Assert.notNull(target, "Target object must not be null");
 		Assert.hasText(name, "Method name must not be empty");
 
 		try {
 			MethodInvoker methodInvoker = new MethodInvoker();
-			methodInvoker.setTargetObject(targetObject);
-			if (targetClass != null) {
-				methodInvoker.setTargetClass(targetClass);
-			}
+			methodInvoker.setTargetObject(target);
 			methodInvoker.setTargetMethod(name);
 			methodInvoker.setArguments(args);
 			methodInvoker.prepare();
 
 			if (logger.isDebugEnabled()) {
-				logger.debug(String.format("Invoking method '%s' on %s or %s with arguments %s", name,
-						safeToString(targetObject), safeToString(targetClass), ObjectUtils.nullSafeToString(args)));
+				logger.debug(String.format("Invoking method '%s' on %s with arguments %s", name, safeToString(target),
+						ObjectUtils.nullSafeToString(args)));
 			}
 
 			return (T) methodInvoker.invoke();
@@ -504,18 +432,14 @@ public abstract class ReflectionTestUtils {
 		}
 	}
 
-	private static String safeToString(@Nullable Object target) {
+	private static String safeToString(Object target) {
 		try {
 			return String.format("target object [%s]", target);
 		}
 		catch (Exception ex) {
 			return String.format("target of type [%s] whose toString() method threw [%s]",
-					(target != null ? target.getClass().getName() : "unknown"), ex);
+				(target != null ? target.getClass().getName() : "unknown"), ex);
 		}
-	}
-
-	private static String safeToString(@Nullable Class<?> clazz) {
-		return String.format("target class [%s]", (clazz != null ? clazz.getName() : null));
 	}
 
 }

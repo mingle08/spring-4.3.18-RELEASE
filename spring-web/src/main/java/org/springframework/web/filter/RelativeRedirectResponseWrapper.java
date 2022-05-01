@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.web.filter;
 
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpServletResponseWrapper;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatusCode;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.web.util.WebUtils;
 
@@ -31,12 +30,12 @@ import org.springframework.web.util.WebUtils;
  * @author Rossen Stoyanchev
  * @since 4.3.10
  */
-final class RelativeRedirectResponseWrapper extends HttpServletResponseWrapper {
+class RelativeRedirectResponseWrapper extends HttpServletResponseWrapper {
 
-	private final HttpStatusCode redirectStatus;
+	private final HttpStatus redirectStatus;
 
 
-	private RelativeRedirectResponseWrapper(HttpServletResponse response, HttpStatusCode redirectStatus) {
+	private RelativeRedirectResponseWrapper(HttpServletResponse response, HttpStatus redirectStatus) {
 		super(response);
 		Assert.notNull(redirectStatus, "'redirectStatus' is required");
 		this.redirectStatus = redirectStatus;
@@ -51,7 +50,7 @@ final class RelativeRedirectResponseWrapper extends HttpServletResponseWrapper {
 
 
 	public static HttpServletResponse wrapIfNecessary(HttpServletResponse response,
-			HttpStatusCode redirectStatus) {
+			HttpStatus redirectStatus) {
 
 		RelativeRedirectResponseWrapper wrapper =
 				WebUtils.getNativeResponse(response, RelativeRedirectResponseWrapper.class);

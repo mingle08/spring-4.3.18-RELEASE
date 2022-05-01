@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,8 @@
 
 package org.springframework.test.context.web;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.BDDMockito;
 
 import org.springframework.context.ApplicationContext;
@@ -30,13 +30,9 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletWebRequest;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.springframework.test.context.web.ServletTestExecutionListener.POPULATED_REQUEST_CONTEXT_HOLDER_ATTRIBUTE;
-import static org.springframework.test.context.web.ServletTestExecutionListener.RESET_REQUEST_CONTEXT_HOLDER_ATTRIBUTE;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
+import static org.springframework.test.context.web.ServletTestExecutionListener.*;
 
 /**
  * Unit tests for {@link ServletTestExecutionListener}.
@@ -45,7 +41,7 @@ import static org.springframework.test.context.web.ServletTestExecutionListener.
  * @author Phillip Webb
  * @since 3.2.6
  */
-class ServletTestExecutionListenerTests {
+public class ServletTestExecutionListenerTests {
 
 	private static final String SET_UP_OUTSIDE_OF_STEL = "setUpOutsideOfStel";
 
@@ -55,8 +51,8 @@ class ServletTestExecutionListenerTests {
 	private final ServletTestExecutionListener listener = new ServletTestExecutionListener();
 
 
-	@BeforeEach
-	void setUp() {
+	@Before
+	public void setUp() {
 		given(wac.getServletContext()).willReturn(mockServletContext);
 		given(testContext.getApplicationContext()).willReturn(wac);
 
@@ -71,7 +67,7 @@ class ServletTestExecutionListenerTests {
 	}
 
 	@Test
-	void standardApplicationContext() throws Exception {
+	public void standardApplicationContext() throws Exception {
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(getClass());
 		given(testContext.getApplicationContext()).willReturn(mock(ApplicationContext.class));
 
@@ -89,7 +85,7 @@ class ServletTestExecutionListenerTests {
 	}
 
 	@Test
-	void legacyWebTestCaseWithoutExistingRequestAttributes() throws Exception {
+	public void legacyWebTestCaseWithoutExistingRequestAttributes() throws Exception {
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(LegacyWebTestCase.class);
 
 		RequestContextHolder.resetRequestAttributes();
@@ -112,7 +108,7 @@ class ServletTestExecutionListenerTests {
 	}
 
 	@Test
-	void legacyWebTestCaseWithPresetRequestAttributes() throws Exception {
+	public void legacyWebTestCaseWithPresetRequestAttributes() throws Exception {
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(LegacyWebTestCase.class);
 
 		listener.beforeTestClass(testContext);
@@ -134,7 +130,7 @@ class ServletTestExecutionListenerTests {
 	}
 
 	@Test
-	void atWebAppConfigTestCaseWithoutExistingRequestAttributes() throws Exception {
+	public void atWebAppConfigTestCaseWithoutExistingRequestAttributes() throws Exception {
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(AtWebAppConfigWebTestCase.class);
 
 		RequestContextHolder.resetRequestAttributes();
@@ -145,7 +141,7 @@ class ServletTestExecutionListenerTests {
 	}
 
 	@Test
-	void atWebAppConfigTestCaseWithPresetRequestAttributes() throws Exception {
+	public void atWebAppConfigTestCaseWithPresetRequestAttributes() throws Exception {
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(AtWebAppConfigWebTestCase.class);
 
 		listener.beforeTestClass(testContext);
@@ -158,7 +154,7 @@ class ServletTestExecutionListenerTests {
 	 * @since 4.3
 	 */
 	@Test
-	void activateListenerWithoutExistingRequestAttributes() throws Exception {
+	public void activateListenerWithoutExistingRequestAttributes() throws Exception {
 		BDDMockito.<Class<?>> given(testContext.getTestClass()).willReturn(NoAtWebAppConfigWebTestCase.class);
 		given(testContext.getAttribute(ServletTestExecutionListener.ACTIVATE_LISTENER)).willReturn(true);
 
@@ -172,26 +168,26 @@ class ServletTestExecutionListenerTests {
 
 	private RequestAttributes assertRequestAttributesExist() {
 		RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-		assertThat(requestAttributes).as("request attributes should exist").isNotNull();
+		assertNotNull("request attributes should exist", requestAttributes);
 		return requestAttributes;
 	}
 
 	private void assertRequestAttributesDoNotExist() {
-		assertThat(RequestContextHolder.getRequestAttributes()).as("request attributes should not exist").isNull();
+		assertNull("request attributes should not exist", RequestContextHolder.getRequestAttributes());
 	}
 
 	private void assertSetUpOutsideOfStelAttributeExists() {
 		RequestAttributes requestAttributes = assertRequestAttributesExist();
 		Object setUpOutsideOfStel = requestAttributes.getAttribute(SET_UP_OUTSIDE_OF_STEL,
 			RequestAttributes.SCOPE_REQUEST);
-		assertThat(setUpOutsideOfStel).as(SET_UP_OUTSIDE_OF_STEL + " should exist as a request attribute").isNotNull();
+		assertNotNull(SET_UP_OUTSIDE_OF_STEL + " should exist as a request attribute", setUpOutsideOfStel);
 	}
 
 	private void assertSetUpOutsideOfStelAttributeDoesNotExist() {
 		RequestAttributes requestAttributes = assertRequestAttributesExist();
 		Object setUpOutsideOfStel = requestAttributes.getAttribute(SET_UP_OUTSIDE_OF_STEL,
 			RequestAttributes.SCOPE_REQUEST);
-		assertThat(setUpOutsideOfStel).as(SET_UP_OUTSIDE_OF_STEL + " should NOT exist as a request attribute").isNull();
+		assertNull(SET_UP_OUTSIDE_OF_STEL + " should NOT exist as a request attribute", setUpOutsideOfStel);
 	}
 
 	private void assertWebAppConfigTestCase() throws Exception {

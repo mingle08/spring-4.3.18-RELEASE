@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.concurrent.SettableListenableFuture;
 import org.springframework.web.socket.CloseStatus;
@@ -39,7 +38,6 @@ import org.springframework.web.socket.adapter.NativeWebSocketSession;
  */
 public class WebSocketClientSockJsSession extends AbstractClientSockJsSession implements NativeWebSocketSession {
 
-	@Nullable
 	private WebSocketSession webSocketSession;
 
 
@@ -52,63 +50,65 @@ public class WebSocketClientSockJsSession extends AbstractClientSockJsSession im
 
 	@Override
 	public Object getNativeSession() {
-		Assert.state(this.webSocketSession != null, "WebSocketSession not yet initialized");
 		return this.webSocketSession;
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	@Nullable
-	public <T> T getNativeSession(@Nullable Class<T> requiredType) {
+	public <T> T getNativeSession(Class<T> requiredType) {
 		return (requiredType == null || requiredType.isInstance(this.webSocketSession) ? (T) this.webSocketSession : null);
 	}
 
 	@Override
 	public InetSocketAddress getLocalAddress() {
-		Assert.state(this.webSocketSession != null, "WebSocketSession not yet initialized");
+		checkDelegateSessionInitialized();
 		return this.webSocketSession.getLocalAddress();
 	}
 
 	@Override
 	public InetSocketAddress getRemoteAddress() {
-		Assert.state(this.webSocketSession != null, "WebSocketSession not yet initialized");
+		checkDelegateSessionInitialized();
 		return this.webSocketSession.getRemoteAddress();
 	}
 
 	@Override
 	public String getAcceptedProtocol() {
-		Assert.state(this.webSocketSession != null, "WebSocketSession not yet initialized");
+		checkDelegateSessionInitialized();
 		return this.webSocketSession.getAcceptedProtocol();
 	}
 
 	@Override
 	public void setTextMessageSizeLimit(int messageSizeLimit) {
-		Assert.state(this.webSocketSession != null, "WebSocketSession not yet initialized");
+		checkDelegateSessionInitialized();
 		this.webSocketSession.setTextMessageSizeLimit(messageSizeLimit);
 	}
 
 	@Override
 	public int getTextMessageSizeLimit() {
-		Assert.state(this.webSocketSession != null, "WebSocketSession not yet initialized");
+		checkDelegateSessionInitialized();
 		return this.webSocketSession.getTextMessageSizeLimit();
 	}
 
 	@Override
 	public void setBinaryMessageSizeLimit(int messageSizeLimit) {
-		Assert.state(this.webSocketSession != null, "WebSocketSession not yet initialized");
+		checkDelegateSessionInitialized();
 		this.webSocketSession.setBinaryMessageSizeLimit(messageSizeLimit);
 	}
 
 	@Override
 	public int getBinaryMessageSizeLimit() {
-		Assert.state(this.webSocketSession != null, "WebSocketSession not yet initialized");
+		checkDelegateSessionInitialized();
 		return this.webSocketSession.getBinaryMessageSizeLimit();
 	}
 
 	@Override
 	public List<WebSocketExtension> getExtensions() {
-		Assert.state(this.webSocketSession != null, "WebSocketSession not yet initialized");
+		checkDelegateSessionInitialized();
 		return this.webSocketSession.getExtensions();
+	}
+
+	private void checkDelegateSessionInitialized() {
+		Assert.state(this.webSocketSession != null, "WebSocketSession not yet initialized");
 	}
 
 	public void initializeDelegateSession(WebSocketSession session) {
@@ -117,7 +117,6 @@ public class WebSocketClientSockJsSession extends AbstractClientSockJsSession im
 
 	@Override
 	protected void sendInternal(TextMessage textMessage) throws IOException {
-		Assert.state(this.webSocketSession != null, "WebSocketSession not yet initialized");
 		this.webSocketSession.sendMessage(textMessage);
 	}
 

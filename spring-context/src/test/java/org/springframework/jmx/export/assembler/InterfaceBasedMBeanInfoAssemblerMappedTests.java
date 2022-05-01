@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,15 +17,13 @@
 package org.springframework.jmx.export.assembler;
 
 import java.util.Properties;
-
 import javax.management.MBeanAttributeInfo;
 import javax.management.modelmbean.ModelMBeanAttributeInfo;
 import javax.management.modelmbean.ModelMBeanInfo;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.*;
 
 /**
  * @author Rob Harrop
@@ -40,20 +38,30 @@ public class InterfaceBasedMBeanInfoAssemblerMappedTests extends AbstractJmxAsse
 		ModelMBeanInfo info = getMBeanInfoFromAssembler();
 		ModelMBeanAttributeInfo attr = info.getAttribute(AGE_ATTRIBUTE);
 
-		assertThat(attr.isReadable()).as("Age is not readable").isTrue();
-		assertThat(attr.isWritable()).as("Age is not writable").isFalse();
+		assertTrue("Age is not readable", attr.isReadable());
+		assertFalse("Age is not writable", attr.isWritable());
 	}
 
 	@Test
 	public void testWithUnknownClass() throws Exception {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				getWithMapping("com.foo.bar.Unknown"));
+		try {
+			getWithMapping("com.foo.bar.Unknown");
+			fail("Should have thrown IllegalArgumentException");
+		}
+		catch (IllegalArgumentException ex) {
+			// expected
+		}
 	}
 
 	@Test
 	public void testWithNonInterface() throws Exception {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				getWithMapping("JmxTestBean"));
+		try {
+			getWithMapping("JmxTestBean");
+			fail("Should have thrown IllegalArgumentException");
+		}
+		catch (IllegalArgumentException ex) {
+			// expected
+		}
 	}
 
 	@Test
@@ -117,9 +125,9 @@ public class InterfaceBasedMBeanInfoAssemblerMappedTests extends AbstractJmxAsse
 	}
 
 	private void assertNickName(MBeanAttributeInfo attr) {
-		assertThat(attr).as("Nick Name should not be null").isNotNull();
-		assertThat(attr.isWritable()).as("Nick Name should be writable").isTrue();
-		assertThat(attr.isReadable()).as("Nick Name should be readable").isTrue();
+		assertNotNull("Nick Name should not be null", attr);
+		assertTrue("Nick Name should be writable", attr.isWritable());
+		assertTrue("Nick Name should be readab;e", attr.isReadable());
 	}
 
 }

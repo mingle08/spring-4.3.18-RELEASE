@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,8 +18,6 @@ package org.springframework.beans;
 
 import java.beans.PropertyChangeEvent;
 
-import org.springframework.lang.Nullable;
-
 /**
  * Superclass for exceptions related to a property access,
  * such as type mismatch or invocation target exception.
@@ -27,11 +25,10 @@ import org.springframework.lang.Nullable;
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
-@SuppressWarnings("serial")
-public abstract class PropertyAccessException extends BeansException {
+@SuppressWarnings({"serial", "deprecation"})
+public abstract class PropertyAccessException extends BeansException implements org.springframework.core.ErrorCoded {
 
-	@Nullable
-	private final PropertyChangeEvent propertyChangeEvent;
+	private transient PropertyChangeEvent propertyChangeEvent;
 
 
 	/**
@@ -40,7 +37,7 @@ public abstract class PropertyAccessException extends BeansException {
 	 * @param msg the detail message
 	 * @param cause the root cause
 	 */
-	public PropertyAccessException(PropertyChangeEvent propertyChangeEvent, String msg, @Nullable Throwable cause) {
+	public PropertyAccessException(PropertyChangeEvent propertyChangeEvent, String msg, Throwable cause) {
 		super(msg, cause);
 		this.propertyChangeEvent = propertyChangeEvent;
 	}
@@ -50,9 +47,8 @@ public abstract class PropertyAccessException extends BeansException {
 	 * @param msg the detail message
 	 * @param cause the root cause
 	 */
-	public PropertyAccessException(String msg, @Nullable Throwable cause) {
+	public PropertyAccessException(String msg, Throwable cause) {
 		super(msg, cause);
-		this.propertyChangeEvent = null;
 	}
 
 
@@ -61,7 +57,6 @@ public abstract class PropertyAccessException extends BeansException {
 	 * <p>May be {@code null}; only available if an actual bean property
 	 * was affected.
 	 */
-	@Nullable
 	public PropertyChangeEvent getPropertyChangeEvent() {
 		return this.propertyChangeEvent;
 	}
@@ -69,7 +64,6 @@ public abstract class PropertyAccessException extends BeansException {
 	/**
 	 * Return the name of the affected property, if available.
 	 */
-	@Nullable
 	public String getPropertyName() {
 		return (this.propertyChangeEvent != null ? this.propertyChangeEvent.getPropertyName() : null);
 	}
@@ -77,7 +71,6 @@ public abstract class PropertyAccessException extends BeansException {
 	/**
 	 * Return the affected value that was about to be set, if any.
 	 */
-	@Nullable
 	public Object getValue() {
 		return (this.propertyChangeEvent != null ? this.propertyChangeEvent.getNewValue() : null);
 	}
@@ -85,6 +78,7 @@ public abstract class PropertyAccessException extends BeansException {
 	/**
 	 * Return a corresponding error code for this type of exception.
 	 */
+	@Override
 	public abstract String getErrorCode();
 
 }

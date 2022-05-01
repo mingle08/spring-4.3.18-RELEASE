@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,8 +21,6 @@ import java.io.Reader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import org.springframework.lang.Nullable;
-
 /**
  * Abstract base class for {@link LobHandler} implementations.
  *
@@ -36,25 +34,21 @@ import org.springframework.lang.Nullable;
 public abstract class AbstractLobHandler implements LobHandler {
 
 	@Override
-	@Nullable
 	public byte[] getBlobAsBytes(ResultSet rs, String columnName) throws SQLException {
 		return getBlobAsBytes(rs, rs.findColumn(columnName));
 	}
 
 	@Override
-	@Nullable
 	public InputStream getBlobAsBinaryStream(ResultSet rs, String columnName) throws SQLException {
 		return getBlobAsBinaryStream(rs, rs.findColumn(columnName));
 	}
 
 	@Override
-	@Nullable
 	public String getClobAsString(ResultSet rs, String columnName) throws SQLException {
 		return getClobAsString(rs, rs.findColumn(columnName));
 	}
 
 	@Override
-	@Nullable
 	public InputStream getClobAsAsciiStream(ResultSet rs, String columnName) throws SQLException {
 		return getClobAsAsciiStream(rs, rs.findColumn(columnName));
 	}

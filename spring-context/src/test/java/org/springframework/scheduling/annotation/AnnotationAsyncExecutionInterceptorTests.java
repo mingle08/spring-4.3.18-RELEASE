@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,10 +19,10 @@ package org.springframework.scheduling.annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@link AnnotationAsyncExecutionInterceptor}.
@@ -38,23 +38,23 @@ public class AnnotationAsyncExecutionInterceptorTests {
 		AnnotationAsyncExecutionInterceptor i = new AnnotationAsyncExecutionInterceptor(null);
 		{ // method level
 			class C { @Async("qMethod") void m() { } }
-			assertThat(i.getExecutorQualifier(C.class.getDeclaredMethod("m"))).isEqualTo("qMethod");
+			assertThat(i.getExecutorQualifier(C.class.getDeclaredMethod("m")), is("qMethod"));
 		}
 		{ // class level
 			@Async("qClass") class C { void m() { } }
-			assertThat(i.getExecutorQualifier(C.class.getDeclaredMethod("m"))).isEqualTo("qClass");
+			assertThat(i.getExecutorQualifier(C.class.getDeclaredMethod("m")), is("qClass"));
 		}
 		{ // method and class level -> method value overrides
 			@Async("qClass") class C { @Async("qMethod") void m() { } }
-			assertThat(i.getExecutorQualifier(C.class.getDeclaredMethod("m"))).isEqualTo("qMethod");
+			assertThat(i.getExecutorQualifier(C.class.getDeclaredMethod("m")), is("qMethod"));
 		}
 		{ // method and class level -> method value, even if empty, overrides
 			@Async("qClass") class C { @Async void m() { } }
-			assertThat(i.getExecutorQualifier(C.class.getDeclaredMethod("m"))).isEqualTo("");
+			assertThat(i.getExecutorQualifier(C.class.getDeclaredMethod("m")), is(""));
 		}
 		{ // meta annotation with qualifier
 			@MyAsync class C { void m() { } }
-			assertThat(i.getExecutorQualifier(C.class.getDeclaredMethod("m"))).isEqualTo("qMeta");
+			assertThat(i.getExecutorQualifier(C.class.getDeclaredMethod("m")), is("qMeta"));
 		}
 	}
 

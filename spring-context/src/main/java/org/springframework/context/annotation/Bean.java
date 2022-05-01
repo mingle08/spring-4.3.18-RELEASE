@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,6 +22,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.springframework.beans.factory.annotation.Autowire;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.core.annotation.AliasFor;
 
@@ -77,7 +78,7 @@ import org.springframework.core.annotation.AliasFor;
  * </pre>
  *
  * The semantics of the above-mentioned annotations match their use at the component
- * class level: {@code @Profile} allows for selective inclusion of certain beans.
+ * class level: {@code Profile} allows for selective inclusion of certain beans.
  * {@code @Scope} changes the bean's scope from singleton to the specified scope.
  * {@code @Lazy} only has an actual effect in case of the default singleton scope.
  * {@code @DependsOn} enforces the creation of specific other beans before this
@@ -95,12 +96,12 @@ import org.springframework.core.annotation.AliasFor;
  * order values determine the order of resolved elements in case of collection
  * injection points (with several target beans matching by type and qualifier).
  *
- * <p><b>NOTE:</b> {@code @Order} values may influence priorities at injection points,
+ * <p><b>NOTE:</b> {@code @Order} values may influence priorities at injection points
  * but please be aware that they do not influence singleton startup order which is an
  * orthogonal concern determined by dependency relationships and {@code @DependsOn}
- * declarations as mentioned above. Also, {@link jakarta.annotation.Priority} is not
+ * declarations as mentioned above. Also, {@link javax.annotation.Priority} is not
  * available at this level since it cannot be declared on methods; its semantics can
- * be modeled through {@code @Order} values in combination with {@code @Primary} on
+ * be modelled through {@code @Order} values in combination with {@code @Primary} on
  * a single bean per type.
  *
  * <h3>{@code @Bean} Methods in {@code @Configuration} Classes</h3>
@@ -193,7 +194,7 @@ import org.springframework.core.annotation.AliasFor;
  * declaring {@code @Configuration} class, thus avoiding the above-mentioned lifecycle conflicts.
  * Note however that {@code static} {@code @Bean} methods will not be enhanced for scoping and AOP
  * semantics as mentioned above. This works out in {@code BFPP} cases, as they are not typically
- * referenced by other {@code @Bean} methods. As a reminder, an INFO-level log message will be
+ * referenced by other {@code @Bean} methods. As a reminder, a WARN-level log message will be
  * issued for any non-static {@code @Bean} methods having a return type assignable to
  * {@code BeanFactoryPostProcessor}.
  *
@@ -239,12 +240,16 @@ public @interface Bean {
 	String[] name() default {};
 
 	/**
-	 * Is this bean a candidate for getting autowired into some other bean?
-	 * <p>Default is {@code true}; set this to {@code false} for internal delegates
-	 * that are not meant to get in the way of beans of the same type in other places.
-	 * @since 5.1
+	 * Are dependencies to be injected via convention-based autowiring by name or type?
+	 * <p>Note that this autowire mode is just about externally driven autowiring based
+	 * on bean property setter methods by convention, analogous to XML bean definitions.
+	 * <p>The default mode does allow for annotation-driven autowiring. "no" refers to
+	 * externally driven autowiring only, not affecting any autowiring demands that the
+	 * bean class itself expresses through annotations.
+	 * @see Autowire#BY_NAME
+	 * @see Autowire#BY_TYPE
 	 */
-	boolean autowireCandidate() default true;
+	Autowire autowire() default Autowire.NO;
 
 	/**
 	 * The optional name of a method to call on the bean instance during initialization.

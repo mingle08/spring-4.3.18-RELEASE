@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,7 +34,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.StreamingHttpOutputMessage;
-import org.springframework.lang.Nullable;
 
 /**
  * {@link ClientHttpRequest} implementation based on
@@ -55,7 +54,6 @@ final class HttpComponentsStreamingClientHttpRequest extends AbstractClientHttpR
 
 	private final HttpContext httpContext;
 
-	@Nullable
 	private Body body;
 
 
@@ -65,15 +63,10 @@ final class HttpComponentsStreamingClientHttpRequest extends AbstractClientHttpR
 		this.httpContext = context;
 	}
 
-	@Override
-	public HttpMethod getMethod() {
-		return HttpMethod.valueOf(this.httpRequest.getMethod());
-	}
 
 	@Override
-	@Deprecated
-	public String getMethodValue() {
-		return this.httpRequest.getMethod();
+	public HttpMethod getMethod() {
+		return HttpMethod.resolve(this.httpRequest.getMethod());
 	}
 
 	@Override
@@ -96,7 +89,8 @@ final class HttpComponentsStreamingClientHttpRequest extends AbstractClientHttpR
 	protected ClientHttpResponse executeInternal(HttpHeaders headers) throws IOException {
 		HttpComponentsClientHttpRequest.addHeaders(this.httpRequest, headers);
 
-		if (this.httpRequest instanceof HttpEntityEnclosingRequest entityEnclosingRequest && this.body != null) {
+		if (this.httpRequest instanceof HttpEntityEnclosingRequest && this.body != null) {
+			HttpEntityEnclosingRequest entityEnclosingRequest = (HttpEntityEnclosingRequest) this.httpRequest;
 			HttpEntity requestEntity = new StreamingHttpEntity(getHeaders(), this.body);
 			entityEnclosingRequest.setEntity(requestEntity);
 		}
@@ -133,14 +127,12 @@ final class HttpComponentsStreamingClientHttpRequest extends AbstractClientHttpR
 		}
 
 		@Override
-		@Nullable
 		public Header getContentType() {
 			MediaType contentType = this.headers.getContentType();
 			return (contentType != null ? new BasicHeader("Content-Type", contentType.toString()) : null);
 		}
 
 		@Override
-		@Nullable
 		public Header getContentEncoding() {
 			String contentEncoding = this.headers.getFirst("Content-Encoding");
 			return (contentEncoding != null ? new BasicHeader("Content-Encoding", contentEncoding) : null);

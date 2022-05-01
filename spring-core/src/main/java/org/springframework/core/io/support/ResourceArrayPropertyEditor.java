@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,11 +18,10 @@ package org.springframework.core.io.support;
 
 import java.beans.PropertyEditorSupport;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -31,7 +30,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.env.PropertyResolver;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -61,7 +59,6 @@ public class ResourceArrayPropertyEditor extends PropertyEditorSupport {
 
 	private final ResourcePatternResolver resourcePatternResolver;
 
-	@Nullable
 	private PropertyResolver propertyResolver;
 
 	private final boolean ignoreUnresolvablePlaceholders;
@@ -83,9 +80,7 @@ public class ResourceArrayPropertyEditor extends PropertyEditorSupport {
 	 * @param resourcePatternResolver the ResourcePatternResolver to use
 	 * @param propertyResolver the PropertyResolver to use
 	 */
-	public ResourceArrayPropertyEditor(
-			ResourcePatternResolver resourcePatternResolver, @Nullable PropertyResolver propertyResolver) {
-
+	public ResourceArrayPropertyEditor(ResourcePatternResolver resourcePatternResolver, PropertyResolver propertyResolver) {
 		this(resourcePatternResolver, propertyResolver, true);
 	}
 
@@ -98,7 +93,7 @@ public class ResourceArrayPropertyEditor extends PropertyEditorSupport {
 	 * if no corresponding system property could be found
 	 */
 	public ResourceArrayPropertyEditor(ResourcePatternResolver resourcePatternResolver,
-			@Nullable PropertyResolver propertyResolver, boolean ignoreUnresolvablePlaceholders) {
+			PropertyResolver propertyResolver, boolean ignoreUnresolvablePlaceholders) {
 
 		Assert.notNull(resourcePatternResolver, "ResourcePatternResolver must not be null");
 		this.resourcePatternResolver = resourcePatternResolver;
@@ -130,7 +125,7 @@ public class ResourceArrayPropertyEditor extends PropertyEditorSupport {
 	public void setValue(Object value) throws IllegalArgumentException {
 		if (value instanceof Collection || (value instanceof Object[] && !(value instanceof Resource[]))) {
 			Collection<?> input = (value instanceof Collection ? (Collection<?>) value : Arrays.asList((Object[]) value));
-			Set<Resource> merged = new LinkedHashSet<>();
+			List<Resource> merged = new ArrayList<Resource>();
 			for (Object element : input) {
 				if (element instanceof String) {
 					// A location pattern: resolve it into a Resource array.
@@ -138,7 +133,11 @@ public class ResourceArrayPropertyEditor extends PropertyEditorSupport {
 					String pattern = resolvePath((String) element).trim();
 					try {
 						Resource[] resources = this.resourcePatternResolver.getResources(pattern);
-						Collections.addAll(merged, resources);
+						for (Resource resource : resources) {
+							if (!merged.contains(resource)) {
+								merged.add(resource);
+							}
+						}
 					}
 					catch (IOException ex) {
 						// ignore - might be an unresolved placeholder or non-existing base directory
@@ -149,14 +148,17 @@ public class ResourceArrayPropertyEditor extends PropertyEditorSupport {
 				}
 				else if (element instanceof Resource) {
 					// A Resource object: add it to the result.
-					merged.add((Resource) element);
+					Resource resource = (Resource) element;
+					if (!merged.contains(resource)) {
+						merged.add(resource);
+					}
 				}
 				else {
 					throw new IllegalArgumentException("Cannot convert element [" + element + "] to [" +
 							Resource.class.getName() + "]: only location String and Resource object supported");
 				}
 			}
-			super.setValue(merged.toArray(new Resource[0]));
+			super.setValue(merged.toArray(new Resource[merged.size()]));
 		}
 
 		else {

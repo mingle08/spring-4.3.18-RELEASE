@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,12 +17,11 @@
 package org.springframework.web.socket.adapter.standard;
 
 import java.nio.ByteBuffer;
-
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.Decoder;
-import jakarta.websocket.EncodeException;
-import jakarta.websocket.Encoder;
-import jakarta.websocket.EndpointConfig;
+import javax.websocket.DecodeException;
+import javax.websocket.Decoder;
+import javax.websocket.EncodeException;
+import javax.websocket.Encoder;
+import javax.websocket.EndpointConfig;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,13 +32,12 @@ import org.springframework.core.GenericTypeResolver;
 import org.springframework.core.convert.ConversionException;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.web.context.ContextLoader;
 
 /**
- * Base class that can be used to implement a standard {@link jakarta.websocket.Encoder}
- * and/or {@link jakarta.websocket.Decoder}. It provides encode and decode method
+ * Base class that can be used to implement a standard {@link javax.websocket.Encoder}
+ * and/or {@link javax.websocket.Decoder}. It provides encode and decode method
  * implementations that delegate to a Spring {@link ConversionService}.
  *
  * <p>By default, this class looks up a {@link ConversionService} registered in the
@@ -50,7 +48,7 @@ import org.springframework.web.context.ContextLoader;
  * {@link #getConversionService()} method to provide an alternative lookup strategy.
  *
  * <p>Subclasses can extend this class and should also implement one or
- * both of {@link jakarta.websocket.Encoder} and {@link jakarta.websocket.Decoder}.
+ * both of {@link javax.websocket.Encoder} and {@link javax.websocket.Decoder}.
  * For convenience {@link ConvertingEncoderDecoderSupport.BinaryEncoder},
  * {@link ConvertingEncoderDecoderSupport.BinaryDecoder},
  * {@link ConvertingEncoderDecoderSupport.TextEncoder} and
@@ -66,12 +64,12 @@ import org.springframework.web.context.ContextLoader;
  *
  * @author Phillip Webb
  * @since 4.0
- * @param <T> the type being converted to (for Encoder) or from (for Decoder)
- * @param <M> the WebSocket message type ({@link String} or {@link ByteBuffer})
  * @see ConvertingEncoderDecoderSupport.BinaryEncoder
  * @see ConvertingEncoderDecoderSupport.BinaryDecoder
  * @see ConvertingEncoderDecoderSupport.TextEncoder
  * @see ConvertingEncoderDecoderSupport.TextDecoder
+ * @param <T> the type being converted to (for Encoder) or from (for Decoder)
+ * @param <M> the WebSocket message type ({@link String} or {@link ByteBuffer})
  */
 public abstract class ConvertingEncoderDecoderSupport<T, M> {
 
@@ -79,13 +77,12 @@ public abstract class ConvertingEncoderDecoderSupport<T, M> {
 
 
 	/**
-	 * Called to initialize the encoder/decoder.
-	 * @see jakarta.websocket.Encoder#init(EndpointConfig)
-	 * @see jakarta.websocket.Decoder#init(EndpointConfig)
+	 * @see javax.websocket.Encoder#init(EndpointConfig)
+	 * @see javax.websocket.Decoder#init(EndpointConfig)
 	 */
 	public void init(EndpointConfig config) {
 		ApplicationContext applicationContext = getApplicationContext();
-		if (applicationContext instanceof ConfigurableApplicationContext) {
+		if (applicationContext != null && applicationContext instanceof ConfigurableApplicationContext) {
 			ConfigurableListableBeanFactory beanFactory =
 					((ConfigurableApplicationContext) applicationContext).getBeanFactory();
 			beanFactory.autowireBean(this);
@@ -93,9 +90,8 @@ public abstract class ConvertingEncoderDecoderSupport<T, M> {
 	}
 
 	/**
-	 * Called to destroy the encoder/decoder.
-	 * @see jakarta.websocket.Encoder#destroy()
-	 * @see jakarta.websocket.Decoder#destroy()
+	 * @see javax.websocket.Encoder#destroy()
+	 * @see javax.websocket.Decoder#destroy()
 	 */
 	public void destroy() {
 	}
@@ -126,7 +122,6 @@ public abstract class ConvertingEncoderDecoderSupport<T, M> {
 	 * not using {@link ContextLoader}, this method should be overridden.
 	 * @return the {@link ApplicationContext} or {@code null}
 	 */
-	@Nullable
 	protected ApplicationContext getApplicationContext() {
 		return ContextLoader.getCurrentWebApplicationContext();
 	}
@@ -157,12 +152,10 @@ public abstract class ConvertingEncoderDecoderSupport<T, M> {
 	}
 
 	/**
-	 * Encode an object to a message.
-	 * @see jakarta.websocket.Encoder.Text#encode(Object)
-	 * @see jakarta.websocket.Encoder.Binary#encode(Object)
+	 * @see javax.websocket.Encoder.Text#encode(Object)
+	 * @see javax.websocket.Encoder.Binary#encode(Object)
 	 */
 	@SuppressWarnings("unchecked")
-	@Nullable
 	public M encode(T object) throws EncodeException {
 		try {
 			return (M) getConversionService().convert(object, getType(), getMessageType());
@@ -173,22 +166,18 @@ public abstract class ConvertingEncoderDecoderSupport<T, M> {
 	}
 
 	/**
-	 * Determine if a given message can be decoded.
-	 * @see #decode(Object)
-	 * @see jakarta.websocket.Decoder.Text#willDecode(String)
-	 * @see jakarta.websocket.Decoder.Binary#willDecode(ByteBuffer)
+	 * @see javax.websocket.Decoder.Text#willDecode(String)
+	 * @see javax.websocket.Decoder.Binary#willDecode(ByteBuffer)
 	 */
 	public boolean willDecode(M bytes) {
 		return getConversionService().canConvert(getType(), getMessageType());
 	}
 
 	/**
-	 * Decode the message into an object.
-	 * @see jakarta.websocket.Decoder.Text#decode(String)
-	 * @see jakarta.websocket.Decoder.Binary#decode(ByteBuffer)
+	 * @see javax.websocket.Decoder.Text#decode(String)
+	 * @see javax.websocket.Decoder.Binary#decode(ByteBuffer)
 	 */
 	@SuppressWarnings("unchecked")
-	@Nullable
 	public T decode(M message) throws DecodeException {
 		try {
 			return (T) getConversionService().convert(message, getMessageType(), getType());
@@ -208,42 +197,42 @@ public abstract class ConvertingEncoderDecoderSupport<T, M> {
 
 
 	/**
-	 * A binary {@link jakarta.websocket.Encoder.Binary jakarta.websocket.Encoder} that delegates
+	 * A binary {@link javax.websocket.Encoder.Binary javax.websocket.Encoder} that delegates
 	 * to Spring's conversion service. See {@link ConvertingEncoderDecoderSupport} for details.
 	 * @param <T> the type that this Encoder can convert to
 	 */
-	public abstract static class BinaryEncoder<T> extends ConvertingEncoderDecoderSupport<T, ByteBuffer>
+	public static abstract class BinaryEncoder<T> extends ConvertingEncoderDecoderSupport<T, ByteBuffer>
 			implements Encoder.Binary<T> {
 	}
 
 
 	/**
-	 * A binary {@link jakarta.websocket.Encoder.Binary jakarta.websocket.Encoder} that delegates
+	 * A binary {@link javax.websocket.Encoder.Binary javax.websocket.Encoder} that delegates
 	 * to Spring's conversion service. See {@link ConvertingEncoderDecoderSupport} for details.
 	 * @param <T> the type that this Decoder can convert from
 	 */
-	public abstract static class BinaryDecoder<T> extends ConvertingEncoderDecoderSupport<T, ByteBuffer>
+	public static abstract class BinaryDecoder<T> extends ConvertingEncoderDecoderSupport<T, ByteBuffer>
 			implements Decoder.Binary<T> {
 	}
 
 
 	/**
-	 * A text {@link jakarta.websocket.Encoder.Text jakarta.websocket.Encoder} that delegates
+	 * A text {@link javax.websocket.Encoder.Text javax.websocket.Encoder} that delegates
 	 * to Spring's conversion service. See {@link ConvertingEncoderDecoderSupport} for
 	 * details.
 	 * @param <T> the type that this Encoder can convert to
 	 */
-	public abstract static class TextEncoder<T> extends ConvertingEncoderDecoderSupport<T, String>
+	public static abstract class TextEncoder<T> extends ConvertingEncoderDecoderSupport<T, String>
 			implements Encoder.Text<T> {
 	}
 
 
 	/**
-	 * A Text {@link jakarta.websocket.Encoder.Text jakarta.websocket.Encoder} that delegates
+	 * A Text {@link javax.websocket.Encoder.Text javax.websocket.Encoder} that delegates
 	 * to Spring's conversion service. See {@link ConvertingEncoderDecoderSupport} for details.
 	 * @param <T> the type that this Decoder can convert from
 	 */
-	public abstract static class TextDecoder<T> extends ConvertingEncoderDecoderSupport<T, String>
+	public static abstract class TextDecoder<T> extends ConvertingEncoderDecoderSupport<T, String>
 			implements Decoder.Text<T> {
 	}
 

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,8 +15,6 @@
  */
 
 package org.springframework.core.type;
-
-import org.springframework.lang.Nullable;
 
 /**
  * Interface that defines abstract metadata of a specific class,
@@ -55,9 +53,7 @@ public interface ClassMetadata {
 	 * Return whether the underlying class represents a concrete class,
 	 * i.e. neither an interface nor an abstract class.
 	 */
-	default boolean isConcrete() {
-		return !(isInterface() || isAbstract());
-	}
+	boolean isConcrete();
 
 	/**
 	 * Return whether the underlying class is marked as 'final'.
@@ -78,29 +74,23 @@ public interface ClassMetadata {
 	 * <p>If this method returns {@code false}, then the underlying
 	 * class is a top-level class.
 	 */
-	default boolean hasEnclosingClass() {
-		return (getEnclosingClassName() != null);
-	}
+	boolean hasEnclosingClass();
 
 	/**
 	 * Return the name of the enclosing class of the underlying class,
 	 * or {@code null} if the underlying class is a top-level class.
 	 */
-	@Nullable
 	String getEnclosingClassName();
 
 	/**
 	 * Return whether the underlying class has a super class.
 	 */
-	default boolean hasSuperClass() {
-		return (getSuperClassName() != null);
-	}
+	boolean hasSuperClass();
 
 	/**
 	 * Return the name of the super class of the underlying class,
 	 * or {@code null} if there is no super class defined.
 	 */
-	@Nullable
 	String getSuperClassName();
 
 	/**

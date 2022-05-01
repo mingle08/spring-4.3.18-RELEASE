@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,10 +18,11 @@ package org.springframework.util.comparator;
 
 import java.util.Comparator;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link ComparableComparator}.
@@ -30,24 +31,27 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  * @author Chris Beams
  * @author Phillip Webb
  */
-class ComparableComparatorTests {
+public class ComparableComparatorTests {
+
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
-	void comparableComparator() {
-		Comparator<String> c = new ComparableComparator<>();
+	public void testComparableComparator() {
+		Comparator<String> c = new ComparableComparator<String>();
 		String s1 = "abc";
 		String s2 = "cde";
-		assertThat(c.compare(s1, s2) < 0).isTrue();
+		assertTrue(c.compare(s1, s2) < 0);
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Test
-	void shouldNeedComparable() {
+	public void shouldNeedComparable() {
 		Comparator c = new ComparableComparator();
 		Object o1 = new Object();
 		Object o2 = new Object();
-		assertThatExceptionOfType(ClassCastException.class).isThrownBy(() ->
-				c.compare(o1, o2));
+		thrown.expect(ClassCastException.class);
+		c.compare(o1, o2);
 	}
 
 }

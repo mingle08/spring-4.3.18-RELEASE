@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +16,14 @@
 
 package org.springframework.orm.jpa;
 
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.Persistence;
-import jakarta.persistence.PersistenceException;
-import jakarta.persistence.spi.PersistenceProvider;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+import javax.persistence.PersistenceException;
+import javax.persistence.spi.PersistenceProvider;
 
 /**
  * {@link org.springframework.beans.factory.FactoryBean} that creates a JPA
- * {@link jakarta.persistence.EntityManagerFactory} according to JPA's standard
+ * {@link javax.persistence.EntityManagerFactory} according to JPA's standard
  * <i>standalone</i> bootstrap contract. This is the simplest way to set up a
  * shared JPA EntityManagerFactory in a Spring application context; the
  * EntityManagerFactory can then be passed to JPA-based DAOs via
@@ -41,7 +41,7 @@ import jakarta.persistence.spi.PersistenceProvider;
  * <p>This EntityManagerFactory bootstrap is appropriate for standalone applications
  * which solely use JPA for data access. If you want to set up your persistence
  * provider for an external DataSource and/or for global transactions which span
- * multiple resources, you will need to either deploy it into a full Jakarta EE
+ * multiple resources, you will need to either deploy it into a full Java EE
  * application server and access the deployed EntityManagerFactory via JNDI,
  * or use Spring's {@link LocalContainerEntityManagerFactoryBean} with appropriate
  * configuration for local setup according to JPA's container contract.
@@ -52,6 +52,10 @@ import jakarta.persistence.spi.PersistenceProvider;
  * to the JPA provider, consider using Spring's more powerful
  * {@link LocalContainerEntityManagerFactoryBean} instead.
  *
+ * <p><b>NOTE: Spring's JPA support requires JPA 2.0 or higher, as of Spring 4.0.</b>
+ * JPA 1.0 based applications are still supported; however, a JPA 2.0/2.1 compliant
+ * persistence provider is needed at runtime.
+ *
  * @author Juergen Hoeller
  * @author Rod Johnson
  * @since 2.0
@@ -61,20 +65,20 @@ import jakarta.persistence.spi.PersistenceProvider;
  * @see LocalContainerEntityManagerFactoryBean
  * @see org.springframework.jndi.JndiObjectFactoryBean
  * @see org.springframework.orm.jpa.support.SharedEntityManagerBean
- * @see jakarta.persistence.Persistence#createEntityManagerFactory
- * @see jakarta.persistence.spi.PersistenceProvider#createEntityManagerFactory
+ * @see javax.persistence.Persistence#createEntityManagerFactory
+ * @see javax.persistence.spi.PersistenceProvider#createEntityManagerFactory
  */
 @SuppressWarnings("serial")
 public class LocalEntityManagerFactoryBean extends AbstractEntityManagerFactoryBean {
 
 	/**
 	 * Initialize the EntityManagerFactory for the given configuration.
-	 * @throws jakarta.persistence.PersistenceException in case of JPA initialization errors
+	 * @throws javax.persistence.PersistenceException in case of JPA initialization errors
 	 */
 	@Override
 	protected EntityManagerFactory createNativeEntityManagerFactory() throws PersistenceException {
-		if (logger.isDebugEnabled()) {
-			logger.debug("Building JPA EntityManagerFactory for persistence unit '" + getPersistenceUnitName() + "'");
+		if (logger.isInfoEnabled()) {
+			logger.info("Building JPA EntityManagerFactory for persistence unit '" + getPersistenceUnitName() + "'");
 		}
 		PersistenceProvider provider = getPersistenceProvider();
 		if (provider != null) {

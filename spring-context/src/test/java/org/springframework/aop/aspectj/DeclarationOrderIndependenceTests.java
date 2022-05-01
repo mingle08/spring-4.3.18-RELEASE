@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,75 +19,66 @@ package org.springframework.aop.aspectj;
 import java.io.Serializable;
 
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Adrian Colyer
  * @author Chris Beams
  */
-class DeclarationOrderIndependenceTests {
-
-	private ClassPathXmlApplicationContext ctx;
+public final class DeclarationOrderIndependenceTests {
 
 	private TopsyTurvyAspect aspect;
 
 	private TopsyTurvyTarget target;
 
 
-	@BeforeEach
-	void setup() {
-		this.ctx = new ClassPathXmlApplicationContext(getClass().getSimpleName() + ".xml", getClass());
+	@Before
+	@SuppressWarnings("resource")
+	public void setUp() {
+		ClassPathXmlApplicationContext ctx =
+			new ClassPathXmlApplicationContext(getClass().getSimpleName() + ".xml", getClass());
 		aspect = (TopsyTurvyAspect) ctx.getBean("topsyTurvyAspect");
 		target = (TopsyTurvyTarget) ctx.getBean("topsyTurvyTarget");
 	}
 
-	@AfterEach
-	void tearDown() {
-		this.ctx.close();
-	}
-
-
 	@Test
-	void testTargetIsSerializable() {
-		boolean condition = this.target instanceof Serializable;
-		assertThat(condition).as("target bean is serializable").isTrue();
+	public void testTargetIsSerializable() {
+		assertTrue("target bean is serializable",this.target instanceof Serializable);
 	}
 
 	@Test
-	void testTargetIsBeanNameAware() {
-		boolean condition = this.target instanceof BeanNameAware;
-		assertThat(condition).as("target bean is bean name aware").isTrue();
+	public void testTargetIsBeanNameAware() {
+		assertTrue("target bean is bean name aware",this.target instanceof BeanNameAware);
 	}
 
 	@Test
-	void testBeforeAdviceFiringOk() {
+	public void testBeforeAdviceFiringOk() {
 		AspectCollaborator collab = new AspectCollaborator();
 		this.aspect.setCollaborator(collab);
 		this.target.doSomething();
-		assertThat(collab.beforeFired).as("before advice fired").isTrue();
+		assertTrue("before advice fired",collab.beforeFired);
 	}
 
 	@Test
-	void testAroundAdviceFiringOk() {
+	public void testAroundAdviceFiringOk() {
 		AspectCollaborator collab = new AspectCollaborator();
 		this.aspect.setCollaborator(collab);
 		this.target.getX();
-		assertThat(collab.aroundFired).as("around advice fired").isTrue();
+		assertTrue("around advice fired",collab.aroundFired);
 	}
 
 	@Test
-	void testAfterReturningFiringOk() {
+	public void testAfterReturningFiringOk() {
 		AspectCollaborator collab = new AspectCollaborator();
 		this.aspect.setCollaborator(collab);
 		this.target.getX();
-		assertThat(collab.afterReturningFired).as("after returning advice fired").isTrue();
+		assertTrue("after returning advice fired",collab.afterReturningFired);
 	}
 
 
@@ -144,9 +135,10 @@ class TopsyTurvyAspect {
 
 interface TopsyTurvyTarget {
 
-	void doSomething();
+	public abstract void doSomething();
 
-	int getX();
+	public abstract int getX();
+
 }
 
 
@@ -163,6 +155,7 @@ class TopsyTurvyTargetImpl implements TopsyTurvyTarget {
 	public int getX() {
 		return x;
 	}
+
 }
 
 
@@ -186,4 +179,5 @@ class AspectCollaborator implements TopsyTurvyAspect.Collaborator {
 	public void beforeAdviceFired() {
 		this.beforeFired = true;
 	}
+
 }

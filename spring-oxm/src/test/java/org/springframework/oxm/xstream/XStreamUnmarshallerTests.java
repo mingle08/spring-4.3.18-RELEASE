@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,10 +18,8 @@ package org.springframework.oxm.xstream;
 
 import java.io.ByteArrayInputStream;
 import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.stream.XMLInputFactory;
@@ -30,19 +28,17 @@ import javax.xml.transform.Source;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamSource;
 
-import com.thoughtworks.xstream.security.AnyTypePermission;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 
 import org.springframework.util.xml.StaxUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Arjen Poutsma
- * @author Juergen Hoeller
  */
 public class XStreamUnmarshallerTests {
 
@@ -50,16 +46,20 @@ public class XStreamUnmarshallerTests {
 
 	private XStreamMarshaller unmarshaller;
 
-
-	@BeforeEach
-	public void createUnmarshaller() {
+	@Before
+	public void createUnmarshaller() throws Exception {
 		unmarshaller = new XStreamMarshaller();
-		unmarshaller.setTypePermissions(AnyTypePermission.ANY);
-		Map<String, Class<?>> aliases = new HashMap<>();
+		Map<String, Class<?>> aliases = new HashMap<String, Class<?>>();
 		aliases.put("flight", Flight.class);
 		unmarshaller.setAliases(aliases);
 	}
 
+	private void testFlight(Object o) {
+		assertTrue("Unmarshalled object is not Flights", o instanceof Flight);
+		Flight flight = (Flight) o;
+		assertNotNull("Flight is null", flight);
+		assertEquals("Number is invalid", 42L, flight.getFlightNumber());
+	}
 
 	@Test
 	public void unmarshalDomSource() throws Exception {
@@ -81,7 +81,7 @@ public class XStreamUnmarshallerTests {
 
 	@Test
 	public void unmarshalStreamSourceInputStream() throws Exception {
-		StreamSource source = new StreamSource(new ByteArrayInputStream(INPUT_STRING.getBytes(StandardCharsets.UTF_8)));
+		StreamSource source = new StreamSource(new ByteArrayInputStream(INPUT_STRING.getBytes("UTF-8")));
 		Object flights = unmarshaller.unmarshal(source);
 		testFlight(flights);
 	}
@@ -92,15 +92,5 @@ public class XStreamUnmarshallerTests {
 		Object flights = unmarshaller.unmarshal(source);
 		testFlight(flights);
 	}
-
-
-	private void testFlight(Object o) {
-		boolean condition = o instanceof Flight;
-		assertThat(condition).as("Unmarshalled object is not Flights").isTrue();
-		Flight flight = (Flight) o;
-		assertThat(flight).as("Flight is null").isNotNull();
-		assertThat(flight.getFlightNumber()).as("Number is invalid").isEqualTo(42L);
-	}
-
 }
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,22 +17,21 @@
 package org.springframework.web.method.annotation;
 
 import java.lang.reflect.Method;
+import javax.servlet.http.Cookie;
 
-import jakarta.servlet.http.Cookie;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.SynthesizingMethodParameter;
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.mock.web.test.MockHttpServletResponse;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.context.request.ServletWebRequest;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
-import org.springframework.web.testfixture.servlet.MockHttpServletResponse;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * Test fixture with {@link org.springframework.web.method.annotation.AbstractCookieValueMethodArgumentResolver}.
@@ -55,7 +54,7 @@ public class CookieValueMethodArgumentResolverTests {
 	private MockHttpServletRequest request;
 
 
-	@BeforeEach
+	@Before
 	public void setUp() throws Exception {
 		resolver = new TestCookieValueMethodArgumentResolver();
 
@@ -71,24 +70,23 @@ public class CookieValueMethodArgumentResolverTests {
 
 	@Test
 	public void supportsParameter() {
-		assertThat(resolver.supportsParameter(paramNamedCookie)).as("Cookie parameter not supported").isTrue();
-		assertThat(resolver.supportsParameter(paramNamedDefaultValueString)).as("Cookie string parameter not supported").isTrue();
-		assertThat(resolver.supportsParameter(paramString)).as("non-@CookieValue parameter supported").isFalse();
+		assertTrue("Cookie parameter not supported", resolver.supportsParameter(paramNamedCookie));
+		assertTrue("Cookie string parameter not supported", resolver.supportsParameter(paramNamedDefaultValueString));
+		assertFalse("non-@CookieValue parameter supported", resolver.supportsParameter(paramString));
 	}
 
 	@Test
 	public void resolveCookieDefaultValue() throws Exception {
 		Object result = resolver.resolveArgument(paramNamedDefaultValueString, null, webRequest, null);
 
-		boolean condition = result instanceof String;
-		assertThat(condition).isTrue();
-		assertThat(result).as("Invalid result").isEqualTo("bar");
+		assertTrue(result instanceof String);
+		assertEquals("Invalid result", "bar", result);
 	}
 
-	@Test
+	@Test(expected = ServletRequestBindingException.class)
 	public void notFound() throws Exception {
-		assertThatExceptionOfType(ServletRequestBindingException.class).isThrownBy(() ->
-			resolver.resolveArgument(paramNamedCookie, null, webRequest, null));
+		resolver.resolveArgument(paramNamedCookie, null, webRequest, null);
+		fail("Expected exception");
 	}
 
 	private static class TestCookieValueMethodArgumentResolver extends AbstractCookieValueMethodArgumentResolver {
@@ -105,8 +103,8 @@ public class CookieValueMethodArgumentResolverTests {
 
 
 	public void params(@CookieValue("name") Cookie param1,
-			@CookieValue(name = "name", defaultValue = "bar") String param2,
-			String param3) {
+					   @CookieValue(name = "name", defaultValue = "bar") String param2,
+					   String param3) {
 	}
 
 }

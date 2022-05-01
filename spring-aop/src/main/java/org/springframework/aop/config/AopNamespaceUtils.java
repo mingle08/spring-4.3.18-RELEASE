@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,17 +22,16 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.parsing.BeanComponentDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.xml.ParserContext;
-import org.springframework.lang.Nullable;
 
 /**
  * Utility class for handling registration of auto-proxy creators used internally
  * by the '{@code aop}' namespace tags.
  *
- * <p>Only a single auto-proxy creator should be registered and multiple configuration
- * elements may wish to register different concrete implementations. As such this class
- * delegates to {@link AopConfigUtils} which provides a simple escalation protocol.
- * Callers may request a particular auto-proxy creator and know that creator,
- * <i>or a more capable variant thereof</i>, will be registered as a post-processor.
+ * <p>Only a single auto-proxy creator can be registered and multiple tags may wish
+ * to register different concrete implementations. As such this class delegates to
+ * {@link AopConfigUtils} which wraps a simple escalation protocol. Therefore classes
+ * may request a particular auto-proxy creator and know that class, <i>or a subclass
+ * thereof</i>, will eventually be resident in the application context.
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -80,7 +79,7 @@ public abstract class AopNamespaceUtils {
 		registerComponentIfNecessary(beanDefinition, parserContext);
 	}
 
-	private static void useClassProxyingIfNecessary(BeanDefinitionRegistry registry, @Nullable Element sourceElement) {
+	private static void useClassProxyingIfNecessary(BeanDefinitionRegistry registry, Element sourceElement) {
 		if (sourceElement != null) {
 			boolean proxyTargetClass = Boolean.parseBoolean(sourceElement.getAttribute(PROXY_TARGET_CLASS_ATTRIBUTE));
 			if (proxyTargetClass) {
@@ -93,10 +92,11 @@ public abstract class AopNamespaceUtils {
 		}
 	}
 
-	private static void registerComponentIfNecessary(@Nullable BeanDefinition beanDefinition, ParserContext parserContext) {
+	private static void registerComponentIfNecessary(BeanDefinition beanDefinition, ParserContext parserContext) {
 		if (beanDefinition != null) {
-			parserContext.registerComponent(
-					new BeanComponentDefinition(beanDefinition, AopConfigUtils.AUTO_PROXY_CREATOR_BEAN_NAME));
+			BeanComponentDefinition componentDefinition =
+					new BeanComponentDefinition(beanDefinition, AopConfigUtils.AUTO_PROXY_CREATOR_BEAN_NAME);
+			parserContext.registerComponent(componentDefinition);
 		}
 	}
 

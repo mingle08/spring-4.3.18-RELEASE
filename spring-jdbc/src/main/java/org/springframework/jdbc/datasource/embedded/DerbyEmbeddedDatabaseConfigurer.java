@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,13 +18,10 @@ package org.springframework.jdbc.datasource.embedded;
 
 import java.sql.SQLException;
 import java.util.Properties;
-
 import javax.sql.DataSource;
 
 import org.apache.commons.logging.LogFactory;
 import org.apache.derby.jdbc.EmbeddedDriver;
-
-import org.springframework.lang.Nullable;
 
 /**
  * {@link EmbeddedDatabaseConfigurer} for the Apache Derby database.
@@ -39,7 +36,6 @@ final class DerbyEmbeddedDatabaseConfigurer implements EmbeddedDatabaseConfigure
 
 	private static final String URL_TEMPLATE = "jdbc:derby:memory:%s;%s";
 
-	@Nullable
 	private static DerbyEmbeddedDatabaseConfigurer instance;
 
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,16 +18,14 @@ package org.springframework.cache.jcache;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.cache.Cache;
 import javax.cache.CacheManager;
 
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.Before;
 
 import org.springframework.cache.transaction.AbstractTransactionSupportingCacheManagerTests;
 
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Stephane Nicoll
@@ -41,7 +39,7 @@ public class JCacheCacheManagerTests extends AbstractTransactionSupportingCacheM
 	private JCacheCacheManager transactionalCacheManager;
 
 
-	@BeforeEach
+	@Before
 	public void setupOnce() {
 		cacheManagerMock = new CacheManagerMock();
 		cacheManagerMock.addCache(CACHE_NAME);
@@ -89,7 +87,7 @@ public class JCacheCacheManagerTests extends AbstractTransactionSupportingCacheM
 		private final CacheManager cacheManager;
 
 		private CacheManagerMock() {
-			this.cacheNames = new ArrayList<>();
+			this.cacheNames = new ArrayList<String>();
 			this.cacheManager = mock(CacheManager.class);
 			given(cacheManager.getCacheNames()).willReturn(cacheNames);
 		}
@@ -98,7 +96,7 @@ public class JCacheCacheManagerTests extends AbstractTransactionSupportingCacheM
 			return cacheManager;
 		}
 
-		@SuppressWarnings({ "unchecked", "rawtypes" })
+		@SuppressWarnings("unchecked")
 		public void addCache(String name) {
 			cacheNames.add(name);
 			Cache cache = mock(Cache.class);

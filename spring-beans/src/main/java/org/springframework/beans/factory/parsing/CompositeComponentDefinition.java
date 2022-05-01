@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,10 +16,9 @@
 
 package org.springframework.beans.factory.parsing;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -35,10 +34,9 @@ public class CompositeComponentDefinition extends AbstractComponentDefinition {
 
 	private final String name;
 
-	@Nullable
 	private final Object source;
 
-	private final List<ComponentDefinition> nestedComponents = new ArrayList<>();
+	private final List<ComponentDefinition> nestedComponents = new LinkedList<ComponentDefinition>();
 
 
 	/**
@@ -46,7 +44,7 @@ public class CompositeComponentDefinition extends AbstractComponentDefinition {
 	 * @param name the name of the composite component
 	 * @param source the source element that defines the root of the composite component
 	 */
-	public CompositeComponentDefinition(String name, @Nullable Object source) {
+	public CompositeComponentDefinition(String name, Object source) {
 		Assert.notNull(name, "Name must not be null");
 		this.name = name;
 		this.source = source;
@@ -59,7 +57,6 @@ public class CompositeComponentDefinition extends AbstractComponentDefinition {
 	}
 
 	@Override
-	@Nullable
 	public Object getSource() {
 		return this.source;
 	}
@@ -79,7 +76,7 @@ public class CompositeComponentDefinition extends AbstractComponentDefinition {
 	 * @return the array of nested components, or an empty array if none
 	 */
 	public ComponentDefinition[] getNestedComponents() {
-		return this.nestedComponents.toArray(new ComponentDefinition[0]);
+		return this.nestedComponents.toArray(new ComponentDefinition[this.nestedComponents.size()]);
 	}
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,11 +17,10 @@
 package org.springframework.web.multipart.support;
 
 import java.io.IOException;
-
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
@@ -38,8 +37,8 @@ import org.springframework.web.multipart.MultipartResolver;
  * the default bean name is "filterMultipartResolver".
  *
  * <p>If no MultipartResolver bean is found, this filter falls back to a default
- * MultipartResolver: {@link StandardServletMultipartResolver} for Servlet
- * oontainers, based on a multipart-config section in {@code web.xml}.
+ * MultipartResolver: {@link StandardServletMultipartResolver} for Servlet 3.0,
+ * based on a multipart-config section in {@code web.xml}.
  * Note however that at present the Servlet specification only defines how to
  * enable multipart configuration on a Servlet and as a result multipart request
  * processing is likely not possible in a Filter unless the Servlet container
@@ -66,9 +65,6 @@ import org.springframework.web.multipart.MultipartResolver;
  */
 public class MultipartFilter extends OncePerRequestFilter {
 
-	/**
-	 * The default name for the multipart resolver bean.
-	 */
 	public static final String DEFAULT_MULTIPART_RESOLVER_BEAN_NAME = "filterMultipartResolver";
 
 	private final MultipartResolver defaultMultipartResolver = new StandardServletMultipartResolver();
@@ -109,15 +105,16 @@ public class MultipartFilter extends OncePerRequestFilter {
 
 		HttpServletRequest processedRequest = request;
 		if (multipartResolver.isMultipart(processedRequest)) {
-			if (logger.isTraceEnabled()) {
-				logger.trace("Resolving multipart request");
+			if (logger.isDebugEnabled()) {
+				logger.debug("Resolving multipart request [" + processedRequest.getRequestURI() +
+						"] with MultipartFilter");
 			}
 			processedRequest = multipartResolver.resolveMultipart(processedRequest);
 		}
 		else {
 			// A regular request...
-			if (logger.isTraceEnabled()) {
-				logger.trace("Not a multipart request");
+			if (logger.isDebugEnabled()) {
+				logger.debug("Request [" + processedRequest.getRequestURI() + "] is not a multipart request");
 			}
 		}
 
@@ -149,7 +146,7 @@ public class MultipartFilter extends OncePerRequestFilter {
 	 * bean name is "filterMultipartResolver".
 	 * <p>This can be overridden to use a custom MultipartResolver instance,
 	 * for example if not using a Spring web application context.
-	 * @return the MultipartResolver instance
+	 * @return the MultipartResolver instance, or {@code null} if none found
 	 */
 	protected MultipartResolver lookupMultipartResolver() {
 		WebApplicationContext wac = WebApplicationContextUtils.getWebApplicationContext(getServletContext());

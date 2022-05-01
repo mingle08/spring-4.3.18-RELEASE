@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,8 +20,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.fasterxml.jackson.annotation.JsonView;
@@ -34,13 +37,13 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import org.springframework.core.MethodParameter;
-import org.springframework.lang.Nullable;
+import org.springframework.core.ResolvableType;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.util.Assert;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.MimeType;
 
 /**
@@ -52,7 +55,7 @@ import org.springframework.util.MimeType;
  * <li>{@link DeserializationFeature#FAIL_ON_UNKNOWN_PROPERTIES} is disabled</li>
  * </ul>
  *
- * <p>Compatible with Jackson 2.9 to 2.12, as of Spring 5.3.
+ * <p>Compatible with Jackson 2.6 and higher, as of Spring 4.3.
  *
  * @author Rossen Stoyanchev
  * @author Juergen Hoeller
@@ -63,7 +66,6 @@ public class MappingJackson2MessageConverter extends AbstractMessageConverter {
 
 	private ObjectMapper objectMapper;
 
-	@Nullable
 	private Boolean prettyPrint;
 
 
@@ -72,8 +74,8 @@ public class MappingJackson2MessageConverter extends AbstractMessageConverter {
 	 * the {@code application/json} MIME type with {@code UTF-8} character set.
 	 */
 	public MappingJackson2MessageConverter() {
-		super(new MimeType("application", "json"), new MimeType("application", "*+json"));
-		this.objectMapper = initObjectMapper();
+		super(new MimeType("application", "json", Charset.forName("UTF-8")));
+		initObjectMapper();
 	}
 
 	/**
@@ -83,17 +85,15 @@ public class MappingJackson2MessageConverter extends AbstractMessageConverter {
 	 * @since 4.1.5
 	 */
 	public MappingJackson2MessageConverter(MimeType... supportedMimeTypes) {
-		super(supportedMimeTypes);
-		this.objectMapper = initObjectMapper();
+		super(Arrays.asList(supportedMimeTypes));
+		initObjectMapper();
 	}
 
 
-	@SuppressWarnings("deprecation")  // on Jackson 2.13: configure(MapperFeature, boolean)
-	private ObjectMapper initObjectMapper() {
-		ObjectMapper objectMapper = new ObjectMapper();
-		objectMapper.configure(MapperFeature.DEFAULT_VIEW_INCLUSION, false);
-		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		return objectMapper;
+	private void initObjectMapper() {
+		this.objectMapper = new ObjectMapper();
+		this.objectMapper.configure(MapperFeature.DEFAULT_VIEW_INCLUSION, false);
+		this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
 
 	/**
@@ -140,14 +140,13 @@ public class MappingJackson2MessageConverter extends AbstractMessageConverter {
 		}
 	}
 
-
 	@Override
-	protected boolean canConvertFrom(Message<?> message, @Nullable Class<?> targetClass) {
+	protected boolean canConvertFrom(Message<?> message, Class<?> targetClass) {
 		if (targetClass == null || !supportsMimeType(message.getHeaders())) {
 			return false;
 		}
 		JavaType javaType = this.objectMapper.constructType(targetClass);
-		AtomicReference<Throwable> causeRef = new AtomicReference<>();
+		AtomicReference<Throwable> causeRef = new AtomicReference<Throwable>();
 		if (this.objectMapper.canDeserialize(javaType, causeRef)) {
 			return true;
 		}
@@ -156,11 +155,11 @@ public class MappingJackson2MessageConverter extends AbstractMessageConverter {
 	}
 
 	@Override
-	protected boolean canConvertTo(Object payload, @Nullable MessageHeaders headers) {
-		if (!supportsMimeType(headers)) {
+	protected boolean canConvertTo(Object payload, MessageHeaders headers) {
+		if (payload == null || !supportsMimeType(headers)) {
 			return false;
 		}
-		AtomicReference<Throwable> causeRef = new AtomicReference<>();
+		AtomicReference<Throwable> causeRef = new AtomicReference<Throwable>();
 		if (this.objectMapper.canSerialize(payload.getClass(), causeRef)) {
 			return true;
 		}
@@ -176,13 +175,13 @@ public class MappingJackson2MessageConverter extends AbstractMessageConverter {
 	 * (typically a {@link JsonMappingException})
 	 * @since 4.3
 	 */
-	protected void logWarningIfNecessary(Type type, @Nullable Throwable cause) {
+	protected void logWarningIfNecessary(Type type, Throwable cause) {
 		if (cause == null) {
 			return;
 		}
 
-		// Do not log warning for serializer not found (note: different message wording on Jackson 2.9)
-		boolean debugLevel = (cause instanceof JsonMappingException && cause.getMessage().startsWith("Cannot find"));
+		boolean debugLevel = (cause instanceof JsonMappingException &&
+				cause.getMessage().startsWith("Can not find"));
 
 		if (debugLevel ? logger.isDebugEnabled() : logger.isWarnEnabled()) {
 			String msg = "Failed to evaluate Jackson " + (type instanceof JavaType ? "de" : "") +
@@ -206,16 +205,13 @@ public class MappingJackson2MessageConverter extends AbstractMessageConverter {
 	}
 
 	@Override
-	@Nullable
-	protected Object convertFromInternal(Message<?> message, Class<?> targetClass, @Nullable Object conversionHint) {
-		JavaType javaType = this.objectMapper.constructType(getResolvedType(targetClass, conversionHint));
+	protected Object convertFromInternal(Message<?> message, Class<?> targetClass, Object conversionHint) {
+		JavaType javaType = getJavaType(targetClass, conversionHint);
 		Object payload = message.getPayload();
 		Class<?> view = getSerializationView(conversionHint);
+		// Note: in the view case, calling withType instead of forType for compatibility with Jackson <2.5
 		try {
-			if (ClassUtils.isAssignableValue(targetClass, payload)) {
-				return payload;
-			}
-			else if (payload instanceof byte[]) {
+			if (payload instanceof byte[]) {
 				if (view != null) {
 					return this.objectMapper.readerWithView(view).forType(javaType).readValue((byte[]) payload);
 				}
@@ -224,7 +220,6 @@ public class MappingJackson2MessageConverter extends AbstractMessageConverter {
 				}
 			}
 			else {
-				// Assuming a text-based source payload
 				if (view != null) {
 					return this.objectMapper.readerWithView(view).forType(javaType).readValue(payload.toString());
 				}
@@ -238,29 +233,102 @@ public class MappingJackson2MessageConverter extends AbstractMessageConverter {
 		}
 	}
 
-	@Override
-	@Nullable
-	protected Object convertToInternal(Object payload, @Nullable MessageHeaders headers,
-			@Nullable Object conversionHint) {
+	private JavaType getJavaType(Class<?> targetClass, Object conversionHint) {
+		if (conversionHint instanceof MethodParameter) {
+			MethodParameter param = (MethodParameter) conversionHint;
+			param = param.nestedIfOptional();
+			if (Message.class.isAssignableFrom(param.getParameterType())) {
+				param = param.nested();
+			}
+			Type genericParameterType = param.getNestedGenericParameterType();
+			Class<?> contextClass = param.getContainingClass();
+			Type type = getJavaType(genericParameterType, contextClass);
+			return this.objectMapper.getTypeFactory().constructType(type);
+		}
+		return this.objectMapper.constructType(targetClass);
+	}
 
+	private JavaType getJavaType(Type type, Class<?> contextClass) {
+		TypeFactory typeFactory = this.objectMapper.getTypeFactory();
+		if (contextClass != null) {
+			ResolvableType resolvedType = ResolvableType.forType(type);
+			if (type instanceof TypeVariable) {
+				ResolvableType resolvedTypeVariable = resolveVariable(
+						(TypeVariable<?>) type, ResolvableType.forClass(contextClass));
+				if (resolvedTypeVariable != ResolvableType.NONE) {
+					return typeFactory.constructType(resolvedTypeVariable.resolve());
+				}
+			}
+			else if (type instanceof ParameterizedType && resolvedType.hasUnresolvableGenerics()) {
+				ParameterizedType parameterizedType = (ParameterizedType) type;
+				Class<?>[] generics = new Class<?>[parameterizedType.getActualTypeArguments().length];
+				Type[] typeArguments = parameterizedType.getActualTypeArguments();
+				for (int i = 0; i < typeArguments.length; i++) {
+					Type typeArgument = typeArguments[i];
+					if (typeArgument instanceof TypeVariable) {
+						ResolvableType resolvedTypeArgument = resolveVariable(
+								(TypeVariable<?>) typeArgument, ResolvableType.forClass(contextClass));
+						if (resolvedTypeArgument != ResolvableType.NONE) {
+							generics[i] = resolvedTypeArgument.resolve();
+						}
+						else {
+							generics[i] = ResolvableType.forType(typeArgument).resolve();
+						}
+					}
+					else {
+						generics[i] = ResolvableType.forType(typeArgument).resolve();
+					}
+				}
+				return typeFactory.constructType(ResolvableType.
+						forClassWithGenerics(resolvedType.getRawClass(), generics).getType());
+			}
+		}
+		return typeFactory.constructType(type);
+	}
+
+	private ResolvableType resolveVariable(TypeVariable<?> typeVariable, ResolvableType contextType) {
+		ResolvableType resolvedType;
+		if (contextType.hasGenerics()) {
+			resolvedType = ResolvableType.forType(typeVariable, contextType);
+			if (resolvedType.resolve() != null) {
+				return resolvedType;
+			}
+		}
+
+		ResolvableType superType = contextType.getSuperType();
+		if (superType != ResolvableType.NONE) {
+			resolvedType = resolveVariable(typeVariable, superType);
+			if (resolvedType.resolve() != null) {
+				return resolvedType;
+			}
+		}
+		for (ResolvableType ifc : contextType.getInterfaces()) {
+			resolvedType = resolveVariable(typeVariable, ifc);
+			if (resolvedType.resolve() != null) {
+				return resolvedType;
+			}
+		}
+		return ResolvableType.NONE;
+	}
+
+	@Override
+	protected Object convertToInternal(Object payload, MessageHeaders headers, Object conversionHint) {
 		try {
 			Class<?> view = getSerializationView(conversionHint);
 			if (byte[].class == getSerializedPayloadClass()) {
 				ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
 				JsonEncoding encoding = getJsonEncoding(getMimeType(headers));
-				try (JsonGenerator generator = this.objectMapper.getFactory().createGenerator(out, encoding)) {
-					if (view != null) {
-						this.objectMapper.writerWithView(view).writeValue(generator, payload);
-					}
-					else {
-						this.objectMapper.writeValue(generator, payload);
-					}
-					payload = out.toByteArray();
+				JsonGenerator generator = this.objectMapper.getFactory().createGenerator(out, encoding);
+				if (view != null) {
+					this.objectMapper.writerWithView(view).writeValue(generator, payload);
 				}
+				else {
+					this.objectMapper.writeValue(generator, payload);
+				}
+				payload = out.toByteArray();
 			}
 			else {
-				// Assuming a text-based target payload
-				Writer writer = new StringWriter(1024);
+				Writer writer = new StringWriter();
 				if (view != null) {
 					this.objectMapper.writerWithView(view).writeValue(writer, payload);
 				}
@@ -283,9 +351,9 @@ public class MappingJackson2MessageConverter extends AbstractMessageConverter {
 	 * @return the serialization view class, or {@code null} if none
 	 * @since 4.2
 	 */
-	@Nullable
-	protected Class<?> getSerializationView(@Nullable Object conversionHint) {
-		if (conversionHint instanceof MethodParameter param) {
+	protected Class<?> getSerializationView(Object conversionHint) {
+		if (conversionHint instanceof MethodParameter) {
+			MethodParameter param = (MethodParameter) conversionHint;
 			JsonView annotation = (param.getParameterIndex() >= 0 ?
 					param.getParameterAnnotation(JsonView.class) : param.getMethodAnnotation(JsonView.class));
 			if (annotation != null) {
@@ -317,8 +385,8 @@ public class MappingJackson2MessageConverter extends AbstractMessageConverter {
 	 * @param contentType the MIME type from the MessageHeaders, if any
 	 * @return the JSON encoding to use (never {@code null})
 	 */
-	protected JsonEncoding getJsonEncoding(@Nullable MimeType contentType) {
-		if (contentType != null && contentType.getCharset() != null) {
+	protected JsonEncoding getJsonEncoding(MimeType contentType) {
+		if ((contentType != null) && (contentType.getCharset() != null)) {
 			Charset charset = contentType.getCharset();
 			for (JsonEncoding encoding : JsonEncoding.values()) {
 				if (charset.name().equals(encoding.getJavaName())) {

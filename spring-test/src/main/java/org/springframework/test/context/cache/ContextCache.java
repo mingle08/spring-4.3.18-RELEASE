@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@
 package org.springframework.test.context.cache;
 
 import org.springframework.context.ApplicationContext;
-import org.springframework.lang.Nullable;
 import org.springframework.test.annotation.DirtiesContext.HierarchyMode;
 import org.springframework.test.context.MergedContextConfiguration;
 
@@ -89,7 +88,6 @@ public interface ContextCache {
 	 * if not found in the cache
 	 * @see #remove
 	 */
-	@Nullable
 	ApplicationContext get(MergedContextConfiguration key);
 
 	/**
@@ -114,7 +112,7 @@ public interface ContextCache {
 	 * @param hierarchyMode the hierarchy mode; may be {@code null} if the context
 	 * is not part of a hierarchy
 	 */
-	void remove(MergedContextConfiguration key, @Nullable HierarchyMode hierarchyMode);
+	void remove(MergedContextConfiguration key, HierarchyMode hierarchyMode);
 
 	/**
 	 * Determine the number of contexts currently stored in the cache.

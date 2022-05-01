@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,6 @@ package org.springframework.http.client;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
-import java.util.function.BiFunction;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
@@ -39,12 +38,12 @@ import org.apache.http.protocol.HttpContext;
 
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.http.HttpMethod;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 
 /**
  * {@link org.springframework.http.client.ClientHttpRequestFactory} implementation that
- * uses <a href="https://hc.apache.org/httpcomponents-client-ga/">Apache HttpComponents
+ * uses <a href="http://hc.apache.org/httpcomponents-client-ga/">Apache HttpComponents
  * HttpClient</a> to create requests.
  *
  * <p>Allows to use a pre-configured {@link HttpClient} instance -
@@ -60,20 +59,30 @@ import org.springframework.util.Assert;
  */
 public class HttpComponentsClientHttpRequestFactory implements ClientHttpRequestFactory, DisposableBean {
 
+	private static Class<?> abstractHttpClientClass;
+
+	static {
+		try {
+			// Looking for AbstractHttpClient class (deprecated as of HttpComponents 4.3)
+			abstractHttpClientClass = ClassUtils.forName("org.apache.http.impl.client.AbstractHttpClient",
+					HttpComponentsClientHttpRequestFactory.class.getClassLoader());
+		}
+		catch (ClassNotFoundException ex) {
+			// Probably removed from HttpComponents in the meantime...
+		}
+	}
+
+
 	private HttpClient httpClient;
 
-	@Nullable
 	private RequestConfig requestConfig;
 
 	private boolean bufferRequestBody = true;
 
-	@Nullable
-	private BiFunction<HttpMethod, URI, HttpContext> httpContextFactory;
-
 
 	/**
 	 * Create a new instance of the {@code HttpComponentsClientHttpRequestFactory}
-	 * with a default {@link HttpClient} based on system properties.
+	 * with a default {@link HttpClient}.
 	 */
 	public HttpComponentsClientHttpRequestFactory() {
 		this.httpClient = HttpClients.createSystem();
@@ -85,7 +94,7 @@ public class HttpComponentsClientHttpRequestFactory implements ClientHttpRequest
 	 * @param httpClient the HttpClient instance to use for this request factory
 	 */
 	public HttpComponentsClientHttpRequestFactory(HttpClient httpClient) {
-		this.httpClient = httpClient;
+		setHttpClient(httpClient);
 	}
 
 
@@ -107,26 +116,43 @@ public class HttpComponentsClientHttpRequestFactory implements ClientHttpRequest
 	}
 
 	/**
-	 * Set the connection timeout for the underlying {@link RequestConfig}.
+	 * Set the connection timeout for the underlying HttpClient.
 	 * A timeout value of 0 specifies an infinite timeout.
 	 * <p>Additional properties can be configured by specifying a
 	 * {@link RequestConfig} instance on a custom {@link HttpClient}.
-	 * <p>This options does not affect connection timeouts for SSL
-	 * handshakes or CONNECT requests; for that, it is required to
-	 * use the {@link org.apache.http.config.SocketConfig} on the
-	 * {@link HttpClient} itself.
 	 * @param timeout the timeout value in milliseconds
 	 * @see RequestConfig#getConnectTimeout()
-	 * @see org.apache.http.config.SocketConfig#getSoTimeout
 	 */
 	public void setConnectTimeout(int timeout) {
 		Assert.isTrue(timeout >= 0, "Timeout must be a non-negative value");
 		this.requestConfig = requestConfigBuilder().setConnectTimeout(timeout).build();
+		setLegacyConnectionTimeout(getHttpClient(), timeout);
 	}
 
 	/**
-	 * Set the timeout in milliseconds used when requesting a connection
-	 * from the connection manager using the underlying {@link RequestConfig}.
+	 * Apply the specified connection timeout to deprecated {@link HttpClient}
+	 * implementations.
+	 * <p>As of HttpClient 4.3, default parameters have to be exposed through a
+	 * {@link RequestConfig} instance instead of setting the parameters on the
+	 * client. Unfortunately, this behavior is not backward-compatible and older
+	 * {@link HttpClient} implementations will ignore the {@link RequestConfig}
+	 * object set in the context.
+	 * <p>If the specified client is an older implementation, we set the custom
+	 * connection timeout through the deprecated API. Otherwise, we just return
+	 * as it is set through {@link RequestConfig} with newer clients.
+	 * @param client the client to configure
+	 * @param timeout the custom connection timeout
+	 */
+	@SuppressWarnings("deprecation")
+	private void setLegacyConnectionTimeout(HttpClient client, int timeout) {
+		if (abstractHttpClientClass != null && abstractHttpClientClass.isInstance(client)) {
+			client.getParams().setIntParameter(org.apache.http.params.CoreConnectionPNames.CONNECTION_TIMEOUT, timeout);
+		}
+	}
+
+	/**
+	 * Set the timeout in milliseconds used when requesting a connection from the connection
+	 * manager using the underlying HttpClient.
 	 * A timeout value of 0 specifies an infinite timeout.
 	 * <p>Additional properties can be configured by specifying a
 	 * {@link RequestConfig} instance on a custom {@link HttpClient}.
@@ -134,12 +160,11 @@ public class HttpComponentsClientHttpRequestFactory implements ClientHttpRequest
 	 * @see RequestConfig#getConnectionRequestTimeout()
 	 */
 	public void setConnectionRequestTimeout(int connectionRequestTimeout) {
-		this.requestConfig = requestConfigBuilder()
-				.setConnectionRequestTimeout(connectionRequestTimeout).build();
+		this.requestConfig = requestConfigBuilder().setConnectionRequestTimeout(connectionRequestTimeout).build();
 	}
 
 	/**
-	 * Set the socket read timeout for the underlying {@link RequestConfig}.
+	 * Set the socket read timeout for the underlying HttpClient.
 	 * A timeout value of 0 specifies an infinite timeout.
 	 * <p>Additional properties can be configured by specifying a
 	 * {@link RequestConfig} instance on a custom {@link HttpClient}.
@@ -149,6 +174,21 @@ public class HttpComponentsClientHttpRequestFactory implements ClientHttpRequest
 	public void setReadTimeout(int timeout) {
 		Assert.isTrue(timeout >= 0, "Timeout must be a non-negative value");
 		this.requestConfig = requestConfigBuilder().setSocketTimeout(timeout).build();
+		setLegacySocketTimeout(getHttpClient(), timeout);
+	}
+
+	/**
+	 * Apply the specified socket timeout to deprecated {@link HttpClient}
+	 * implementations. See {@link #setLegacyConnectionTimeout}.
+	 * @param client the client to configure
+	 * @param timeout the custom socket timeout
+	 * @see #setLegacyConnectionTimeout
+	 */
+	@SuppressWarnings("deprecation")
+	private void setLegacySocketTimeout(HttpClient client, int timeout) {
+		if (abstractHttpClientClass != null && abstractHttpClientClass.isInstance(client)) {
+			client.getParams().setIntParameter(org.apache.http.params.CoreConnectionPNames.SO_TIMEOUT, timeout);
+		}
 	}
 
 	/**
@@ -161,24 +201,9 @@ public class HttpComponentsClientHttpRequestFactory implements ClientHttpRequest
 		this.bufferRequestBody = bufferRequestBody;
 	}
 
-	/**
-	 * Configure a factory to pre-create the {@link HttpContext} for each request.
-	 * <p>This may be useful for example in mutual TLS authentication where a
-	 * different {@code RestTemplate} for each client certificate such that
-	 * all calls made through a given {@code RestTemplate} instance as associated
-	 * for the same client identity. {@link HttpClientContext#setUserToken(Object)}
-	 * can be used to specify a fixed user token for all requests.
-	 * @param httpContextFactory the context factory to use
-	 * @since 5.2.7
-	 */
-	public void setHttpContextFactory(BiFunction<HttpMethod, URI, HttpContext> httpContextFactory) {
-		this.httpContextFactory = httpContextFactory;
-	}
 
 	@Override
 	public ClientHttpRequest createRequest(URI uri, HttpMethod httpMethod) throws IOException {
-		HttpClient client = getHttpClient();
-
 		HttpUriRequest httpRequest = createHttpUriRequest(httpMethod, uri);
 		postProcessHttpRequest(httpRequest);
 		HttpContext context = createHttpContext(httpMethod, uri);
@@ -194,7 +219,7 @@ public class HttpComponentsClientHttpRequestFactory implements ClientHttpRequest
 				config = ((Configurable) httpRequest).getConfig();
 			}
 			if (config == null) {
-				config = createRequestConfig(client);
+				config = createRequestConfig(getHttpClient());
 			}
 			if (config != null) {
 				context.setAttribute(HttpClientContext.REQUEST_CONFIG, config);
@@ -202,10 +227,10 @@ public class HttpComponentsClientHttpRequestFactory implements ClientHttpRequest
 		}
 
 		if (this.bufferRequestBody) {
-			return new HttpComponentsClientHttpRequest(client, httpRequest, context);
+			return new HttpComponentsClientHttpRequest(getHttpClient(), httpRequest, context);
 		}
 		else {
-			return new HttpComponentsStreamingClientHttpRequest(client, httpRequest, context);
+			return new HttpComponentsStreamingClientHttpRequest(getHttpClient(), httpRequest, context);
 		}
 	}
 
@@ -229,7 +254,6 @@ public class HttpComponentsClientHttpRequestFactory implements ClientHttpRequest
 	 * @since 4.2
 	 * @see #mergeRequestConfig(RequestConfig)
 	 */
-	@Nullable
 	protected RequestConfig createRequestConfig(Object client) {
 		if (client instanceof Configurable) {
 			RequestConfig clientRequestConfig = ((Configurable) client).getConfig();
@@ -273,31 +297,26 @@ public class HttpComponentsClientHttpRequestFactory implements ClientHttpRequest
 	 * @return the Commons HttpMethodBase object
 	 */
 	protected HttpUriRequest createHttpUriRequest(HttpMethod httpMethod, URI uri) {
-		if (HttpMethod.GET.equals(httpMethod)) {
-			return new HttpGet(uri);
+		switch (httpMethod) {
+			case GET:
+				return new HttpGet(uri);
+			case HEAD:
+				return new HttpHead(uri);
+			case POST:
+				return new HttpPost(uri);
+			case PUT:
+				return new HttpPut(uri);
+			case PATCH:
+				return new HttpPatch(uri);
+			case DELETE:
+				return new HttpDelete(uri);
+			case OPTIONS:
+				return new HttpOptions(uri);
+			case TRACE:
+				return new HttpTrace(uri);
+			default:
+				throw new IllegalArgumentException("Invalid HTTP method: " + httpMethod);
 		}
-		else if (HttpMethod.HEAD.equals(httpMethod)) {
-			return new HttpHead(uri);
-		}
-		else if (HttpMethod.POST.equals(httpMethod)) {
-			return new HttpPost(uri);
-		}
-		else if (HttpMethod.PUT.equals(httpMethod)) {
-			return new HttpPut(uri);
-		}
-		else if (HttpMethod.PATCH.equals(httpMethod)) {
-			return new HttpPatch(uri);
-		}
-		else if (HttpMethod.DELETE.equals(httpMethod)) {
-			return new HttpDelete(uri);
-		}
-		else if (HttpMethod.OPTIONS.equals(httpMethod)) {
-			return new HttpOptions(uri);
-		}
-		else if (HttpMethod.TRACE.equals(httpMethod)) {
-			return new HttpTrace(uri);
-		}
-		throw new IllegalArgumentException("Invalid HTTP method: " + httpMethod);
 	}
 
 	/**
@@ -316,9 +335,8 @@ public class HttpComponentsClientHttpRequestFactory implements ClientHttpRequest
 	 * @param uri the URI
 	 * @return the http context
 	 */
-	@Nullable
 	protected HttpContext createHttpContext(HttpMethod httpMethod, URI uri) {
-		return (this.httpContextFactory != null ? this.httpContextFactory.apply(httpMethod, uri) : null);
+		return null;
 	}
 
 

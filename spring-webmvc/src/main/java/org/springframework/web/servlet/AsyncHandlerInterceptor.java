@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,8 @@
 
 package org.springframework.web.servlet;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.web.method.HandlerMethod;
 
@@ -38,7 +38,7 @@ import org.springframework.web.method.HandlerMethod;
  * invokes {@code preHandle}, {@code postHandle}, and {@code afterCompletion}.
  * To distinguish between the initial request and the subsequent dispatch
  * after asynchronous handling completes, interceptors can check whether the
- * {@code jakarta.servlet.DispatcherType} of {@link jakarta.servlet.ServletRequest}
+ * {@code javax.servlet.DispatcherType} of {@link javax.servlet.ServletRequest}
  * is {@code "REQUEST"} or {@code "ASYNC"}.
  *
  * <p>Note that {@code HandlerInterceptor} implementations may need to do work
@@ -60,8 +60,8 @@ import org.springframework.web.method.HandlerMethod;
 public interface AsyncHandlerInterceptor extends HandlerInterceptor {
 
 	/**
-	 * Called instead of {@code postHandle} and {@code afterCompletion}
-	 * when the handler is being executed concurrently.
+	 * Called instead of {@code postHandle} and {@code afterCompletion}, when
+	 * the a handler is being executed concurrently.
 	 * <p>Implementations may use the provided request and response but should
 	 * avoid modifying them in ways that would conflict with the concurrent
 	 * execution of the handler. A typical use of this method would be to
@@ -72,8 +72,7 @@ public interface AsyncHandlerInterceptor extends HandlerInterceptor {
 	 * execution, for type and/or instance examination
 	 * @throws Exception in case of errors
 	 */
-	default void afterConcurrentHandlingStarted(HttpServletRequest request, HttpServletResponse response,
-			Object handler) throws Exception {
-	}
+	void afterConcurrentHandlingStarted(HttpServletRequest request, HttpServletResponse response, Object handler)
+			throws Exception;
 
 }

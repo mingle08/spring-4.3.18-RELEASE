@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,9 +19,7 @@ package org.springframework.aop.framework;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import org.springframework.aop.SpringProxy;
 import org.springframework.aop.TargetClassAware;
@@ -29,9 +27,7 @@ import org.springframework.aop.TargetSource;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.aop.target.SingletonTargetSource;
 import org.springframework.core.DecoratingProxy;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
 
 /**
@@ -43,7 +39,6 @@ import org.springframework.util.ObjectUtils;
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
- * @author Sam Brannen
  * @see org.springframework.aop.support.AopUtils
  */
 public abstract class AopProxyUtils {
@@ -57,7 +52,6 @@ public abstract class AopProxyUtils {
 	 * @see Advised#getTargetSource()
 	 * @see SingletonTargetSource#getTarget()
 	 */
-	@Nullable
 	public static Object getSingletonTarget(Object candidate) {
 		if (candidate instanceof Advised) {
 			TargetSource targetSource = ((Advised) candidate).getTargetSource();
@@ -128,29 +122,40 @@ public abstract class AopProxyUtils {
 				if (targetClass.isInterface()) {
 					advised.setInterfaces(targetClass);
 				}
-				else if (Proxy.isProxyClass(targetClass) || ClassUtils.isLambdaClass(targetClass)) {
+				else if (Proxy.isProxyClass(targetClass)) {
 					advised.setInterfaces(targetClass.getInterfaces());
 				}
 				specifiedInterfaces = advised.getProxiedInterfaces();
 			}
 		}
-		List<Class<?>> proxiedInterfaces = new ArrayList<>(specifiedInterfaces.length + 3);
-		for (Class<?> ifc : specifiedInterfaces) {
-			// Only non-sealed interfaces are actually eligible for JDK proxying (on JDK 17)
-			if (!ifc.isSealed()) {
-				proxiedInterfaces.add(ifc);
-			}
+		boolean addSpringProxy = !advised.isInterfaceProxied(SpringProxy.class);
+		boolean addAdvised = !advised.isOpaque() && !advised.isInterfaceProxied(Advised.class);
+		boolean addDecoratingProxy = (decoratingProxy && !advised.isInterfaceProxied(DecoratingProxy.class));
+		int nonUserIfcCount = 0;
+		if (addSpringProxy) {
+			nonUserIfcCount++;
 		}
-		if (!advised.isInterfaceProxied(SpringProxy.class)) {
-			proxiedInterfaces.add(SpringProxy.class);
+		if (addAdvised) {
+			nonUserIfcCount++;
 		}
-		if (!advised.isOpaque() && !advised.isInterfaceProxied(Advised.class)) {
-			proxiedInterfaces.add(Advised.class);
+		if (addDecoratingProxy) {
+			nonUserIfcCount++;
 		}
-		if (decoratingProxy && !advised.isInterfaceProxied(DecoratingProxy.class)) {
-			proxiedInterfaces.add(DecoratingProxy.class);
+		Class<?>[] proxiedInterfaces = new Class<?>[specifiedInterfaces.length + nonUserIfcCount];
+		System.arraycopy(specifiedInterfaces, 0, proxiedInterfaces, 0, specifiedInterfaces.length);
+		int index = specifiedInterfaces.length;
+		if (addSpringProxy) {
+			proxiedInterfaces[index] = SpringProxy.class;
+			index++;
 		}
-		return ClassUtils.toClassArray(proxiedInterfaces);
+		if (addAdvised) {
+			proxiedInterfaces[index] = Advised.class;
+			index++;
+		}
+		if (addDecoratingProxy) {
+			proxiedInterfaces[index] = DecoratingProxy.class;
+		}
+		return proxiedInterfaces;
 	}
 
 	/**
@@ -173,7 +178,8 @@ public abstract class AopProxyUtils {
 		if (proxy instanceof DecoratingProxy) {
 			nonUserIfcCount++;
 		}
-		Class<?>[] userInterfaces = Arrays.copyOf(proxyInterfaces, proxyInterfaces.length - nonUserIfcCount);
+		Class<?>[] userInterfaces = new Class<?>[proxyInterfaces.length - nonUserIfcCount];
+		System.arraycopy(proxyInterfaces, 0, userInterfaces, 0, userInterfaces.length);
 		Assert.notEmpty(userInterfaces, "JDK proxy must implement one or more interfaces");
 		return userInterfaces;
 	}
@@ -199,7 +205,7 @@ public abstract class AopProxyUtils {
 	 * Check equality of the advisors behind the given AdvisedSupport objects.
 	 */
 	public static boolean equalsAdvisors(AdvisedSupport a, AdvisedSupport b) {
-		return a.getAdvisorCount() == b.getAdvisorCount() && Arrays.equals(a.getAdvisors(), b.getAdvisors());
+		return Arrays.equals(a.getAdvisors(), b.getAdvisors());
 	}
 
 
@@ -212,13 +218,10 @@ public abstract class AopProxyUtils {
 	 * @return a cloned argument array, or the original if no adaptation is needed
 	 * @since 4.2.3
 	 */
-	static Object[] adaptArgumentsIfNecessary(Method method, @Nullable Object[] arguments) {
-		if (ObjectUtils.isEmpty(arguments)) {
-			return new Object[0];
-		}
-		if (method.isVarArgs()) {
-			if (method.getParameterCount() == arguments.length) {
-				Class<?>[] paramTypes = method.getParameterTypes();
+	static Object[] adaptArgumentsIfNecessary(Method method, Object... arguments) {
+		if (method.isVarArgs() && !ObjectUtils.isEmpty(arguments)) {
+			Class<?>[] paramTypes = method.getParameterTypes();
+			if (paramTypes.length == arguments.length) {
 				int varargIndex = paramTypes.length - 1;
 				Class<?> varargType = paramTypes[varargIndex];
 				if (varargType.isArray()) {

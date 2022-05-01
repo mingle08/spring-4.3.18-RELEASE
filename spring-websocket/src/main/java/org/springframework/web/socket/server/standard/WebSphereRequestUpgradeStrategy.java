@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,23 +20,21 @@ import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.websocket.Endpoint;
-import jakarta.websocket.Extension;
-import jakarta.websocket.server.ServerContainer;
-import jakarta.websocket.server.ServerEndpointConfig;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.websocket.Endpoint;
+import javax.websocket.Extension;
+import javax.websocket.server.ServerContainer;
+import javax.websocket.server.ServerEndpointConfig;
 
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
-import org.springframework.lang.Nullable;
 import org.springframework.web.socket.server.HandshakeFailureException;
 
 /**
  * WebSphere support for upgrading an {@link HttpServletRequest} during a
  * WebSocket handshake. To modify properties of the underlying
- * {@link jakarta.websocket.server.ServerContainer} you can use
+ * {@link javax.websocket.server.ServerContainer} you can use
  * {@link ServletServerContainerFactoryBean} in XML configuration or, when using
  * Java configuration, access the container instance through the
  * "javax.websocket.server.ServerContainer" ServletContext attribute.
@@ -48,7 +46,7 @@ import org.springframework.web.socket.server.HandshakeFailureException;
  */
 public class WebSphereRequestUpgradeStrategy extends AbstractStandardUpgradeStrategy {
 
-	private static final Method upgradeMethod;
+	private final static Method upgradeMethod;
 
 	static {
 		ClassLoader loader = WebSphereRequestUpgradeStrategy.class.getClassLoader();
@@ -70,7 +68,7 @@ public class WebSphereRequestUpgradeStrategy extends AbstractStandardUpgradeStra
 
 	@Override
 	public void upgradeInternal(ServerHttpRequest httpRequest, ServerHttpResponse httpResponse,
-			@Nullable String selectedProtocol, List<Extension> selectedExtensions, Endpoint endpoint)
+			String selectedProtocol, List<Extension> selectedExtensions, Endpoint endpoint)
 			throws HandshakeFailureException {
 
 		HttpServletRequest request = getHttpServletRequest(httpRequest);

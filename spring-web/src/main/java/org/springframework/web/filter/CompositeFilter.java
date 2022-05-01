@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,13 +19,12 @@ package org.springframework.web.filter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 
 /**
  * A generic composite servlet {@link Filter} that just delegates its behavior
@@ -42,11 +41,11 @@ import jakarta.servlet.ServletResponse;
  */
 public class CompositeFilter implements Filter {
 
-	private List<? extends Filter> filters = new ArrayList<>();
+	private List<? extends Filter> filters = new ArrayList<Filter>();
 
 
 	public void setFilters(List<? extends Filter> filters) {
-		this.filters = new ArrayList<>(filters);
+		this.filters = new ArrayList<Filter>(filters);
 	}
 
 

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,7 @@ import org.springframework.test.web.servlet.MockMvcBuilder;
 import org.springframework.web.context.WebApplicationContext;
 
 /**
- * The main class to import in order to access all available {@link MockMvcBuilder MockMvcBuilders}.
+ * The main class to import in order to access all available {@link MockMvcBuilder}s.
  *
  * <h3>Eclipse Users</h3>
  * <p>Consider adding this class as a Java editor favorite. To navigate to
@@ -33,11 +33,7 @@ import org.springframework.web.context.WebApplicationContext;
  * @see #webAppContextSetup(WebApplicationContext)
  * @see #standaloneSetup(Object...)
  */
-public final class MockMvcBuilders {
-
-	private MockMvcBuilders() {
-	}
-
+public class MockMvcBuilders {
 
 	/**
 	 * Build a {@link MockMvc} instance using the given, fully initialized
@@ -45,7 +41,7 @@ public final class MockMvcBuilders {
 	 * <p>The {@link org.springframework.web.servlet.DispatcherServlet DispatcherServlet}
 	 * will use the context to discover Spring MVC infrastructure and application
 	 * controllers in it. The context must have been configured with a
-	 * {@link jakarta.servlet.ServletContext ServletContext}.
+	 * {@link javax.servlet.ServletContext ServletContext}.
 	 */
 	public static DefaultMockMvcBuilder webAppContextSetup(WebApplicationContext context) {
 		return new DefaultMockMvcBuilder(context);
@@ -70,7 +66,6 @@ public final class MockMvcBuilders {
 	 * smaller number of tests can be used to focus on testing and verifying
 	 * the actual Spring MVC configuration.
 	 * @param controllers one or more {@code @Controller} instances to test
-	 * (specified {@code Class} will be turned into instance)
 	 */
 	public static StandaloneMockMvcBuilder standaloneSetup(Object... controllers) {
 		return new StandaloneMockMvcBuilder(controllers);

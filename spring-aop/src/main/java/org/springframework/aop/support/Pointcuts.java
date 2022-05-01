@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,8 +26,7 @@ import org.springframework.util.Assert;
 /**
  * Pointcut constants for matching getters and setters,
  * and static methods useful for manipulating and evaluating pointcuts.
- *
- * <p>These methods are particularly useful for composing pointcuts
+ * These methods are particularly useful for composing pointcuts
  * using the union and intersection methods.
  *
  * @author Rod Johnson
@@ -35,10 +34,10 @@ import org.springframework.util.Assert;
  */
 public abstract class Pointcuts {
 
-	/** Pointcut matching all bean property setters, in any class. */
+	/** Pointcut matching all bean property setters, in any class */
 	public static final Pointcut SETTERS = SetterPointcut.INSTANCE;
 
-	/** Pointcut matching all bean property getters, in any class. */
+	/** Pointcut matching all bean property getters, in any class */
 	public static final Pointcut GETTERS = GetterPointcut.INSTANCE;
 
 
@@ -100,17 +99,12 @@ public abstract class Pointcuts {
 		@Override
 		public boolean matches(Method method, Class<?> targetClass) {
 			return (method.getName().startsWith("set") &&
-					method.getParameterCount() == 1 &&
+					method.getParameterTypes().length == 1 &&
 					method.getReturnType() == Void.TYPE);
 		}
 
 		private Object readResolve() {
 			return INSTANCE;
-		}
-
-		@Override
-		public String toString() {
-			return "Pointcuts.SETTERS";
 		}
 	}
 
@@ -126,16 +120,11 @@ public abstract class Pointcuts {
 		@Override
 		public boolean matches(Method method, Class<?> targetClass) {
 			return (method.getName().startsWith("get") &&
-					method.getParameterCount() == 0);
+					method.getParameterTypes().length == 0);
 		}
 
 		private Object readResolve() {
 			return INSTANCE;
-		}
-
-		@Override
-		public String toString() {
-			return "Pointcuts.GETTERS";
 		}
 	}
 

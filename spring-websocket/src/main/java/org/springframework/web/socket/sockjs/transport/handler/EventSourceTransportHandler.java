@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,6 @@
 
 package org.springframework.web.socket.sockjs.transport.handler;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.springframework.http.MediaType;
@@ -27,11 +26,12 @@ import org.springframework.web.socket.sockjs.frame.SockJsFrameFormat;
 import org.springframework.web.socket.sockjs.transport.SockJsServiceConfig;
 import org.springframework.web.socket.sockjs.transport.SockJsSession;
 import org.springframework.web.socket.sockjs.transport.TransportType;
+import org.springframework.web.socket.sockjs.transport.session.PollingSockJsSession;
 import org.springframework.web.socket.sockjs.transport.session.StreamingSockJsSession;
 
 /**
- * A TransportHandler for sending messages via Server-Sent Events:
- * <a href="https://dev.w3.org/html5/eventsource/">https://dev.w3.org/html5/eventsource/</a>.
+ * A TransportHandler for sending messages via Server-Sent events:
+ * <a href="http://dev.w3.org/html5/eventsource/">http://dev.w3.org/html5/eventsource/</a>.
  *
  * @author Rossen Stoyanchev
  * @since 4.0
@@ -45,12 +45,12 @@ public class EventSourceTransportHandler extends AbstractHttpSendingTransportHan
 
 	@Override
 	protected MediaType getContentType() {
-		return new MediaType("text", "event-stream", StandardCharsets.UTF_8);
+		return new MediaType("text", "event-stream", UTF8_CHARSET);
 	}
 
 	@Override
 	public boolean checkSessionType(SockJsSession session) {
-		return (session instanceof EventSourceStreamingSockJsSession);
+		return session instanceof EventSourceStreamingSockJsSession;
 	}
 
 	@Override
@@ -66,7 +66,7 @@ public class EventSourceTransportHandler extends AbstractHttpSendingTransportHan
 	}
 
 
-	private static class EventSourceStreamingSockJsSession extends StreamingSockJsSession {
+	private class EventSourceStreamingSockJsSession extends StreamingSockJsSession {
 
 		public EventSourceStreamingSockJsSession(String sessionId, SockJsServiceConfig config,
 				WebSocketHandler wsHandler, Map<String, Object> attributes) {
@@ -76,7 +76,7 @@ public class EventSourceTransportHandler extends AbstractHttpSendingTransportHan
 
 		@Override
 		protected byte[] getPrelude(ServerHttpRequest request) {
-			return new byte[] {'\r', '\n'};
+			return new byte[] { '\r', '\n' };
 		}
 	}
 

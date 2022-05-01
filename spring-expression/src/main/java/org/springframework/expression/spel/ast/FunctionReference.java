@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.expression.spel.ast;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.StringJoiner;
 
 import org.springframework.asm.MethodVisitor;
 import org.springframework.core.MethodParameter;
@@ -31,7 +30,6 @@ import org.springframework.expression.spel.ExpressionState;
 import org.springframework.expression.spel.SpelEvaluationException;
 import org.springframework.expression.spel.SpelMessage;
 import org.springframework.expression.spel.support.ReflectionHelper;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
@@ -54,12 +52,11 @@ public class FunctionReference extends SpelNodeImpl {
 
 	// Captures the most recently used method for the function invocation *if* the method
 	// can safely be used for compilation (i.e. no argument conversion is going on)
-	@Nullable
 	private volatile Method method;
 
 
-	public FunctionReference(String functionName, int startPos, int endPos, SpelNodeImpl... arguments) {
-		super(startPos, endPos, arguments);
+	public FunctionReference(String functionName, int pos, SpelNodeImpl... arguments) {
+		super(pos, arguments);
 		this.name = functionName;
 	}
 
@@ -96,7 +93,7 @@ public class FunctionReference extends SpelNodeImpl {
 		Object[] functionArgs = getArguments(state);
 
 		if (!method.isVarArgs()) {
-			int declaredParamCount = method.getParameterCount();
+			int declaredParamCount = method.getParameterTypes().length;
 			if (declaredParamCount != functionArgs.length) {
 				throw new SpelEvaluationException(SpelMessage.INCORRECT_NUMBER_OF_ARGUMENTS_TO_FUNCTION,
 						functionArgs.length, declaredParamCount);
@@ -140,11 +137,16 @@ public class FunctionReference extends SpelNodeImpl {
 
 	@Override
 	public String toStringAST() {
-		StringJoiner sj = new StringJoiner(",", "(", ")");
+		StringBuilder sb = new StringBuilder("#").append(this.name);
+		sb.append("(");
 		for (int i = 0; i < getChildCount(); i++) {
-			sj.add(getChild(i).toStringAST());
+			if (i > 0) {
+				sb.append(",");
+			}
+			sb.append(getChild(i).toStringAST());
 		}
-		return '#' + this.name + sj.toString();
+		sb.append(")");
+		return sb.toString();
 	}
 
 	/**
@@ -159,7 +161,7 @@ public class FunctionReference extends SpelNodeImpl {
 		}
 		return arguments;
 	}
-
+	
 	@Override
 	public boolean isCompilable() {
 		Method method = this.method;
@@ -178,8 +180,8 @@ public class FunctionReference extends SpelNodeImpl {
 		}
 		return true;
 	}
-
-	@Override
+	
+	@Override 
 	public void generateCode(MethodVisitor mv, CodeFlow cf) {
 		Method method = this.method;
 		Assert.state(method != null, "No method handle");

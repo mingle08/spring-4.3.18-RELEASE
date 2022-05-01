@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,8 +21,6 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.lang.Nullable;
 import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 
@@ -35,14 +33,12 @@ import org.springframework.util.StringUtils;
  * @author Brian Clozel
  * @since 3.0
  */
-final class SimpleClientHttpResponse implements ClientHttpResponse {
+final class SimpleClientHttpResponse extends AbstractClientHttpResponse {
 
 	private final HttpURLConnection connection;
 
-	@Nullable
 	private HttpHeaders headers;
 
-	@Nullable
 	private InputStream responseStream;
 
 
@@ -52,20 +48,13 @@ final class SimpleClientHttpResponse implements ClientHttpResponse {
 
 
 	@Override
-	public HttpStatusCode getStatusCode() throws IOException {
-		return HttpStatusCode.valueOf(this.connection.getResponseCode());
-	}
-
-	@Override
-	@Deprecated
 	public int getRawStatusCode() throws IOException {
 		return this.connection.getResponseCode();
 	}
 
 	@Override
 	public String getStatusText() throws IOException {
-		String result = this.connection.getResponseMessage();
-		return (result != null) ? result : "";
+		return this.connection.getResponseMessage();
 	}
 
 	@Override
@@ -99,15 +88,14 @@ final class SimpleClientHttpResponse implements ClientHttpResponse {
 
 	@Override
 	public void close() {
-		try {
-			if (this.responseStream == null) {
-				getBody();
+		if (this.responseStream != null) {
+			try {
+				StreamUtils.drain(this.responseStream);
+				this.responseStream.close();
 			}
-			StreamUtils.drain(this.responseStream);
-			this.responseStream.close();
-		}
-		catch (Exception ex) {
-			// ignore
+			catch (Exception ex) {
+				// ignore
+			}
 		}
 	}
 

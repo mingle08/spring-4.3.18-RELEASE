@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,19 +19,17 @@ package org.springframework.transaction.annotation;
 import java.io.Serializable;
 import java.lang.reflect.AnnotatedElement;
 import java.util.ArrayList;
-import java.util.List;
 
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.transaction.interceptor.NoRollbackRuleAttribute;
 import org.springframework.transaction.interceptor.RollbackRuleAttribute;
 import org.springframework.transaction.interceptor.RuleBasedTransactionAttribute;
 import org.springframework.transaction.interceptor.TransactionAttribute;
 
 /**
- * Strategy implementation for parsing JTA 1.2's {@link jakarta.transaction.Transactional} annotation.
+ * Strategy implementation for parsing JTA 1.2's {@link javax.transaction.Transactional} annotation.
  *
  * @author Juergen Hoeller
  * @since 4.0
@@ -40,15 +38,9 @@ import org.springframework.transaction.interceptor.TransactionAttribute;
 public class JtaTransactionAnnotationParser implements TransactionAnnotationParser, Serializable {
 
 	@Override
-	public boolean isCandidateClass(Class<?> targetClass) {
-		return AnnotationUtils.isCandidateClass(targetClass, jakarta.transaction.Transactional.class);
-	}
-
-	@Override
-	@Nullable
-	public TransactionAttribute parseTransactionAnnotation(AnnotatedElement element) {
-		AnnotationAttributes attributes = AnnotatedElementUtils.getMergedAnnotationAttributes(
-				element, jakarta.transaction.Transactional.class);
+	public TransactionAttribute parseTransactionAnnotation(AnnotatedElement ae) {
+		AnnotationAttributes attributes =
+				AnnotatedElementUtils.getMergedAnnotationAttributes(ae, javax.transaction.Transactional.class);
 		if (attributes != null) {
 			return parseTransactionAnnotation(attributes);
 		}
@@ -57,32 +49,32 @@ public class JtaTransactionAnnotationParser implements TransactionAnnotationPars
 		}
 	}
 
-	public TransactionAttribute parseTransactionAnnotation(jakarta.transaction.Transactional ann) {
+	public TransactionAttribute parseTransactionAnnotation(javax.transaction.Transactional ann) {
 		return parseTransactionAnnotation(AnnotationUtils.getAnnotationAttributes(ann, false, false));
 	}
 
 	protected TransactionAttribute parseTransactionAnnotation(AnnotationAttributes attributes) {
 		RuleBasedTransactionAttribute rbta = new RuleBasedTransactionAttribute();
-
 		rbta.setPropagationBehaviorName(
 				RuleBasedTransactionAttribute.PREFIX_PROPAGATION + attributes.getEnum("value").toString());
-
-		List<RollbackRuleAttribute> rollbackRules = new ArrayList<>();
-		for (Class<?> rbRule : attributes.getClassArray("rollbackOn")) {
-			rollbackRules.add(new RollbackRuleAttribute(rbRule));
+		ArrayList<RollbackRuleAttribute> rollBackRules = new ArrayList<RollbackRuleAttribute>();
+		Class<?>[] rbf = attributes.getClassArray("rollbackOn");
+		for (Class<?> rbRule : rbf) {
+			RollbackRuleAttribute rule = new RollbackRuleAttribute(rbRule);
+			rollBackRules.add(rule);
 		}
-		for (Class<?> rbRule : attributes.getClassArray("dontRollbackOn")) {
-			rollbackRules.add(new NoRollbackRuleAttribute(rbRule));
+		Class<?>[] nrbf = attributes.getClassArray("dontRollbackOn");
+		for (Class<?> rbRule : nrbf) {
+			NoRollbackRuleAttribute rule = new NoRollbackRuleAttribute(rbRule);
+			rollBackRules.add(rule);
 		}
-		rbta.setRollbackRules(rollbackRules);
-
+		rbta.getRollbackRules().addAll(rollBackRules);
 		return rbta;
 	}
 
-
 	@Override
-	public boolean equals(@Nullable Object other) {
-		return (other instanceof JtaTransactionAnnotationParser);
+	public boolean equals(Object other) {
+		return (this == other || other instanceof JtaTransactionAnnotationParser);
 	}
 
 	@Override

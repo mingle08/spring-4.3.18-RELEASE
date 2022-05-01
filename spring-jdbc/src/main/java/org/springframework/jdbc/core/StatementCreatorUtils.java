@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,19 +25,22 @@ import java.sql.Clob;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Types;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.core.SpringProperties;
 import org.springframework.jdbc.support.SqlValue;
-import org.springframework.lang.Nullable;
 
 /**
  * Utility methods for PreparedStatementSetter/Creator and CallableStatementCreator
@@ -65,23 +68,33 @@ public abstract class StatementCreatorUtils {
 	 * System property that instructs Spring to ignore {@link java.sql.ParameterMetaData#getParameterType}
 	 * completely, i.e. to never even attempt to retrieve {@link PreparedStatement#getParameterMetaData()}
 	 * for {@link StatementCreatorUtils#setNull} calls.
-	 * <p>The default is "false", trying {@code getParameterType} calls first and falling back to
-	 * {@link PreparedStatement#setNull} / {@link PreparedStatement#setObject} calls based on
-	 * well-known behavior of common databases.
-	 * <p>Consider switching this flag to "true" if you experience misbehavior at runtime,
-	 * e.g. with connection pool issues in case of an exception thrown from {@code getParameterType}
-	 * (as reported on JBoss AS 7) or in case of performance problems (as reported on PostgreSQL).
+	 * <p>The effective default is "false", trying {@code getParameterType} calls first and falling back to
+	 * {@link PreparedStatement#setNull} / {@link PreparedStatement#setObject} calls based on well-known
+	 * behavior of common databases. Spring records JDBC drivers with non-working {@code getParameterType}
+	 * implementations and won't attempt to call that method for that driver again, always falling back.
+	 * <p>Consider switching this flag to "true" if you experience misbehavior at runtime, e.g. with
+	 * a connection pool setting back the {@link PreparedStatement} instance in case of an exception
+	 * thrown from {@code getParameterType} (as reported on JBoss AS 7).
+	 * <p>Note that this flag is "true" by default on Oracle 12c since there can be leaks created by
+	 * {@code getParameterType} calls in such a scenario. You need to explicitly set the flag to
+	 * "false" in order to enforce the use of {@code getParameterType} against Oracle drivers.
 	 */
 	public static final String IGNORE_GETPARAMETERTYPE_PROPERTY_NAME = "spring.jdbc.getParameterType.ignore";
 
 
-	static boolean shouldIgnoreGetParameterType = SpringProperties.getFlag(IGNORE_GETPARAMETERTYPE_PROPERTY_NAME);
+	static final Boolean shouldIgnoreGetParameterType;
+
+	static final Set<String> driversWithNoSupportForGetParameterType =
+			Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>(1));
 
 	private static final Log logger = LogFactory.getLog(StatementCreatorUtils.class);
 
-	private static final Map<Class<?>, Integer> javaTypeToSqlTypeMap = new HashMap<>(32);
+	private static final Map<Class<?>, Integer> javaTypeToSqlTypeMap = new HashMap<Class<?>, Integer>(32);
 
 	static {
+		String propVal = SpringProperties.getProperty(IGNORE_GETPARAMETERTYPE_PROPERTY_NAME);
+		shouldIgnoreGetParameterType = (propVal != null ? Boolean.valueOf(propVal) : null);
+
 		javaTypeToSqlTypeMap.put(boolean.class, Types.BOOLEAN);
 		javaTypeToSqlTypeMap.put(Boolean.class, Types.BOOLEAN);
 		javaTypeToSqlTypeMap.put(byte.class, Types.TINYINT);
@@ -111,10 +124,7 @@ public abstract class StatementCreatorUtils {
 	 * @param javaType the Java type to translate
 	 * @return the corresponding SQL type, or {@link SqlTypeValue#TYPE_UNKNOWN} if none found
 	 */
-	public static int javaTypeToSqlParameterType(@Nullable Class<?> javaType) {
-		if (javaType == null) {
-			return SqlTypeValue.TYPE_UNKNOWN;
-		}
+	public static int javaTypeToSqlParameterType(Class<?> javaType) {
 		Integer sqlType = javaTypeToSqlTypeMap.get(javaType);
 		if (sqlType != null) {
 			return sqlType;
@@ -140,8 +150,8 @@ public abstract class StatementCreatorUtils {
 	 * @param inValue the value to set
 	 * @throws SQLException if thrown by PreparedStatement methods
 	 */
-	public static void setParameterValue(PreparedStatement ps, int paramIndex, SqlParameter param,
-			@Nullable Object inValue) throws SQLException {
+	public static void setParameterValue(PreparedStatement ps, int paramIndex, SqlParameter param, Object inValue)
+			throws SQLException {
 
 		setParameterValueInternal(ps, paramIndex, param.getSqlType(), param.getTypeName(), param.getScale(), inValue);
 	}
@@ -152,12 +162,12 @@ public abstract class StatementCreatorUtils {
 	 * @param ps the prepared statement or callable statement
 	 * @param paramIndex index of the parameter we are setting
 	 * @param sqlType the SQL type of the parameter
-	 * @param inValue the value to set (plain value or an SqlTypeValue)
+	 * @param inValue the value to set (plain value or a SqlTypeValue)
 	 * @throws SQLException if thrown by PreparedStatement methods
 	 * @see SqlTypeValue
 	 */
-	public static void setParameterValue(PreparedStatement ps, int paramIndex, int sqlType,
-			@Nullable Object inValue) throws SQLException {
+	public static void setParameterValue(PreparedStatement ps, int paramIndex, int sqlType, Object inValue)
+			throws SQLException {
 
 		setParameterValueInternal(ps, paramIndex, sqlType, null, null, inValue);
 	}
@@ -170,12 +180,12 @@ public abstract class StatementCreatorUtils {
 	 * @param sqlType the SQL type of the parameter
 	 * @param typeName the type name of the parameter
 	 * (optional, only used for SQL NULL and SqlTypeValue)
-	 * @param inValue the value to set (plain value or an SqlTypeValue)
+	 * @param inValue the value to set (plain value or a SqlTypeValue)
 	 * @throws SQLException if thrown by PreparedStatement methods
 	 * @see SqlTypeValue
 	 */
 	public static void setParameterValue(PreparedStatement ps, int paramIndex, int sqlType, String typeName,
-			@Nullable Object inValue) throws SQLException {
+			Object inValue) throws SQLException {
 
 		setParameterValueInternal(ps, paramIndex, sqlType, typeName, null, inValue);
 	}
@@ -190,19 +200,20 @@ public abstract class StatementCreatorUtils {
 	 * (optional, only used for SQL NULL and SqlTypeValue)
 	 * @param scale the number of digits after the decimal point
 	 * (for DECIMAL and NUMERIC types)
-	 * @param inValue the value to set (plain value or an SqlTypeValue)
+	 * @param inValue the value to set (plain value or a SqlTypeValue)
 	 * @throws SQLException if thrown by PreparedStatement methods
 	 * @see SqlTypeValue
 	 */
 	private static void setParameterValueInternal(PreparedStatement ps, int paramIndex, int sqlType,
-			@Nullable String typeName, @Nullable Integer scale, @Nullable Object inValue) throws SQLException {
+			String typeName, Integer scale, Object inValue) throws SQLException {
 
 		String typeNameToUse = typeName;
 		int sqlTypeToUse = sqlType;
 		Object inValueToUse = inValue;
 
 		// override type info?
-		if (inValue instanceof SqlParameterValue parameterValue) {
+		if (inValue instanceof SqlParameterValue) {
+			SqlParameterValue parameterValue = (SqlParameterValue) inValue;
 			if (logger.isDebugEnabled()) {
 				logger.debug("Overriding type info with runtime info from SqlParameterValue: column index " + paramIndex +
 						", SQL type " + parameterValue.getSqlType() + ", type name " + parameterValue.getTypeName());
@@ -235,38 +246,76 @@ public abstract class StatementCreatorUtils {
 	 * Set the specified PreparedStatement parameter to null,
 	 * respecting database-specific peculiarities.
 	 */
-	private static void setNull(PreparedStatement ps, int paramIndex, int sqlType, @Nullable String typeName)
-			throws SQLException {
-
+	private static void setNull(PreparedStatement ps, int paramIndex, int sqlType, String typeName) throws SQLException {
 		if (sqlType == SqlTypeValue.TYPE_UNKNOWN || (sqlType == Types.OTHER && typeName == null)) {
 			boolean useSetObject = false;
 			Integer sqlTypeToUse = null;
-			if (!shouldIgnoreGetParameterType) {
+			DatabaseMetaData dbmd = null;
+			String jdbcDriverName = null;
+			boolean tryGetParameterType = true;
+
+			if (shouldIgnoreGetParameterType == null) {
+				try {
+					dbmd = ps.getConnection().getMetaData();
+					jdbcDriverName = dbmd.getDriverName();
+					tryGetParameterType = !driversWithNoSupportForGetParameterType.contains(jdbcDriverName);
+					if (tryGetParameterType && jdbcDriverName.startsWith("Oracle")) {
+						// Avoid getParameterType use with Oracle 12c driver by default:
+						// needs to be explicitly activated through spring.jdbc.getParameterType.ignore=false
+						tryGetParameterType = false;
+						driversWithNoSupportForGetParameterType.add(jdbcDriverName);
+					}
+				}
+				catch (Throwable ex) {
+					logger.debug("Could not check connection metadata", ex);
+				}
+			}
+			else {
+				tryGetParameterType = !shouldIgnoreGetParameterType;
+			}
+
+			if (tryGetParameterType) {
 				try {
 					sqlTypeToUse = ps.getParameterMetaData().getParameterType(paramIndex);
 				}
-				catch (SQLException ex) {
+				catch (Throwable ex) {
 					if (logger.isDebugEnabled()) {
-						logger.debug("JDBC getParameterType call failed - using fallback method instead: " + ex);
+						logger.debug("JDBC 3.0 getParameterType call not supported - using fallback method instead: " + ex);
 					}
 				}
 			}
+
 			if (sqlTypeToUse == null) {
-				// Proceed with database-specific checks
+				// JDBC driver not compliant with JDBC 3.0 -> proceed with database-specific checks
 				sqlTypeToUse = Types.NULL;
-				DatabaseMetaData dbmd = ps.getConnection().getMetaData();
-				String jdbcDriverName = dbmd.getDriverName();
-				String databaseProductName = dbmd.getDatabaseProductName();
-				if (databaseProductName.startsWith("Informix") ||
-						(jdbcDriverName.startsWith("Microsoft") && jdbcDriverName.contains("SQL Server"))) {
-						// "Microsoft SQL Server JDBC Driver 3.0" versus "Microsoft JDBC Driver 4.0 for SQL Server"
-					useSetObject = true;
+				try {
+					if (dbmd == null) {
+						dbmd = ps.getConnection().getMetaData();
+					}
+					if (jdbcDriverName == null) {
+						jdbcDriverName = dbmd.getDriverName();
+					}
+					if (shouldIgnoreGetParameterType == null) {
+						// Register JDBC driver with no support for getParameterType, except for the
+						// Oracle 12c driver where getParameterType fails for specific statements only
+						// (so an exception thrown above does not indicate general lack of support).
+						driversWithNoSupportForGetParameterType.add(jdbcDriverName);
+					}
+					String databaseProductName = dbmd.getDatabaseProductName();
+					if (databaseProductName.startsWith("Informix") ||
+							(jdbcDriverName.startsWith("Microsoft") && jdbcDriverName.contains("SQL Server"))) {
+							// "Microsoft SQL Server JDBC Driver 3.0" versus "Microsoft JDBC Driver 4.0 for SQL Server"
+						useSetObject = true;
+					}
+					else if (databaseProductName.startsWith("DB2") ||
+							jdbcDriverName.startsWith("jConnect") ||
+							jdbcDriverName.startsWith("SQLServer")||
+							jdbcDriverName.startsWith("Apache Derby")) {
+						sqlTypeToUse = Types.VARCHAR;
+					}
 				}
-				else if (databaseProductName.startsWith("DB2") ||
-						jdbcDriverName.startsWith("jConnect") ||
-						jdbcDriverName.startsWith("SQLServer") ||
-						jdbcDriverName.startsWith("Apache Derby")) {
-					sqlTypeToUse = Types.VARCHAR;
+				catch (Throwable ex) {
+					logger.debug("Could not check connection metadata", ex);
 				}
 			}
 			if (useSetObject) {
@@ -284,8 +333,8 @@ public abstract class StatementCreatorUtils {
 		}
 	}
 
-	private static void setValue(PreparedStatement ps, int paramIndex, int sqlType,
-			@Nullable String typeName, @Nullable Integer scale, Object inValue) throws SQLException {
+	private static void setValue(PreparedStatement ps, int paramIndex, int sqlType, String typeName,
+			Integer scale, Object inValue) throws SQLException {
 
 		if (inValue instanceof SqlTypeValue) {
 			((SqlTypeValue) inValue).setTypeValue(ps, paramIndex, sqlType, typeName);
@@ -304,21 +353,28 @@ public abstract class StatementCreatorUtils {
 			if (strVal.length() > 4000) {
 				// Necessary for older Oracle drivers, in particular when running against an Oracle 10 database.
 				// Should also work fine against other drivers/databases since it uses standard JDBC 4.0 API.
-				if (sqlType == Types.NCLOB) {
-					ps.setNClob(paramIndex, new StringReader(strVal), strVal.length());
+				try {
+					if (sqlType == Types.NCLOB) {
+						ps.setNClob(paramIndex, new StringReader(strVal), strVal.length());
+					}
+					else {
+						ps.setClob(paramIndex, new StringReader(strVal), strVal.length());
+					}
+					return;
 				}
-				else {
-					ps.setClob(paramIndex, new StringReader(strVal), strVal.length());
+				catch (AbstractMethodError err) {
+					logger.debug("JDBC driver does not implement JDBC 4.0 'setClob(int, Reader, long)' method", err);
+				}
+				catch (SQLFeatureNotSupportedException ex) {
+					logger.debug("JDBC driver does not support JDBC 4.0 'setClob(int, Reader, long)' method", ex);
 				}
 			}
+			// Fallback: setString or setNString binding
+			if (sqlType == Types.NCLOB) {
+				ps.setNString(paramIndex, strVal);
+			}
 			else {
-				// Fallback: setString or setNString binding
-				if (sqlType == Types.NCLOB) {
-					ps.setNString(paramIndex, strVal);
-				}
-				else {
-					ps.setString(paramIndex, strVal);
-				}
+				ps.setString(paramIndex, strVal);
 			}
 		}
 		else if (sqlType == Types.DECIMAL || sqlType == Types.NUMERIC) {
@@ -349,7 +405,8 @@ public abstract class StatementCreatorUtils {
 					ps.setDate(paramIndex, new java.sql.Date(((java.util.Date) inValue).getTime()));
 				}
 			}
-			else if (inValue instanceof Calendar cal) {
+			else if (inValue instanceof Calendar) {
+				Calendar cal = (Calendar) inValue;
 				ps.setDate(paramIndex, new java.sql.Date(cal.getTime().getTime()), cal);
 			}
 			else {
@@ -365,7 +422,8 @@ public abstract class StatementCreatorUtils {
 					ps.setTime(paramIndex, new java.sql.Time(((java.util.Date) inValue).getTime()));
 				}
 			}
-			else if (inValue instanceof Calendar cal) {
+			else if (inValue instanceof Calendar) {
+				Calendar cal = (Calendar) inValue;
 				ps.setTime(paramIndex, new java.sql.Time(cal.getTime().getTime()), cal);
 			}
 			else {
@@ -381,7 +439,8 @@ public abstract class StatementCreatorUtils {
 					ps.setTimestamp(paramIndex, new java.sql.Timestamp(((java.util.Date) inValue).getTime()));
 				}
 			}
-			else if (inValue instanceof Calendar cal) {
+			else if (inValue instanceof Calendar) {
+				Calendar cal = (Calendar) inValue;
 				ps.setTimestamp(paramIndex, new java.sql.Timestamp(cal.getTime().getTime()), cal);
 			}
 			else {
@@ -396,7 +455,8 @@ public abstract class StatementCreatorUtils {
 			else if (isDateValue(inValue.getClass())) {
 				ps.setTimestamp(paramIndex, new java.sql.Timestamp(((java.util.Date) inValue).getTime()));
 			}
-			else if (inValue instanceof Calendar cal) {
+			else if (inValue instanceof Calendar) {
+				Calendar cal = (Calendar) inValue;
 				ps.setTimestamp(paramIndex, new java.sql.Timestamp(cal.getTime().getTime()), cal);
 			}
 			else {
@@ -437,7 +497,7 @@ public abstract class StatementCreatorUtils {
 	 * @see DisposableSqlTypeValue#cleanup()
 	 * @see org.springframework.jdbc.core.support.SqlLobValue#cleanup()
 	 */
-	public static void cleanupParameters(@Nullable Object... paramValues) {
+	public static void cleanupParameters(Object... paramValues) {
 		if (paramValues != null) {
 			cleanupParameters(Arrays.asList(paramValues));
 		}
@@ -450,19 +510,14 @@ public abstract class StatementCreatorUtils {
 	 * @see DisposableSqlTypeValue#cleanup()
 	 * @see org.springframework.jdbc.core.support.SqlLobValue#cleanup()
 	 */
-	public static void cleanupParameters(@Nullable Collection<?> paramValues) {
+	public static void cleanupParameters(Collection<?> paramValues) {
 		if (paramValues != null) {
 			for (Object inValue : paramValues) {
-				// Unwrap SqlParameterValue first...
-				if (inValue instanceof SqlParameterValue) {
-					inValue = ((SqlParameterValue) inValue).getValue();
-				}
-				// Check for disposable value types
-				if (inValue instanceof SqlValue) {
-					((SqlValue) inValue).cleanup();
-				}
-				else if (inValue instanceof DisposableSqlTypeValue) {
+				if (inValue instanceof DisposableSqlTypeValue) {
 					((DisposableSqlTypeValue) inValue).cleanup();
+				}
+				else if (inValue instanceof SqlValue) {
+					((SqlValue) inValue).cleanup();
 				}
 			}
 		}

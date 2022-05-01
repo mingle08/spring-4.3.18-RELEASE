@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,11 +23,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import javax.validation.Valid;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.TestName;
 
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.core.MethodParameter;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.converter.ByteArrayMessageConverter;
@@ -41,10 +46,8 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
-import org.springframework.validation.annotation.Validated;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * @author Stephane Nicoll
@@ -53,12 +56,23 @@ public class DefaultMessageHandlerMethodFactoryTests {
 
 	private final SampleBean sample = new SampleBean();
 
+	@Rule
+	public final TestName name = new TestName();
+
+	@Rule
+	public final ExpectedException thrown = ExpectedException.none();
+
 
 	@Test
 	public void customConversion() throws Exception {
 		DefaultMessageHandlerMethodFactory instance = createInstance();
 		GenericConversionService conversionService = new GenericConversionService();
-		conversionService.addConverter(SampleBean.class, String.class, source -> "foo bar");
+		conversionService.addConverter(SampleBean.class, String.class, new Converter<SampleBean, String>() {
+			@Override
+			public String convert(SampleBean source) {
+				return "foo bar";
+			}
+		});
 		instance.setConversionService(conversionService);
 		instance.afterPropertiesSet();
 
@@ -73,15 +87,16 @@ public class DefaultMessageHandlerMethodFactoryTests {
 	public void customConversionServiceFailure() throws Exception {
 		DefaultMessageHandlerMethodFactory instance = createInstance();
 		GenericConversionService conversionService = new GenericConversionService();
-		assertThat(conversionService.canConvert(Integer.class, String.class)).as("conversion service should fail to convert payload").isFalse();
+		assertFalse("conversion service should fail to convert payload",
+				conversionService.canConvert(Integer.class, String.class));
 		instance.setConversionService(conversionService);
 		instance.afterPropertiesSet();
 
 		InvocableHandlerMethod invocableHandlerMethod =
 				createInvocableHandlerMethod(instance, "simpleString", String.class);
 
-		assertThatExceptionOfType(MessageConversionException.class).isThrownBy(() ->
-				invocableHandlerMethod.invoke(MessageBuilder.withPayload(123).build()));
+		thrown.expect(MessageConversionException.class);
+		invocableHandlerMethod.invoke(MessageBuilder.withPayload(123).build());
 	}
 
 	@Test
@@ -94,8 +109,8 @@ public class DefaultMessageHandlerMethodFactoryTests {
 		InvocableHandlerMethod invocableHandlerMethod =
 				createInvocableHandlerMethod(instance, "simpleString", String.class);
 
-		assertThatExceptionOfType(MessageConversionException.class).isThrownBy(() ->
-				invocableHandlerMethod.invoke(MessageBuilder.withPayload(123).build()));
+		thrown.expect(MessageConversionException.class);
+		invocableHandlerMethod.invoke(MessageBuilder.withPayload(123).build());
 	}
 
 	@Test
@@ -133,8 +148,9 @@ public class DefaultMessageHandlerMethodFactoryTests {
 		InvocableHandlerMethod invocableHandlerMethod2 =
 				createInvocableHandlerMethod(instance, "simpleString", String.class);
 
-		assertThatExceptionOfType(MethodArgumentResolutionException.class).isThrownBy(() ->
-				invocableHandlerMethod2.invoke(message)).withMessageContaining("No suitable resolver");
+		thrown.expect(MethodArgumentResolutionException.class);
+		thrown.expectMessage("No suitable resolver for");
+		invocableHandlerMethod2.invoke(message);
 	}
 
 	@Test
@@ -168,13 +184,13 @@ public class DefaultMessageHandlerMethodFactoryTests {
 
 		InvocableHandlerMethod invocableHandlerMethod =
 				createInvocableHandlerMethod(instance, "payloadValidation", String.class);
-		assertThatExceptionOfType(MethodArgumentNotValidException.class).isThrownBy(() ->
-				invocableHandlerMethod.invoke(MessageBuilder.withPayload("failure").build()));
+		thrown.expect(MethodArgumentNotValidException.class);
+		invocableHandlerMethod.invoke(MessageBuilder.withPayload("failure").build());
 	}
 
 
 	private void assertMethodInvocation(SampleBean bean, String methodName) {
-		assertThat((boolean) bean.invocations.get(methodName)).as("Method " + methodName + " should have been invoked").isTrue();
+		assertTrue("Method " + methodName + " should have been invoked", bean.invocations.get(methodName));
 	}
 
 	private InvocableHandlerMethod createInvocableHandlerMethod(
@@ -190,7 +206,7 @@ public class DefaultMessageHandlerMethodFactoryTests {
 
 	private Method getListenerMethod(String methodName, Class<?>... parameterTypes) {
 		Method method = ReflectionUtils.findMethod(SampleBean.class, methodName, parameterTypes);
-		assertThat(("no method found with name " + methodName + " and parameters " + Arrays.toString(parameterTypes))).isNotNull();
+		assertNotNull("no method found with name " + methodName + " and parameters " + Arrays.toString(parameterTypes));
 		return method;
 	}
 
@@ -203,13 +219,13 @@ public class DefaultMessageHandlerMethodFactoryTests {
 			invocations.put("simpleString", true);
 		}
 
-		public void payloadValidation(@Payload @Validated String value) {
+		public void payloadValidation(@Payload @Valid String value) {
 			invocations.put("payloadValidation", true);
 		}
 
 		public void customArgumentResolver(Locale locale) {
 			invocations.put("customArgumentResolver", true);
-			assertThat(locale).as("Wrong value for locale").isEqualTo(Locale.getDefault());
+			assertEquals("Wrong value for locale", Locale.getDefault(), locale);
 		}
 	}
 

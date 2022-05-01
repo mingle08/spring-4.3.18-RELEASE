@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,8 +20,9 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.springframework.lang.Nullable;
+import org.springframework.lang.UsesJava7;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 
 /**
  * Base class for decorating ClassLoaders such as {@link OverridingClassLoader}
@@ -32,16 +33,28 @@ import org.springframework.util.Assert;
  * @author Rod Johnson
  * @since 2.5.2
  */
+@UsesJava7
 public abstract class DecoratingClassLoader extends ClassLoader {
 
+	/**
+	 * Java 7+ {@code ClassLoader.registerAsParallelCapable()} available?
+	 * @since 4.1.2
+	 */
+	protected static final boolean parallelCapableClassLoaderAvailable =
+			ClassUtils.hasMethod(ClassLoader.class, "registerAsParallelCapable");
+
 	static {
-		ClassLoader.registerAsParallelCapable();
+		if (parallelCapableClassLoaderAvailable) {
+			ClassLoader.registerAsParallelCapable();
+		}
 	}
 
 
-	private final Set<String> excludedPackages = Collections.newSetFromMap(new ConcurrentHashMap<>(8));
+	private final Set<String> excludedPackages =
+			Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>(8));
 
-	private final Set<String> excludedClasses = Collections.newSetFromMap(new ConcurrentHashMap<>(8));
+	private final Set<String> excludedClasses =
+			Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>(8));
 
 
 	/**
@@ -54,7 +67,7 @@ public abstract class DecoratingClassLoader extends ClassLoader {
 	 * Create a new DecoratingClassLoader using the given parent ClassLoader
 	 * for delegation.
 	 */
-	public DecoratingClassLoader(@Nullable ClassLoader parent) {
+	public DecoratingClassLoader(ClassLoader parent) {
 		super(parent);
 	}
 

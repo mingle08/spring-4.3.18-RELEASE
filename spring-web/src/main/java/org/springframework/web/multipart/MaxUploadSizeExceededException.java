@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,8 +15,6 @@
  */
 
 package org.springframework.web.multipart;
-
-import org.springframework.lang.Nullable;
 
 /**
  * MultipartException subclass thrown when an upload exceeds the
@@ -33,8 +31,7 @@ public class MaxUploadSizeExceededException extends MultipartException {
 
 	/**
 	 * Constructor for MaxUploadSizeExceededException.
-	 * @param maxUploadSize the maximum upload size allowed,
-	 * or -1 if the size limit isn't known
+	 * @param maxUploadSize the maximum upload size allowed
 	 */
 	public MaxUploadSizeExceededException(long maxUploadSize) {
 		this(maxUploadSize, null);
@@ -42,19 +39,17 @@ public class MaxUploadSizeExceededException extends MultipartException {
 
 	/**
 	 * Constructor for MaxUploadSizeExceededException.
-	 * @param maxUploadSize the maximum upload size allowed,
-	 * or -1 if the size limit isn't known
+	 * @param maxUploadSize the maximum upload size allowed
 	 * @param ex root cause from multipart parsing API in use
 	 */
-	public MaxUploadSizeExceededException(long maxUploadSize, @Nullable Throwable ex) {
-		super("Maximum upload size " + (maxUploadSize >= 0 ? "of " + maxUploadSize + " bytes " : "") + "exceeded", ex);
+	public MaxUploadSizeExceededException(long maxUploadSize, Throwable ex) {
+		super("Maximum upload size of " + maxUploadSize + " bytes exceeded", ex);
 		this.maxUploadSize = maxUploadSize;
 	}
 
 
 	/**
-	 * Return the maximum upload size allowed,
-	 * or -1 if the size limit isn't known.
+	 * Return the maximum upload size allowed.
 	 */
 	public long getMaxUploadSize() {
 		return this.maxUploadSize;

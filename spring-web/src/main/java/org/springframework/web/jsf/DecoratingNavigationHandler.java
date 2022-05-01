@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,10 +16,8 @@
 
 package org.springframework.web.jsf;
 
-import jakarta.faces.application.NavigationHandler;
-import jakarta.faces.context.FacesContext;
-
-import org.springframework.lang.Nullable;
+import javax.faces.application.NavigationHandler;
+import javax.faces.context.FacesContext;
 
 /**
  * Base class for JSF NavigationHandler implementations that want
@@ -34,12 +32,11 @@ import org.springframework.lang.Nullable;
  *
  * @author Juergen Hoeller
  * @since 1.2.7
- * @see #handleNavigation(jakarta.faces.context.FacesContext, String, String, NavigationHandler)
+ * @see #handleNavigation(javax.faces.context.FacesContext, String, String, NavigationHandler)
  * @see DelegatingNavigationHandlerProxy
  */
 public abstract class DecoratingNavigationHandler extends NavigationHandler {
 
-	@Nullable
 	private NavigationHandler decoratedNavigationHandler;
 
 
@@ -61,7 +58,6 @@ public abstract class DecoratingNavigationHandler extends NavigationHandler {
 	 * Return the fixed original NavigationHandler decorated by this handler, if any
 	 * (that is, if passed in through the constructor).
 	 */
-	@Nullable
 	public final NavigationHandler getDecoratedNavigationHandler() {
 		return this.decoratedNavigationHandler;
 	}
@@ -71,7 +67,7 @@ public abstract class DecoratingNavigationHandler extends NavigationHandler {
 	 * This implementation of the standard JSF {@code handleNavigation} method
 	 * delegates to the overloaded variant, passing in constructor-injected
 	 * NavigationHandler as argument.
-	 * @see #handleNavigation(jakarta.faces.context.FacesContext, String, String, jakarta.faces.application.NavigationHandler)
+	 * @see #handleNavigation(javax.faces.context.FacesContext, String, String, javax.faces.application.NavigationHandler)
 	 */
 	@Override
 	public final void handleNavigation(FacesContext facesContext, String fromAction, String outcome) {
@@ -98,8 +94,8 @@ public abstract class DecoratingNavigationHandler extends NavigationHandler {
 	 * or {@code null} if none
 	 * @see #callNextHandlerInChain
 	 */
-	public abstract void handleNavigation(FacesContext facesContext, @Nullable String fromAction,
-			@Nullable String outcome, @Nullable NavigationHandler originalNavigationHandler);
+	public abstract void handleNavigation(
+			FacesContext facesContext, String fromAction, String outcome, NavigationHandler originalNavigationHandler);
 
 
 	/**
@@ -130,14 +126,15 @@ public abstract class DecoratingNavigationHandler extends NavigationHandler {
 	 * @param originalNavigationHandler the original NavigationHandler,
 	 * or {@code null} if none
 	 */
-	protected final void callNextHandlerInChain(FacesContext facesContext, @Nullable String fromAction,
-			@Nullable String outcome, @Nullable NavigationHandler originalNavigationHandler) {
+	protected final void callNextHandlerInChain(
+			FacesContext facesContext, String fromAction, String outcome, NavigationHandler originalNavigationHandler) {
 
 		NavigationHandler decoratedNavigationHandler = getDecoratedNavigationHandler();
 
-		if (decoratedNavigationHandler instanceof DecoratingNavigationHandler decHandler) {
+		if (decoratedNavigationHandler instanceof DecoratingNavigationHandler) {
 			// DecoratingNavigationHandler specified through constructor argument:
 			// Call it with original NavigationHandler passed in.
+			DecoratingNavigationHandler decHandler = (DecoratingNavigationHandler) decoratedNavigationHandler;
 			decHandler.handleNavigation(facesContext, fromAction, outcome, originalNavigationHandler);
 		}
 		else if (decoratedNavigationHandler != null) {

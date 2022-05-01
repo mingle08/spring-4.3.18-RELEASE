@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,7 +24,6 @@ import java.nio.charset.Charset;
 
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
@@ -46,10 +45,8 @@ public class EncodedResource implements InputStreamSource {
 
 	private final Resource resource;
 
-	@Nullable
 	private final String encoding;
 
-	@Nullable
 	private final Charset charset;
 
 
@@ -68,7 +65,7 @@ public class EncodedResource implements InputStreamSource {
 	 * @param resource the {@code Resource} to hold (never {@code null})
 	 * @param encoding the encoding to use for reading from the resource
 	 */
-	public EncodedResource(Resource resource, @Nullable String encoding) {
+	public EncodedResource(Resource resource, String encoding) {
 		this(resource, encoding, null);
 	}
 
@@ -78,11 +75,11 @@ public class EncodedResource implements InputStreamSource {
 	 * @param resource the {@code Resource} to hold (never {@code null})
 	 * @param charset the {@code Charset} to use for reading from the resource
 	 */
-	public EncodedResource(Resource resource, @Nullable Charset charset) {
+	public EncodedResource(Resource resource, Charset charset) {
 		this(resource, null, charset);
 	}
 
-	private EncodedResource(Resource resource, @Nullable String encoding, @Nullable Charset charset) {
+	private EncodedResource(Resource resource, String encoding, Charset charset) {
 		super();
 		Assert.notNull(resource, "Resource must not be null");
 		this.resource = resource;
@@ -102,7 +99,6 @@ public class EncodedResource implements InputStreamSource {
 	 * Return the encoding to use for reading from the {@linkplain #getResource() resource},
 	 * or {@code null} if none specified.
 	 */
-	@Nullable
 	public final String getEncoding() {
 		return this.encoding;
 	}
@@ -111,7 +107,6 @@ public class EncodedResource implements InputStreamSource {
 	 * Return the {@code Charset} to use for reading from the {@linkplain #getResource() resource},
 	 * or {@code null} if none specified.
 	 */
-	@Nullable
 	public final Charset getCharset() {
 		return this.charset;
 	}
@@ -161,13 +156,14 @@ public class EncodedResource implements InputStreamSource {
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}
-		if (!(other instanceof EncodedResource otherResource)) {
+		if (!(other instanceof EncodedResource)) {
 			return false;
 		}
+		EncodedResource otherResource = (EncodedResource) other;
 		return (this.resource.equals(otherResource.resource) &&
 				ObjectUtils.nullSafeEquals(this.charset, otherResource.charset) &&
 				ObjectUtils.nullSafeEquals(this.encoding, otherResource.encoding));

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,11 +20,9 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.logging.Logger;
-
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -41,7 +39,6 @@ import org.springframework.util.Assert;
  */
 public class DelegatingDataSource implements DataSource, InitializingBean {
 
-	@Nullable
 	private DataSource targetDataSource;
 
 
@@ -64,26 +61,16 @@ public class DelegatingDataSource implements DataSource, InitializingBean {
 	/**
 	 * Set the target DataSource that this DataSource should delegate to.
 	 */
-	public void setTargetDataSource(@Nullable DataSource targetDataSource) {
+	public void setTargetDataSource(DataSource targetDataSource) {
+		Assert.notNull(targetDataSource, "'targetDataSource' must not be null");
 		this.targetDataSource = targetDataSource;
 	}
 
 	/**
 	 * Return the target DataSource that this DataSource should delegate to.
 	 */
-	@Nullable
 	public DataSource getTargetDataSource() {
 		return this.targetDataSource;
-	}
-
-	/**
-	 * Obtain the target {@code DataSource} for actual use (never {@code null}).
-	 * @since 5.0
-	 */
-	protected DataSource obtainTargetDataSource() {
-		DataSource dataSource = getTargetDataSource();
-		Assert.state(dataSource != null, "No 'targetDataSource' set");
-		return dataSource;
 	}
 
 	@Override
@@ -96,32 +83,32 @@ public class DelegatingDataSource implements DataSource, InitializingBean {
 
 	@Override
 	public Connection getConnection() throws SQLException {
-		return obtainTargetDataSource().getConnection();
+		return getTargetDataSource().getConnection();
 	}
 
 	@Override
 	public Connection getConnection(String username, String password) throws SQLException {
-		return obtainTargetDataSource().getConnection(username, password);
+		return getTargetDataSource().getConnection(username, password);
 	}
 
 	@Override
 	public PrintWriter getLogWriter() throws SQLException {
-		return obtainTargetDataSource().getLogWriter();
+		return getTargetDataSource().getLogWriter();
 	}
 
 	@Override
 	public void setLogWriter(PrintWriter out) throws SQLException {
-		obtainTargetDataSource().setLogWriter(out);
+		getTargetDataSource().setLogWriter(out);
 	}
 
 	@Override
 	public int getLoginTimeout() throws SQLException {
-		return obtainTargetDataSource().getLoginTimeout();
+		return getTargetDataSource().getLoginTimeout();
 	}
 
 	@Override
 	public void setLoginTimeout(int seconds) throws SQLException {
-		obtainTargetDataSource().setLoginTimeout(seconds);
+		getTargetDataSource().setLoginTimeout(seconds);
 	}
 
 
@@ -135,12 +122,12 @@ public class DelegatingDataSource implements DataSource, InitializingBean {
 		if (iface.isInstance(this)) {
 			return (T) this;
 		}
-		return obtainTargetDataSource().unwrap(iface);
+		return getTargetDataSource().unwrap(iface);
 	}
 
 	@Override
 	public boolean isWrapperFor(Class<?> iface) throws SQLException {
-		return (iface.isInstance(this) || obtainTargetDataSource().isWrapperFor(iface));
+		return (iface.isInstance(this) || getTargetDataSource().isWrapperFor(iface));
 	}
 
 

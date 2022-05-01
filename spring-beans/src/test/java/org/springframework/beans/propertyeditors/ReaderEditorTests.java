@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,12 +18,11 @@ package org.springframework.beans.propertyeditors;
 
 import java.io.Reader;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.util.ClassUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for the {@link ReaderEditor} class.
@@ -33,10 +32,9 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  */
 public class ReaderEditorTests {
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testCtorWithNullResourceEditor() throws Exception {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				new ReaderEditor(null));
+		new ReaderEditor(null);
 	}
 
 	@Test
@@ -48,11 +46,10 @@ public class ReaderEditorTests {
 			ReaderEditor editor = new ReaderEditor();
 			editor.setAsText(resource);
 			Object value = editor.getValue();
-			assertThat(value).isNotNull();
-			boolean condition = value instanceof Reader;
-			assertThat(condition).isTrue();
+			assertNotNull(value);
+			assertTrue(value instanceof Reader);
 			reader = (Reader) value;
-			assertThat(reader.ready()).isTrue();
+			assertTrue(reader.ready());
 		}
 		finally {
 			if (reader != null) {
@@ -61,22 +58,21 @@ public class ReaderEditorTests {
 		}
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testWhenResourceDoesNotExist() throws Exception {
 		String resource = "classpath:bingo!";
 		ReaderEditor editor = new ReaderEditor();
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				editor.setAsText(resource));
+		editor.setAsText(resource);
 	}
 
 	@Test
 	public void testGetAsTextReturnsNullByDefault() throws Exception {
-		assertThat(new ReaderEditor().getAsText()).isNull();
+		assertNull(new ReaderEditor().getAsText());
 		String resource = "classpath:" + ClassUtils.classPackageAsResourcePath(getClass()) +
 				"/" + ClassUtils.getShortName(getClass()) + ".class";
 		ReaderEditor editor = new ReaderEditor();
 		editor.setAsText(resource);
-		assertThat(editor.getAsText()).isNull();
+		assertNull(editor.getAsText());
 	}
 
 }

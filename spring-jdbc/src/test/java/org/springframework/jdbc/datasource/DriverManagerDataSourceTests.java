@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,11 +19,10 @@ package org.springframework.jdbc.datasource;
 import java.sql.Connection;
 import java.util.Properties;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Rod Johnson
@@ -41,9 +40,9 @@ public class DriverManagerDataSourceTests {
 		class TestDriverManagerDataSource extends DriverManagerDataSource {
 			@Override
 			protected Connection getConnectionFromDriverManager(String url, Properties props) {
-				assertThat(url).isEqualTo(jdbcUrl);
-				assertThat(props.getProperty("user")).isEqualTo(uname);
-				assertThat(props.getProperty("password")).isEqualTo(pwd);
+				assertEquals(jdbcUrl, url);
+				assertEquals(uname, props.getProperty("user"));
+				assertEquals(pwd, props.getProperty("password"));
 				return connection;
 			}
 		}
@@ -55,11 +54,11 @@ public class DriverManagerDataSourceTests {
 		ds.setPassword(pwd);
 
 		Connection actualCon = ds.getConnection();
-		assertThat(actualCon == connection).isTrue();
+		assertTrue(actualCon == connection);
 
-		assertThat(ds.getUrl().equals(jdbcUrl)).isTrue();
-		assertThat(ds.getPassword().equals(pwd)).isTrue();
-		assertThat(ds.getUsername().equals(uname)).isTrue();
+		assertTrue(ds.getUrl().equals(jdbcUrl));
+		assertTrue(ds.getPassword().equals(pwd));
+		assertTrue(ds.getUsername().equals(uname));
 	}
 
 	@Test
@@ -75,11 +74,11 @@ public class DriverManagerDataSourceTests {
 		class TestDriverManagerDataSource extends DriverManagerDataSource {
 			@Override
 			protected Connection getConnectionFromDriverManager(String url, Properties props) {
-				assertThat(url).isEqualTo(jdbcUrl);
-				assertThat(props.getProperty("user")).isEqualTo("uname");
-				assertThat(props.getProperty("password")).isEqualTo("pwd");
-				assertThat(props.getProperty("myProp")).isEqualTo("myValue");
-				assertThat(props.getProperty("yourProp")).isEqualTo("yourValue");
+				assertEquals(jdbcUrl, url);
+				assertEquals("uname", props.getProperty("user"));
+				assertEquals("pwd", props.getProperty("password"));
+				assertEquals("myValue", props.getProperty("myProp"));
+				assertEquals("yourValue", props.getProperty("yourProp"));
 				return connection;
 			}
 		}
@@ -90,9 +89,9 @@ public class DriverManagerDataSourceTests {
 		ds.setConnectionProperties(connProps);
 
 		Connection actualCon = ds.getConnection();
-		assertThat(actualCon == connection).isTrue();
+		assertTrue(actualCon == connection);
 
-		assertThat(ds.getUrl().equals(jdbcUrl)).isTrue();
+		assertTrue(ds.getUrl().equals(jdbcUrl));
 	}
 
 	@Test
@@ -110,11 +109,11 @@ public class DriverManagerDataSourceTests {
 		class TestDriverManagerDataSource extends DriverManagerDataSource {
 			@Override
 			protected Connection getConnectionFromDriverManager(String url, Properties props) {
-				assertThat(url).isEqualTo(jdbcUrl);
-				assertThat(props.getProperty("user")).isEqualTo(uname);
-				assertThat(props.getProperty("password")).isEqualTo(pwd);
-				assertThat(props.getProperty("myProp")).isEqualTo("myValue");
-				assertThat(props.getProperty("yourProp")).isEqualTo("yourValue");
+				assertEquals(jdbcUrl, url);
+				assertEquals(uname, props.getProperty("user"));
+				assertEquals(pwd, props.getProperty("password"));
+				assertEquals("myValue", props.getProperty("myProp"));
+				assertEquals("yourValue", props.getProperty("yourProp"));
 				return connection;
 			}
 		}
@@ -127,20 +126,25 @@ public class DriverManagerDataSourceTests {
 		ds.setConnectionProperties(connProps);
 
 		Connection actualCon = ds.getConnection();
-		assertThat(actualCon == connection).isTrue();
+		assertTrue(actualCon == connection);
 
-		assertThat(ds.getUrl().equals(jdbcUrl)).isTrue();
-		assertThat(ds.getPassword().equals(pwd)).isTrue();
-		assertThat(ds.getUsername().equals(uname)).isTrue();
+		assertTrue(ds.getUrl().equals(jdbcUrl));
+		assertTrue(ds.getPassword().equals(pwd));
+		assertTrue(ds.getUsername().equals(uname));
 	}
 
 	@Test
 	public void testInvalidClassName() throws Exception {
 		String bogusClassName = "foobar";
 		DriverManagerDataSource ds = new DriverManagerDataSource();
-		assertThatIllegalStateException().isThrownBy(() ->
-				ds.setDriverClassName(bogusClassName))
-			.withCauseInstanceOf(ClassNotFoundException.class);
+		try {
+			ds.setDriverClassName(bogusClassName);
+			fail("Should have thrown IllegalStateException");
+		}
+		catch (IllegalStateException ex) {
+			// OK
+			assertTrue(ex.getCause() instanceof ClassNotFoundException);
+		}
 	}
 
 }

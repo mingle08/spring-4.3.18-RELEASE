@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,8 +26,9 @@ import java.nio.file.Paths;
 
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceEditor;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.lang.UsesJava7;
 import org.springframework.util.Assert;
-import org.springframework.util.ResourceUtils;
 
 /**
  * Editor for {@code java.nio.file.Path}, to directly populate a Path
@@ -50,6 +51,7 @@ import org.springframework.util.ResourceUtils;
  * @see FileEditor
  * @see URLEditor
  */
+@UsesJava7
 public class PathEditor extends PropertyEditorSupport {
 
 	private final ResourceEditor resourceEditor;
@@ -74,7 +76,7 @@ public class PathEditor extends PropertyEditorSupport {
 
 	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
-		boolean nioPathCandidate = !text.startsWith(ResourceUtils.CLASSPATH_URL_PREFIX);
+		boolean nioPathCandidate = !text.startsWith(ResourceLoader.CLASSPATH_URL_PREFIX);
 		if (nioPathCandidate && !text.startsWith("/")) {
 			try {
 				URI uri = new URI(text);
@@ -86,13 +88,11 @@ public class PathEditor extends PropertyEditorSupport {
 				}
 			}
 			catch (URISyntaxException ex) {
-				// Not a valid URI; potentially a Windows-style path after
-				// a file prefix (let's try as Spring resource location)
-				nioPathCandidate = !text.startsWith(ResourceUtils.FILE_URL_PREFIX);
+				// Not a valid URI: Let's try as Spring resource location.
 			}
 			catch (FileSystemNotFoundException ex) {
-				// URI scheme not registered for NIO (let's try URL
-				// protocol handlers via Spring's resource mechanism).
+				// URI scheme not registered for NIO:
+				// Let's try URL protocol handlers via Spring's resource mechanism.
 			}
 		}
 
@@ -101,7 +101,7 @@ public class PathEditor extends PropertyEditorSupport {
 		if (resource == null) {
 			setValue(null);
 		}
-		else if (nioPathCandidate && !resource.exists()) {
+		else if (!resource.exists() && nioPathCandidate) {
 			setValue(Paths.get(text).normalize());
 		}
 		else {

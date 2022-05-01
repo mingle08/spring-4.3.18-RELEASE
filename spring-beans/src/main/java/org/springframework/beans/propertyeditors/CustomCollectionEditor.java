@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,10 +24,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
-import org.springframework.util.ReflectionUtils;
 
 /**
  * Property editor for Collections, converting any source Collection
@@ -87,7 +83,9 @@ public class CustomCollectionEditor extends PropertyEditorSupport {
 	 */
 	@SuppressWarnings("rawtypes")
 	public CustomCollectionEditor(Class<? extends Collection> collectionType, boolean nullAsEmptyCollection) {
-		Assert.notNull(collectionType, "Collection type is required");
+		if (collectionType == null) {
+			throw new IllegalArgumentException("Collection type is required");
+		}
 		if (!Collection.class.isAssignableFrom(collectionType)) {
 			throw new IllegalArgumentException(
 					"Collection type [" + collectionType.getName() + "] does not implement [java.util.Collection]");
@@ -109,7 +107,7 @@ public class CustomCollectionEditor extends PropertyEditorSupport {
 	 * Convert the given value to a Collection of the target type.
 	 */
 	@Override
-	public void setValue(@Nullable Object value) {
+	public void setValue(Object value) {
 		if (value == null && this.nullAsEmptyCollection) {
 			super.setValue(createCollection(this.collectionType, 0));
 		}
@@ -117,8 +115,9 @@ public class CustomCollectionEditor extends PropertyEditorSupport {
 			// Use the source value as-is, as it matches the target type.
 			super.setValue(value);
 		}
-		else if (value instanceof Collection<?> source) {
+		else if (value instanceof Collection) {
 			// Convert Collection elements.
+			Collection<?> source = (Collection<?>) value;
 			Collection<Object> target = createCollection(this.collectionType, source.size());
 			for (Object elem : source) {
 				target.add(convertElement(elem));
@@ -149,11 +148,11 @@ public class CustomCollectionEditor extends PropertyEditorSupport {
 	 * @param initialCapacity the initial capacity
 	 * @return the new Collection instance
 	 */
-	@SuppressWarnings({"rawtypes", "unchecked"})
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected Collection<Object> createCollection(Class<? extends Collection> collectionType, int initialCapacity) {
 		if (!collectionType.isInterface()) {
 			try {
-				return ReflectionUtils.accessibleConstructor(collectionType).newInstance();
+				return collectionType.newInstance();
 			}
 			catch (Throwable ex) {
 				throw new IllegalArgumentException(
@@ -161,13 +160,13 @@ public class CustomCollectionEditor extends PropertyEditorSupport {
 			}
 		}
 		else if (List.class == collectionType) {
-			return new ArrayList<>(initialCapacity);
+			return new ArrayList<Object>(initialCapacity);
 		}
 		else if (SortedSet.class == collectionType) {
-			return new TreeSet<>();
+			return new TreeSet<Object>();
 		}
 		else {
-			return new LinkedHashSet<>(initialCapacity);
+			return new LinkedHashSet<Object>(initialCapacity);
 		}
 	}
 
@@ -206,7 +205,6 @@ public class CustomCollectionEditor extends PropertyEditorSupport {
 	 * there is no appropriate text representation.
 	 */
 	@Override
-	@Nullable
 	public String getAsText() {
 		return null;
 	}

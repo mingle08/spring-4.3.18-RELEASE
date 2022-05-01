@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,6 @@ import java.lang.reflect.Method;
 import java.util.Map;
 
 import org.springframework.core.MethodParameter;
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.Headers;
@@ -29,11 +28,11 @@ import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * Argument resolver for headers. Resolves the following method parameters:
+ * Resolves the following method parameters:
  * <ul>
- * <li>{@link Headers @Headers} {@link Map}
- * <li>{@link MessageHeaders}
- * <li>{@link MessageHeaderAccessor}
+ * <li>Parameters assignable to {@link Map} annotated with {@link Headers @Headers}
+ * <li>Parameters of type {@link MessageHeaders}
+ * <li>Parameters assignable to {@link MessageHeaderAccessor}
  * </ul>
  *
  * @author Rossen Stoyanchev
@@ -49,7 +48,6 @@ public class HeadersMethodArgumentResolver implements HandlerMethodArgumentResol
 	}
 
 	@Override
-	@Nullable
 	public Object resolveArgument(MethodParameter parameter, Message<?> message) throws Exception {
 		Class<?> paramType = parameter.getParameterType();
 		if (Map.class.isAssignableFrom(paramType)) {
@@ -57,7 +55,7 @@ public class HeadersMethodArgumentResolver implements HandlerMethodArgumentResol
 		}
 		else if (MessageHeaderAccessor.class == paramType) {
 			MessageHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, MessageHeaderAccessor.class);
-			return accessor != null ? accessor : new MessageHeaderAccessor(message);
+			return (accessor != null ? accessor : new MessageHeaderAccessor(message));
 		}
 		else if (MessageHeaderAccessor.class.isAssignableFrom(paramType)) {
 			MessageHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, MessageHeaderAccessor.class);
@@ -74,8 +72,9 @@ public class HeadersMethodArgumentResolver implements HandlerMethodArgumentResol
 			}
 		}
 		else {
-			throw new IllegalStateException("Unexpected parameter of type " + paramType +
-					" in method " + parameter.getMethod() + ". ");
+			throw new IllegalStateException(
+					"Unexpected method parameter type " + paramType + "in method " + parameter.getMethod() + ". "
+					+ "@Headers method arguments must be assignable to java.util.Map.");
 		}
 	}
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,16 +19,15 @@ package org.springframework.jdbc.datasource.lookup;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * @author Rick Evans
  * @author Chris Beams
  */
-public class JndiDataSourceLookupTests {
+public final class JndiDataSourceLookupTests {
 
 	private static final String DATA_SOURCE_NAME = "Love is like a stove, burns you when it's hot";
 
@@ -38,26 +37,25 @@ public class JndiDataSourceLookupTests {
 		JndiDataSourceLookup lookup = new JndiDataSourceLookup() {
 			@Override
 			protected <T> T lookup(String jndiName, Class<T> requiredType) {
-				assertThat(jndiName).isEqualTo(DATA_SOURCE_NAME);
+				assertEquals(DATA_SOURCE_NAME, jndiName);
 				return requiredType.cast(expectedDataSource);
 			}
 		};
 		DataSource dataSource = lookup.getDataSource(DATA_SOURCE_NAME);
-		assertThat(dataSource).as("A DataSourceLookup implementation must *never* return null from getDataSource(): this one obviously (and incorrectly) is").isNotNull();
-		assertThat(dataSource).isSameAs(expectedDataSource);
+		assertNotNull("A DataSourceLookup implementation must *never* return null from getDataSource(): this one obviously (and incorrectly) is", dataSource);
+		assertSame(expectedDataSource, dataSource);
 	}
 
-	@Test
+	@Test(expected=DataSourceLookupFailureException.class)
 	public void testNoDataSourceAtJndiLocation() throws Exception {
 		JndiDataSourceLookup lookup = new JndiDataSourceLookup() {
 			@Override
 			protected <T> T lookup(String jndiName, Class<T> requiredType) throws NamingException {
-				assertThat(jndiName).isEqualTo(DATA_SOURCE_NAME);
+				assertEquals(DATA_SOURCE_NAME, jndiName);
 				throw new NamingException();
 			}
 		};
-		assertThatExceptionOfType(DataSourceLookupFailureException.class).isThrownBy(() ->
-				lookup.getDataSource(DATA_SOURCE_NAME));
+		lookup.getDataSource(DATA_SOURCE_NAME);
 	}
 
 }

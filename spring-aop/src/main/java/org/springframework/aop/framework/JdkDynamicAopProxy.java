@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,7 +31,6 @@ import org.springframework.aop.RawTargetAccess;
 import org.springframework.aop.TargetSource;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.core.DecoratingProxy;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
@@ -57,14 +56,13 @@ import org.springframework.util.ClassUtils;
  * @author Juergen Hoeller
  * @author Rob Harrop
  * @author Dave Syer
- * @author Sergey Tsypanov
  * @see java.lang.reflect.Proxy
  * @see AdvisedSupport
  * @see ProxyFactory
  */
 final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializable {
 
-	/** use serialVersionUID from Spring 1.2 for interoperability. */
+	/** use serialVersionUID from Spring 1.2 for interoperability */
 	private static final long serialVersionUID = 5531744639992436476L;
 
 
@@ -77,13 +75,11 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 	 * This way, we can also more easily take advantage of minor optimizations in each class.
 	 */
 
-	/** We use a static Log to avoid serialization issues. */
+	/** We use a static Log to avoid serialization issues */
 	private static final Log logger = LogFactory.getLog(JdkDynamicAopProxy.class);
 
-	/** Config used to configure this proxy. */
+	/** Config used to configure this proxy */
 	private final AdvisedSupport advised;
-
-	private final Class<?>[] proxiedInterfaces;
 
 	/**
 	 * Is the {@link #equals} method defined on the proxied interfaces?
@@ -104,12 +100,10 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 	 */
 	public JdkDynamicAopProxy(AdvisedSupport config) throws AopConfigException {
 		Assert.notNull(config, "AdvisedSupport must not be null");
-		if (config.getAdvisorCount() == 0 && config.getTargetSource() == AdvisedSupport.EMPTY_TARGET_SOURCE) {
+		if (config.getAdvisors().length == 0 && config.getTargetSource() == AdvisedSupport.EMPTY_TARGET_SOURCE) {
 			throw new AopConfigException("No advisors and no TargetSource specified");
 		}
 		this.advised = config;
-		this.proxiedInterfaces = AopProxyUtils.completeProxiedInterfaces(this.advised, true);
-		findDefinedEqualsAndHashCodeMethods(this.proxiedInterfaces);
 	}
 
 
@@ -119,11 +113,13 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 	}
 
 	@Override
-	public Object getProxy(@Nullable ClassLoader classLoader) {
-		if (logger.isTraceEnabled()) {
-			logger.trace("Creating JDK dynamic proxy: " + this.advised.getTargetSource());
+	public Object getProxy(ClassLoader classLoader) {
+		if (logger.isDebugEnabled()) {
+			logger.debug("Creating JDK dynamic proxy: target source is " + this.advised.getTargetSource());
 		}
-		return Proxy.newProxyInstance(classLoader, this.proxiedInterfaces, this);
+		Class<?>[] proxiedInterfaces = AopProxyUtils.completeProxiedInterfaces(this.advised, true);
+		findDefinedEqualsAndHashCodeMethods(proxiedInterfaces);
+		return Proxy.newProxyInstance(classLoader, proxiedInterfaces, this);
 	}
 
 	/**
@@ -155,12 +151,13 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 	 * unless a hook method throws an exception.
 	 */
 	@Override
-	@Nullable
 	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+		MethodInvocation invocation;
 		Object oldProxy = null;
 		boolean setProxyContext = false;
 
 		TargetSource targetSource = this.advised.targetSource;
+		Class<?> targetClass = null;
 		Object target = null;
 
 		try {
@@ -190,10 +187,12 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 				setProxyContext = true;
 			}
 
-			// Get as late as possible to minimize the time we "own" the target,
+			// May be null. Get as late as possible to minimize the time we "own" the target,
 			// in case it comes from a pool.
 			target = targetSource.getTarget();
-			Class<?> targetClass = (target != null ? target.getClass() : null);
+			if (target != null) {
+				targetClass = target.getClass();
+			}
 
 			// Get the interception chain for this method.
 			List<Object> chain = this.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);
@@ -209,8 +208,7 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 			}
 			else {
 				// We need to create a method invocation...
-				MethodInvocation invocation =
-						new ReflectiveMethodInvocation(proxy, target, method, args, targetClass, chain);
+				invocation = new ReflectiveMethodInvocation(proxy, target, method, args, targetClass, chain);
 				// Proceed to the joinpoint through the interceptor chain.
 				retVal = invocation.proceed();
 			}
@@ -250,7 +248,7 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 	 * or a dynamic proxy wrapping a JdkDynamicAopProxy instance.
 	 */
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (other == this) {
 			return true;
 		}

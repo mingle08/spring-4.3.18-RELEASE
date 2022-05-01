@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,18 +19,17 @@ package org.springframework.web.servlet.resource;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.Set;
+import javax.servlet.http.HttpServletRequest;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.core.io.Resource;
-import org.springframework.lang.Nullable;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.util.StringUtils;
 
@@ -50,20 +49,19 @@ import org.springframework.util.StringUtils;
  */
 public class CssLinkResourceTransformer extends ResourceTransformerSupport {
 
-	private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
+	private static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
 
 	private static final Log logger = LogFactory.getLog(CssLinkResourceTransformer.class);
 
-	private final List<LinkParser> linkParsers = new ArrayList<>(2);
+	private final List<CssLinkParser> linkParsers = new ArrayList<CssLinkParser>(2);
 
 
 	public CssLinkResourceTransformer() {
-		this.linkParsers.add(new ImportStatementLinkParser());
-		this.linkParsers.add(new UrlFunctionLinkParser());
+		this.linkParsers.add(new ImportStatementCssLinkParser());
+		this.linkParsers.add(new UrlFunctionCssLinkParser());
 	}
 
 
-	@SuppressWarnings("deprecation")
 	@Override
 	public Resource transform(HttpServletRequest request, Resource resource, ResourceTransformerChain transformerChain)
 			throws IOException {
@@ -71,35 +69,51 @@ public class CssLinkResourceTransformer extends ResourceTransformerSupport {
 		resource = transformerChain.transform(request, resource);
 
 		String filename = resource.getFilename();
-		if (!"css".equals(StringUtils.getFilenameExtension(filename)) ||
-				resource instanceof EncodedResourceResolver.EncodedResource) {
+		if (!"css".equals(StringUtils.getFilenameExtension(filename))) {
 			return resource;
+		}
+
+		if (logger.isTraceEnabled()) {
+			logger.trace("Transforming resource: " + resource);
 		}
 
 		byte[] bytes = FileCopyUtils.copyToByteArray(resource.getInputStream());
 		String content = new String(bytes, DEFAULT_CHARSET);
 
-		SortedSet<ContentChunkInfo> links = new TreeSet<>();
-		for (LinkParser parser : this.linkParsers) {
-			parser.parse(content, links);
+		Set<CssLinkInfo> infos = new HashSet<CssLinkInfo>(8);
+		for (CssLinkParser parser : this.linkParsers) {
+			parser.parseLink(content, infos);
 		}
 
-		if (links.isEmpty()) {
+		if (infos.isEmpty()) {
+			if (logger.isTraceEnabled()) {
+				logger.trace("No links found.");
+			}
 			return resource;
 		}
 
+		List<CssLinkInfo> sortedInfos = new ArrayList<CssLinkInfo>(infos);
+		Collections.sort(sortedInfos);
+
 		int index = 0;
 		StringWriter writer = new StringWriter();
-		for (ContentChunkInfo linkContentChunkInfo : links) {
-			writer.write(content.substring(index, linkContentChunkInfo.getStart()));
-			String link = content.substring(linkContentChunkInfo.getStart(), linkContentChunkInfo.getEnd());
+		for (CssLinkInfo info : sortedInfos) {
+			writer.write(content.substring(index, info.getStart()));
+			String link = content.substring(info.getStart(), info.getEnd());
 			String newLink = null;
 			if (!hasScheme(link)) {
-				String absolutePath = toAbsolutePath(link, request);
-				newLink = resolveUrlPath(absolutePath, request, resource, transformerChain);
+				newLink = resolveUrlPath(link, request, resource, transformerChain);
+			}
+			if (logger.isTraceEnabled()) {
+				if (newLink != null && !link.equals(newLink)) {
+					logger.trace("Link modified: " + newLink + " (original: " + link + ")");
+				}
+				else {
+					logger.trace("Link not modified: " + link);
+				}
 			}
 			writer.write(newLink != null ? newLink : link);
-			index = linkContentChunkInfo.getEnd();
+			index = info.getEnd();
 		}
 		writer.write(content.substring(index));
 
@@ -108,69 +122,73 @@ public class CssLinkResourceTransformer extends ResourceTransformerSupport {
 
 	private boolean hasScheme(String link) {
 		int schemeIndex = link.indexOf(':');
-		return ((schemeIndex > 0 && !link.substring(0, schemeIndex).contains("/")) || link.indexOf("//") == 0);
+		return (schemeIndex > 0 && !link.substring(0, schemeIndex).contains("/")) || link.indexOf("//") == 0;
 	}
 
 
-	/**
-	 * Extract content chunks that represent links.
-	 */
-	@FunctionalInterface
-	protected interface LinkParser {
+	protected interface CssLinkParser {
 
-		void parse(String content, SortedSet<ContentChunkInfo> result);
-
+		void parseLink(String content, Set<CssLinkInfo> linkInfos);
 	}
 
 
-	/**
-	 * Abstract base class for {@link LinkParser} implementations.
-	 */
-	protected abstract static class AbstractLinkParser implements LinkParser {
+	protected static abstract class AbstractCssLinkParser implements CssLinkParser {
 
-		/** Return the keyword to use to search for links, e.g. "@import", "url(" */
+		/**
+		 * Return the keyword to use to search for links.
+		 */
 		protected abstract String getKeyword();
 
 		@Override
-		public void parse(String content, SortedSet<ContentChunkInfo> result) {
-			int position = 0;
-			while (true) {
-				position = content.indexOf(getKeyword(), position);
-				if (position == -1) {
-					return;
+		public void parseLink(String content, Set<CssLinkInfo> linkInfos) {
+			int index = 0;
+			do {
+				index = content.indexOf(getKeyword(), index);
+				if (index == -1) {
+					break;
 				}
-				position += getKeyword().length();
-				while (Character.isWhitespace(content.charAt(position))) {
-					position++;
+				index = skipWhitespace(content, index + getKeyword().length());
+				if (content.charAt(index) == '\'') {
+					index = addLink(index, "'", content, linkInfos);
 				}
-				if (content.charAt(position) == '\'') {
-					position = extractLink(position, "'", content, result);
-				}
-				else if (content.charAt(position) == '"') {
-					position = extractLink(position, "\"", content, result);
+				else if (content.charAt(index) == '"') {
+					index = addLink(index, "\"", content, linkInfos);
 				}
 				else {
-					position = extractLink(position, content, result);
+					index = extractLink(index, content, linkInfos);
+
 				}
+			}
+			while (true);
+		}
+
+		private int skipWhitespace(String content, int index) {
+			while (true) {
+				if (Character.isWhitespace(content.charAt(index))) {
+					index++;
+					continue;
+				}
+				return index;
 			}
 		}
 
-		protected int extractLink(int index, String endKey, String content, SortedSet<ContentChunkInfo> linksToAdd) {
+		protected int addLink(int index, String endKey, String content, Set<CssLinkInfo> linkInfos) {
 			int start = index + 1;
 			int end = content.indexOf(endKey, start);
-			linksToAdd.add(new ContentChunkInfo(start, end));
+			linkInfos.add(new CssLinkInfo(start, end));
 			return end + endKey.length();
 		}
 
 		/**
-		 * Invoked after a keyword match, after whitespace has been removed, and when
+		 * Invoked after a keyword match, after whitespaces removed, and when
 		 * the next char is neither a single nor double quote.
 		 */
-		protected abstract int extractLink(int index, String content, SortedSet<ContentChunkInfo> linksToAdd);
+		protected abstract int extractLink(int index, String content, Set<CssLinkInfo> linkInfos);
+
 	}
 
 
-	private static class ImportStatementLinkParser extends AbstractLinkParser {
+	private static class ImportStatementCssLinkParser extends AbstractCssLinkParser {
 
 		@Override
 		protected String getKeyword() {
@@ -178,19 +196,19 @@ public class CssLinkResourceTransformer extends ResourceTransformerSupport {
 		}
 
 		@Override
-		protected int extractLink(int index, String content, SortedSet<ContentChunkInfo> linksToAdd) {
-			if (content.startsWith("url(", index)) {
-				// Ignore: UrlFunctionLinkParser will handle it.
+		protected int extractLink(int index, String content, Set<CssLinkInfo> linkInfos) {
+			if (content.substring(index, index + 4).equals("url(")) {
+				// Ignore, UrlLinkParser will take care
 			}
-			else if (logger.isTraceEnabled()) {
-				logger.trace("Unexpected syntax for @import link at index " + index);
+			else if (logger.isErrorEnabled()) {
+				logger.error("Unexpected syntax for @import link at index " + index);
 			}
 			return index;
 		}
 	}
 
 
-	private static class UrlFunctionLinkParser extends AbstractLinkParser {
+	private static class UrlFunctionCssLinkParser extends AbstractCssLinkParser {
 
 		@Override
 		protected String getKeyword() {
@@ -198,20 +216,20 @@ public class CssLinkResourceTransformer extends ResourceTransformerSupport {
 		}
 
 		@Override
-		protected int extractLink(int index, String content, SortedSet<ContentChunkInfo> linksToAdd) {
+		protected int extractLink(int index, String content, Set<CssLinkInfo> linkInfos) {
 			// A url() function without unquoted
-			return extractLink(index - 1, ")", content, linksToAdd);
+			return addLink(index - 1, ")", content, linkInfos);
 		}
 	}
 
 
-	private static class ContentChunkInfo implements Comparable<ContentChunkInfo> {
+	private static class CssLinkInfo implements Comparable<CssLinkInfo> {
 
 		private final int start;
 
 		private final int end;
 
-		ContentChunkInfo(int start, int end) {
+		public CssLinkInfo(int start, int end) {
 			this.start = start;
 			this.end = end;
 		}
@@ -225,19 +243,20 @@ public class CssLinkResourceTransformer extends ResourceTransformerSupport {
 		}
 
 		@Override
-		public int compareTo(ContentChunkInfo other) {
-			return Integer.compare(this.start, other.start);
+		public int compareTo(CssLinkInfo other) {
+			return (this.start < other.start ? -1 : (this.start == other.start ? 0 : 1));
 		}
 
 		@Override
-		public boolean equals(@Nullable Object other) {
-			if (this == other) {
+		public boolean equals(Object obj) {
+			if (this == obj) {
 				return true;
 			}
-			if (!(other instanceof ContentChunkInfo otherCci)) {
-				return false;
+			if (obj != null && obj instanceof CssLinkInfo) {
+				CssLinkInfo other = (CssLinkInfo) obj;
+				return (this.start == other.start && this.end == other.end);
 			}
-			return (this.start == otherCci.start && this.end == otherCci.end);
+			return false;
 		}
 
 		@Override

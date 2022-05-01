@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 
 /**
@@ -49,7 +48,7 @@ public class SimpleMetadataReaderFactory implements MetadataReaderFactory {
 	 * @param resourceLoader the Spring ResourceLoader to use
 	 * (also determines the ClassLoader to use)
 	 */
-	public SimpleMetadataReaderFactory(@Nullable ResourceLoader resourceLoader) {
+	public SimpleMetadataReaderFactory(ResourceLoader resourceLoader) {
 		this.resourceLoader = (resourceLoader != null ? resourceLoader : new DefaultResourceLoader());
 	}
 
@@ -57,7 +56,7 @@ public class SimpleMetadataReaderFactory implements MetadataReaderFactory {
 	 * Create a new SimpleMetadataReaderFactory for the given class loader.
 	 * @param classLoader the ClassLoader to use
 	 */
-	public SimpleMetadataReaderFactory(@Nullable ClassLoader classLoader) {
+	public SimpleMetadataReaderFactory(ClassLoader classLoader) {
 		this.resourceLoader =
 				(classLoader != null ? new DefaultResourceLoader(classLoader) : new DefaultResourceLoader());
 	}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
@@ -33,7 +32,6 @@ import org.springframework.core.task.AsyncListenableTaskExecutor;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.HttpHeaders;
-import org.springframework.lang.Nullable;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.ListenableFutureTask;
 import org.springframework.web.socket.WebSocketExtension;
@@ -56,14 +54,12 @@ import org.springframework.web.util.UriComponentsBuilder;
  * WebSocketConnectionManager} instead to auto-start a WebSocket connection.
  *
  * @author Rossen Stoyanchev
- * @author Juergen Hoeller
  * @since 4.0
  */
 public class JettyWebSocketClient extends AbstractWebSocketClient implements Lifecycle {
 
 	private final org.eclipse.jetty.websocket.client.WebSocketClient client;
 
-	@Nullable
 	private AsyncListenableTaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
 
 
@@ -90,14 +86,13 @@ public class JettyWebSocketClient extends AbstractWebSocketClient implements Lif
 	 * {@code doHandshake} methods will block until the connection is established.
 	 * <p>By default an instance of {@code SimpleAsyncTaskExecutor} is used.
 	 */
-	public void setTaskExecutor(@Nullable AsyncListenableTaskExecutor taskExecutor) {
+	public void setTaskExecutor(AsyncListenableTaskExecutor taskExecutor) {
 		this.taskExecutor = taskExecutor;
 	}
 
 	/**
 	 * Return the configured {@link TaskExecutor}.
 	 */
-	@Nullable
 	public AsyncListenableTaskExecutor getTaskExecutor() {
 		return this.taskExecutor;
 	}
@@ -145,37 +140,41 @@ public class JettyWebSocketClient extends AbstractWebSocketClient implements Lif
 		final ClientUpgradeRequest request = new ClientUpgradeRequest();
 		request.setSubProtocols(protocols);
 
-		for (WebSocketExtension extension : extensions) {
-			request.addExtensions(new WebSocketToJettyExtensionConfigAdapter(extension));
+		for (WebSocketExtension e : extensions) {
+			request.addExtensions(new WebSocketToJettyExtensionConfigAdapter(e));
 		}
 
-		request.setHeaders(headers);
+		for (String header : headers.keySet()) {
+			request.setHeader(header, headers.get(header));
+		}
 
 		Principal user = getUser();
-		JettyWebSocketSession wsSession = new JettyWebSocketSession(attributes, user);
+		final JettyWebSocketSession wsSession = new JettyWebSocketSession(attributes, user);
+		final JettyWebSocketHandlerAdapter listener = new JettyWebSocketHandlerAdapter(wsHandler, wsSession);
 
-		Callable<WebSocketSession> connectTask = () -> {
-			JettyWebSocketHandlerAdapter adapter = new JettyWebSocketHandlerAdapter(wsHandler, wsSession);
-			Future<Session> future = this.client.connect(adapter, uri, request);
-			future.get(this.client.getConnectTimeout() + 2000, TimeUnit.MILLISECONDS);
-			return wsSession;
+		Callable<WebSocketSession> connectTask = new Callable<WebSocketSession>() {
+			@Override
+			public WebSocketSession call() throws Exception {
+				Future<Session> future = client.connect(listener, uri, request);
+				future.get();
+				return wsSession;
+			}
 		};
 
 		if (this.taskExecutor != null) {
 			return this.taskExecutor.submitListenable(connectTask);
 		}
 		else {
-			ListenableFutureTask<WebSocketSession> task = new ListenableFutureTask<>(connectTask);
+			ListenableFutureTask<WebSocketSession> task = new ListenableFutureTask<WebSocketSession>(connectTask);
 			task.run();
 			return task;
 		}
 	}
 
 	/**
-	 * Return the user to make available through {@link WebSocketSession#getPrincipal()}.
-	 * By default this method returns {@code null}
+	 * @return the user to make available through {@link WebSocketSession#getPrincipal()};
+	 * 	by default this method returns {@code null}
 	 */
-	@Nullable
 	protected Principal getUser() {
 		return null;
 	}

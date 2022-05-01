@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,11 +21,11 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import jakarta.servlet.ServletContext;
+import javax.servlet.ServletContext;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.lang.Nullable;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.web.context.ServletContextAware;
 import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
@@ -78,11 +78,14 @@ public class DefaultSockJsService extends TransportHandlingSockJsService impleme
 	}
 
 
-	private static Set<TransportHandler> getDefaultTransportHandlers(@Nullable Collection<TransportHandler> overrides) {
-		Set<TransportHandler> result = new LinkedHashSet<>(8);
+	@SuppressWarnings("deprecation")
+	private static Set<TransportHandler> getDefaultTransportHandlers(Collection<TransportHandler> overrides) {
+		Set<TransportHandler> result = new LinkedHashSet<TransportHandler>(8);
 		result.add(new XhrPollingTransportHandler());
 		result.add(new XhrReceivingTransportHandler());
 		result.add(new XhrStreamingTransportHandler());
+		result.add(new JsonpPollingTransportHandler());
+		result.add(new JsonpReceivingTransportHandler());
 		result.add(new EventSourceTransportHandler());
 		result.add(new HtmlFileTransportHandler());
 		try {

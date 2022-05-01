@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -101,8 +101,8 @@ public interface SmartContextLoader extends ContextLoader {
 	 * {@code SmartContextLoader}. Beans will therefore automatically be
 	 * candidates for annotation-based dependency injection using
 	 * {@link org.springframework.beans.factory.annotation.Autowired @Autowired},
-	 * {@link jakarta.annotation.Resource @Resource}, and
-	 * {@link jakarta.inject.Inject @Inject}. In addition, concrete implementations
+	 * {@link javax.annotation.Resource @Resource}, and
+	 * {@link javax.inject.Inject @Inject}. In addition, concrete implementations
 	 * should set the active bean definition profiles in the context's
 	 * {@link org.springframework.core.env.Environment Environment}.
 	 * <p>Any {@code ApplicationContext} loaded by a

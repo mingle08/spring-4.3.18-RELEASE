@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,21 +21,19 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.lang.Nullable;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 /**
- * Abstract base implementation of the {@link MultipartHttpServletRequest} interface.
- * <p>Provides management of pre-generated {@link MultipartFile} instances.
+ * Abstract base implementation of the MultipartHttpServletRequest interface.
+ * Provides management of pre-generated MultipartFile instances.
  *
  * @author Juergen Hoeller
  * @author Arjen Poutsma
@@ -44,7 +42,6 @@ import org.springframework.web.multipart.MultipartHttpServletRequest;
 public abstract class AbstractMultipartHttpServletRequest extends HttpServletRequestWrapper
 		implements MultipartHttpServletRequest {
 
-	@Nullable
 	private MultiValueMap<String, MultipartFile> multipartFiles;
 
 
@@ -64,7 +61,7 @@ public abstract class AbstractMultipartHttpServletRequest extends HttpServletReq
 
 	@Override
 	public HttpMethod getRequestMethod() {
-		return HttpMethod.valueOf(getRequest().getMethod());
+		return HttpMethod.resolve(getRequest().getMethod());
 	}
 
 	@Override
@@ -128,7 +125,7 @@ public abstract class AbstractMultipartHttpServletRequest extends HttpServletReq
 	 */
 	protected final void setMultipartFiles(MultiValueMap<String, MultipartFile> multipartFiles) {
 		this.multipartFiles =
-				new LinkedMultiValueMap<>(Collections.unmodifiableMap(multipartFiles));
+				new LinkedMultiValueMap<String, MultipartFile>(Collections.unmodifiableMap(multipartFiles));
 	}
 
 	/**

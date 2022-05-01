@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,8 +26,6 @@ import org.springframework.context.weaving.DefaultContextLoadTimeWeaver;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.instrument.classloading.LoadTimeWeaver;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
 
 /**
  * {@code @Configuration} class that registers a {@link LoadTimeWeaver} bean.
@@ -41,17 +39,13 @@ import org.springframework.util.Assert;
  * @see LoadTimeWeavingConfigurer
  * @see ConfigurableApplicationContext#LOAD_TIME_WEAVER_BEAN_NAME
  */
-@Configuration(proxyBeanMethods = false)
-@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+@Configuration
 public class LoadTimeWeavingConfiguration implements ImportAware, BeanClassLoaderAware {
 
-	@Nullable
 	private AnnotationAttributes enableLTW;
 
-	@Nullable
 	private LoadTimeWeavingConfigurer ltwConfigurer;
 
-	@Nullable
 	private ClassLoader beanClassLoader;
 
 
@@ -78,7 +72,6 @@ public class LoadTimeWeavingConfiguration implements ImportAware, BeanClassLoade
 	@Bean(name = ConfigurableApplicationContext.LOAD_TIME_WEAVER_BEAN_NAME)
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	public LoadTimeWeaver loadTimeWeaver() {
-		Assert.state(this.beanClassLoader != null, "No ClassLoader set");
 		LoadTimeWeaver loadTimeWeaver = null;
 
 		if (this.ltwConfigurer != null) {
@@ -91,24 +84,22 @@ public class LoadTimeWeavingConfiguration implements ImportAware, BeanClassLoade
 			loadTimeWeaver = new DefaultContextLoadTimeWeaver(this.beanClassLoader);
 		}
 
-		if (this.enableLTW != null) {
-			AspectJWeaving aspectJWeaving = this.enableLTW.getEnum("aspectjWeaving");
-			switch (aspectJWeaving) {
-				case DISABLED:
-					// AJ weaving is disabled -> do nothing
+		AspectJWeaving aspectJWeaving = this.enableLTW.getEnum("aspectjWeaving");
+		switch (aspectJWeaving) {
+			case DISABLED:
+				// AJ weaving is disabled -> do nothing
+				break;
+			case AUTODETECT:
+				if (this.beanClassLoader.getResource(AspectJWeavingEnabler.ASPECTJ_AOP_XML_RESOURCE) == null) {
+					// No aop.xml present on the classpath -> treat as 'disabled'
 					break;
-				case AUTODETECT:
-					if (this.beanClassLoader.getResource(AspectJWeavingEnabler.ASPECTJ_AOP_XML_RESOURCE) == null) {
-						// No aop.xml present on the classpath -> treat as 'disabled'
-						break;
-					}
-					// aop.xml is present on the classpath -> enable
-					AspectJWeavingEnabler.enableAspectJWeaving(loadTimeWeaver, this.beanClassLoader);
-					break;
-				case ENABLED:
-					AspectJWeavingEnabler.enableAspectJWeaving(loadTimeWeaver, this.beanClassLoader);
-					break;
-			}
+				}
+				// aop.xml is present on the classpath -> enable
+				AspectJWeavingEnabler.enableAspectJWeaving(loadTimeWeaver, this.beanClassLoader);
+				break;
+			case ENABLED:
+				AspectJWeavingEnabler.enableAspectJWeaving(loadTimeWeaver, this.beanClassLoader);
+				break;
 		}
 
 		return loadTimeWeaver;

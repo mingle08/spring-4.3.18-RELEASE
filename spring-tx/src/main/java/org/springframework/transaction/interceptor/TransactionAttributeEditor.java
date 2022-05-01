@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -45,6 +45,7 @@ public class TransactionAttributeEditor extends PropertyEditorSupport {
 	/**
 	 * Format is PROPAGATION_NAME,ISOLATION_NAME,readOnly,timeout_NNNN,+Exception1,-Exception2.
 	 * Null or the empty string means that the method is non transactional.
+	 * @see java.beans.PropertyEditor#setAsText(java.lang.String)
 	 */
 	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
@@ -52,39 +53,38 @@ public class TransactionAttributeEditor extends PropertyEditorSupport {
 			// tokenize it with ","
 			String[] tokens = StringUtils.commaDelimitedListToStringArray(text);
 			RuleBasedTransactionAttribute attr = new RuleBasedTransactionAttribute();
-			for (String token : tokens) {
+			for (int i = 0; i < tokens.length; i++) {
 				// Trim leading and trailing whitespace.
-				String trimmedToken = token.strip();
+				String token = StringUtils.trimWhitespace(tokens[i].trim());
 				// Check whether token contains illegal whitespace within text.
-				if (StringUtils.containsWhitespace(trimmedToken)) {
+				if (StringUtils.containsWhitespace(token)) {
 					throw new IllegalArgumentException(
-							"Transaction attribute token contains illegal whitespace: [" + trimmedToken + "]");
+							"Transaction attribute token contains illegal whitespace: [" + token + "]");
 				}
 				// Check token type.
-				if (trimmedToken.startsWith(RuleBasedTransactionAttribute.PREFIX_PROPAGATION)) {
-					attr.setPropagationBehaviorName(trimmedToken);
+				if (token.startsWith(RuleBasedTransactionAttribute.PREFIX_PROPAGATION)) {
+					attr.setPropagationBehaviorName(token);
 				}
-				else if (trimmedToken.startsWith(RuleBasedTransactionAttribute.PREFIX_ISOLATION)) {
-					attr.setIsolationLevelName(trimmedToken);
+				else if (token.startsWith(RuleBasedTransactionAttribute.PREFIX_ISOLATION)) {
+					attr.setIsolationLevelName(token);
 				}
-				else if (trimmedToken.startsWith(RuleBasedTransactionAttribute.PREFIX_TIMEOUT)) {
-					String value = trimmedToken.substring(DefaultTransactionAttribute.PREFIX_TIMEOUT.length());
-					attr.setTimeoutString(value);
+				else if (token.startsWith(RuleBasedTransactionAttribute.PREFIX_TIMEOUT)) {
+					String value = token.substring(DefaultTransactionAttribute.PREFIX_TIMEOUT.length());
+					attr.setTimeout(Integer.parseInt(value));
 				}
-				else if (trimmedToken.equals(RuleBasedTransactionAttribute.READ_ONLY_MARKER)) {
+				else if (token.equals(RuleBasedTransactionAttribute.READ_ONLY_MARKER)) {
 					attr.setReadOnly(true);
 				}
-				else if (trimmedToken.startsWith(RuleBasedTransactionAttribute.PREFIX_COMMIT_RULE)) {
-					attr.getRollbackRules().add(new NoRollbackRuleAttribute(trimmedToken.substring(1)));
+				else if (token.startsWith(RuleBasedTransactionAttribute.PREFIX_COMMIT_RULE)) {
+					attr.getRollbackRules().add(new NoRollbackRuleAttribute(token.substring(1)));
 				}
-				else if (trimmedToken.startsWith(RuleBasedTransactionAttribute.PREFIX_ROLLBACK_RULE)) {
-					attr.getRollbackRules().add(new RollbackRuleAttribute(trimmedToken.substring(1)));
+				else if (token.startsWith(RuleBasedTransactionAttribute.PREFIX_ROLLBACK_RULE)) {
+					attr.getRollbackRules().add(new RollbackRuleAttribute(token.substring(1)));
 				}
 				else {
-					throw new IllegalArgumentException("Invalid transaction attribute token: [" + trimmedToken + "]");
+					throw new IllegalArgumentException("Invalid transaction attribute token: [" + token + "]");
 				}
 			}
-			attr.resolveAttributeStrings(null);  // placeholders expected to be pre-resolved
 			setValue(attr);
 		}
 		else {

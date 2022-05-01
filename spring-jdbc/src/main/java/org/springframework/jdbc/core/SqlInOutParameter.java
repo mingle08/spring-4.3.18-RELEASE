@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,8 +15,6 @@
  */
 
 package org.springframework.jdbc.core;
-
-import java.sql.ResultSet;
 
 /**
  * Subclass of {@link SqlOutParameter} to represent an INOUT parameter.
@@ -33,8 +31,8 @@ public class SqlInOutParameter extends SqlOutParameter {
 
 	/**
 	 * Create a new SqlInOutParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
+	 * @param name name of the parameter, as used in input and output maps
+	 * @param sqlType SQL type of the parameter according to java.sql.Types
 	 */
 	public SqlInOutParameter(String name, int sqlType) {
 		super(name, sqlType);
@@ -42,8 +40,8 @@ public class SqlInOutParameter extends SqlOutParameter {
 
 	/**
 	 * Create a new SqlInOutParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
+	 * @param name name of the parameter, as used in input and output maps
+	 * @param sqlType SQL type of the parameter according to java.sql.Types
 	 * @param scale the number of digits after the decimal point
 	 * (for DECIMAL and NUMERIC types)
 	 */
@@ -53,8 +51,8 @@ public class SqlInOutParameter extends SqlOutParameter {
 
 	/**
 	 * Create a new SqlInOutParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
+	 * @param name name of the parameter, as used in input and output maps
+	 * @param sqlType SQL type of the parameter according to java.sql.Types
 	 * @param typeName the type name of the parameter (optional)
 	 */
 	public SqlInOutParameter(String name, int sqlType, String typeName) {
@@ -63,8 +61,8 @@ public class SqlInOutParameter extends SqlOutParameter {
 
 	/**
 	 * Create a new SqlInOutParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
+	 * @param name name of the parameter, as used in input and output maps
+	 * @param sqlType SQL type of the parameter according to java.sql.Types
 	 * @param typeName the type name of the parameter (optional)
 	 * @param sqlReturnType custom value handler for complex type (optional)
 	 */
@@ -74,9 +72,9 @@ public class SqlInOutParameter extends SqlOutParameter {
 
 	/**
 	 * Create a new SqlInOutParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
-	 * @param rse the {@link ResultSetExtractor} to use for parsing the {@link ResultSet}
+	 * @param name name of the parameter, as used in input and output maps
+	 * @param sqlType SQL type of the parameter according to java.sql.Types
+	 * @param rse ResultSetExtractor to use for parsing the ResultSet
 	 */
 	public SqlInOutParameter(String name, int sqlType, ResultSetExtractor<?> rse) {
 		super(name, sqlType, rse);
@@ -84,9 +82,9 @@ public class SqlInOutParameter extends SqlOutParameter {
 
 	/**
 	 * Create a new SqlInOutParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
-	 * @param rch the {@link RowCallbackHandler} to use for parsing the {@link ResultSet}
+	 * @param name name of the parameter, as used in input and output maps
+	 * @param sqlType SQL type of the parameter according to java.sql.Types
+	 * @param rch RowCallbackHandler to use for parsing the ResultSet
 	 */
 	public SqlInOutParameter(String name, int sqlType, RowCallbackHandler rch) {
 		super(name, sqlType, rch);
@@ -94,9 +92,9 @@ public class SqlInOutParameter extends SqlOutParameter {
 
 	/**
 	 * Create a new SqlInOutParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
-	 * @param rm the {@link RowMapper} to use for parsing the {@link ResultSet}
+	 * @param name name of the parameter, as used in input and output maps
+	 * @param sqlType SQL type of the parameter according to java.sql.Types
+	 * @param rm RowMapper to use for parsing the ResultSet
 	 */
 	public SqlInOutParameter(String name, int sqlType, RowMapper<?> rm) {
 		super(name, sqlType, rm);

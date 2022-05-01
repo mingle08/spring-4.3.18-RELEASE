@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,8 @@
 
 package org.springframework.jms.config;
 
-import jakarta.jms.Session;
+import javax.jms.Session;
+
 import org.w3c.dom.Element;
 
 import org.springframework.beans.MutablePropertyValues;
@@ -63,10 +64,10 @@ class JmsListenerContainerParser extends AbstractListenerContainerParser {
 
 		String containerType = containerEle.getAttribute(CONTAINER_TYPE_ATTRIBUTE);
 		String containerClass = containerEle.getAttribute(CONTAINER_CLASS_ATTRIBUTE);
-		if (StringUtils.hasLength(containerClass)) {
-			return null;  // not supported
+		if (!"".equals(containerClass)) {
+			return null; // Not supported
 		}
-		else if (!StringUtils.hasLength(containerType) || containerType.startsWith("default")) {
+		else if ("".equals(containerType) || containerType.startsWith("default")) {
 			factoryDef.setBeanClassName("org.springframework.jms.config.DefaultJmsListenerContainerFactory");
 		}
 		else if (containerType.startsWith("simple")) {
@@ -90,10 +91,10 @@ class JmsListenerContainerParser extends AbstractListenerContainerParser {
 
 		String containerType = containerEle.getAttribute(CONTAINER_TYPE_ATTRIBUTE);
 		String containerClass = containerEle.getAttribute(CONTAINER_CLASS_ATTRIBUTE);
-		if (StringUtils.hasLength(containerClass)) {
+		if (!"".equals(containerClass)) {
 			containerDef.setBeanClassName(containerClass);
 		}
-		else if (!StringUtils.hasLength(containerType) || containerType.startsWith("default")) {
+		else if ("".equals(containerType) || containerType.startsWith("default")) {
 			containerDef.setBeanClassName("org.springframework.jms.listener.DefaultMessageListenerContainer");
 		}
 		else if (containerType.startsWith("simple")) {

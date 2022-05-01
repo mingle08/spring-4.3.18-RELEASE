@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,16 +16,17 @@
 
 package org.springframework.orm.jpa;
 
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.PersistenceException;
-import jakarta.persistence.spi.PersistenceUnitInfo;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceException;
+import javax.persistence.spi.PersistenceUnitInfo;
+
+import org.junit.After;
+import org.junit.Before;
 
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * Superclass for unit tests for EntityManagerFactory-creating beans.
@@ -39,28 +40,28 @@ public abstract class AbstractEntityManagerFactoryBeanTests {
 
 	protected static EntityManagerFactory mockEmf;
 
-	@BeforeEach
+	@Before
 	public void setUp() throws Exception {
 		mockEmf = mock(EntityManagerFactory.class);
 	}
 
-	@AfterEach
+	@After
 	public void tearDown() throws Exception {
-		assertThat(TransactionSynchronizationManager.getResourceMap().isEmpty()).isTrue();
-		assertThat(TransactionSynchronizationManager.isSynchronizationActive()).isFalse();
-		assertThat(TransactionSynchronizationManager.isCurrentTransactionReadOnly()).isFalse();
-		assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+		assertTrue(TransactionSynchronizationManager.getResourceMap().isEmpty());
+		assertFalse(TransactionSynchronizationManager.isSynchronizationActive());
+		assertFalse(TransactionSynchronizationManager.isCurrentTransactionReadOnly());
+		assertFalse(TransactionSynchronizationManager.isActualTransactionActive());
 	}
 
 	protected void checkInvariants(AbstractEntityManagerFactoryBean demf) {
-		assertThat(EntityManagerFactory.class.isAssignableFrom(demf.getObjectType())).isTrue();
+		assertTrue(EntityManagerFactory.class.isAssignableFrom(demf.getObjectType()));
 		Object gotObject = demf.getObject();
-		boolean condition = gotObject instanceof EntityManagerFactoryInfo;
-		assertThat(condition).as("Object created by factory implements EntityManagerFactoryInfo").isTrue();
+		assertTrue("Object created by factory implements EntityManagerFactoryInfo",
+				gotObject instanceof EntityManagerFactoryInfo);
 		EntityManagerFactoryInfo emfi = (EntityManagerFactoryInfo) demf.getObject();
-		assertThat(demf.getObject()).as("Successive invocations of getObject() return same object").isSameAs(emfi);
-		assertThat(demf.getObject()).isSameAs(emfi);
-		assertThat(mockEmf).isSameAs(emfi.getNativeEntityManagerFactory());
+		assertSame("Successive invocations of getObject() return same object", emfi, demf.getObject());
+		assertSame(emfi, demf.getObject());
+		assertSame(emfi.getNativeEntityManagerFactory(), mockEmf);
 	}
 
 

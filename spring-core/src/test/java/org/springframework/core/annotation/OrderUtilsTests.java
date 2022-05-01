@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,53 +16,47 @@
 
 package org.springframework.core.annotation;
 
-import jakarta.annotation.Priority;
-import org.junit.jupiter.api.Test;
+import javax.annotation.Priority;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
+ *
  * @author Stephane Nicoll
- * @author Juergen Hoeller
  */
-class OrderUtilsTests {
+public class OrderUtilsTests {
 
 	@Test
-	void getSimpleOrder() {
-		assertThat(OrderUtils.getOrder(SimpleOrder.class, null)).isEqualTo(Integer.valueOf(50));
-		assertThat(OrderUtils.getOrder(SimpleOrder.class, null)).isEqualTo(Integer.valueOf(50));
+	public void getSimpleOrder() {
+		assertEquals(Integer.valueOf(50), OrderUtils.getOrder(SimpleOrder.class, null));
 	}
 
 	@Test
-	void getPriorityOrder() {
-		assertThat(OrderUtils.getOrder(SimplePriority.class, null)).isEqualTo(Integer.valueOf(55));
-		assertThat(OrderUtils.getOrder(SimplePriority.class, null)).isEqualTo(Integer.valueOf(55));
+	public void getPriorityOrder() {
+		assertEquals(Integer.valueOf(55), OrderUtils.getOrder(SimplePriority.class, null));
 	}
 
 	@Test
-	void getOrderWithBoth() {
-		assertThat(OrderUtils.getOrder(OrderAndPriority.class, null)).isEqualTo(Integer.valueOf(50));
-		assertThat(OrderUtils.getOrder(OrderAndPriority.class, null)).isEqualTo(Integer.valueOf(50));
+	public void getOrderWithBoth() {
+		assertEquals(Integer.valueOf(50), OrderUtils.getOrder(OrderAndPriority.class, null));
 	}
 
 	@Test
-	void getDefaultOrder() {
-		assertThat(OrderUtils.getOrder(NoOrder.class, 33)).isEqualTo(33);
-		assertThat(OrderUtils.getOrder(NoOrder.class, 33)).isEqualTo(33);
+	public void getDefaultOrder() {
+		assertEquals(Integer.valueOf(33), OrderUtils.getOrder(NoOrder.class, 33));
 	}
 
 	@Test
-	void getPriorityValueNoAnnotation() {
-		assertThat(OrderUtils.getPriority(SimpleOrder.class)).isNull();
-		assertThat(OrderUtils.getPriority(SimpleOrder.class)).isNull();
+	public void getPriorityValueNoAnnotation() {
+		assertNull(OrderUtils.getPriority(SimpleOrder.class));
 	}
 
 	@Test
-	void getPriorityValue() {
-		assertThat(OrderUtils.getPriority(OrderAndPriority.class)).isEqualTo(Integer.valueOf(55));
-		assertThat(OrderUtils.getPriority(OrderAndPriority.class)).isEqualTo(Integer.valueOf(55));
+	public void getPriorityValue() {
+		assertEquals(Integer.valueOf(55), OrderUtils.getPriority(OrderAndPriority.class));
 	}
-
 
 	@Order(50)
 	private static class SimpleOrder {}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,29 +16,30 @@
 
 package org.springframework.context.annotation;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Juergen Hoeller
  * @author Oliver Gierke
  */
-class Spr16179Tests {
+public class Spr16179Tests {
 
 	@Test
-	void repro() {
-		try (AnnotationConfigApplicationContext bf = new AnnotationConfigApplicationContext(AssemblerConfig.class, AssemblerInjection.class)) {
-			assertThat(bf.getBean(AssemblerInjection.class).assembler0).isSameAs(bf.getBean("someAssembler"));
-			// assertNull(bf.getBean(AssemblerInjection.class).assembler1);  TODO: accidental match
-			// assertNull(bf.getBean(AssemblerInjection.class).assembler2);
-			assertThat(bf.getBean(AssemblerInjection.class).assembler3).isSameAs(bf.getBean("pageAssembler"));
-			assertThat(bf.getBean(AssemblerInjection.class).assembler4).isSameAs(bf.getBean("pageAssembler"));
-			assertThat(bf.getBean(AssemblerInjection.class).assembler5).isSameAs(bf.getBean("pageAssembler"));
-			assertThat(bf.getBean(AssemblerInjection.class).assembler6).isSameAs(bf.getBean("pageAssembler"));
-		}
+	public void repro() {
+		AnnotationConfigApplicationContext bf =
+				new AnnotationConfigApplicationContext(AssemblerConfig.class, AssemblerInjection.class);
+
+		assertSame(bf.getBean("someAssembler"), bf.getBean(AssemblerInjection.class).assembler0);
+		// assertNull(bf.getBean(AssemblerInjection.class).assembler1);  TODO: accidental match
+		// assertNull(bf.getBean(AssemblerInjection.class).assembler2);
+		assertSame(bf.getBean("pageAssembler"), bf.getBean(AssemblerInjection.class).assembler3);
+		assertSame(bf.getBean("pageAssembler"), bf.getBean(AssemblerInjection.class).assembler4);
+		assertSame(bf.getBean("pageAssembler"), bf.getBean(AssemblerInjection.class).assembler5);
+		assertSame(bf.getBean("pageAssembler"), bf.getBean(AssemblerInjection.class).assembler6);
 	}
 
 
@@ -52,7 +53,7 @@ class Spr16179Tests {
 
 		@Bean
 		Assembler<SomeType> someAssembler() {
-			return new Assembler<>() {};
+			return new Assembler<SomeType>() {};
 		}
 	}
 
@@ -69,7 +70,6 @@ class Spr16179Tests {
 		Assembler<Page<String>> assembler2;
 
 		@Autowired(required = false)
-		@SuppressWarnings("rawtypes")
 		Assembler<Page> assembler3;
 
 		@Autowired(required = false)

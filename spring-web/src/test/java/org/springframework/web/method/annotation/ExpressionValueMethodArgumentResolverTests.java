@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,20 +18,20 @@ package org.springframework.web.method.annotation;
 
 import java.lang.reflect.Method;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.MethodParameter;
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.mock.web.test.MockHttpServletResponse;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.support.GenericWebApplicationContext;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
-import org.springframework.web.testfixture.servlet.MockHttpServletResponse;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Test fixture with {@link ExpressionValueMethodArgumentResolver}.
@@ -50,7 +50,7 @@ public class ExpressionValueMethodArgumentResolverTests {
 
 	private NativeWebRequest webRequest;
 
-	@BeforeEach
+	@Before
 	@SuppressWarnings("resource")
 	public void setUp() throws Exception {
 		GenericWebApplicationContext context = new GenericWebApplicationContext();
@@ -68,16 +68,16 @@ public class ExpressionValueMethodArgumentResolverTests {
 		RequestContextHolder.setRequestAttributes(webRequest);
 	}
 
-	@AfterEach
+	@After
 	public void teardown() {
 		RequestContextHolder.resetRequestAttributes();
 	}
 
 	@Test
 	public void supportsParameter() throws Exception {
-		assertThat(resolver.supportsParameter(paramSystemProperty)).isTrue();
-		assertThat(resolver.supportsParameter(paramContextPath)).isTrue();
-		assertThat(resolver.supportsParameter(paramNotSupported)).isFalse();
+		assertTrue(resolver.supportsParameter(paramSystemProperty));
+		assertTrue(resolver.supportsParameter(paramContextPath));
+		assertFalse(resolver.supportsParameter(paramNotSupported));
 	}
 
 	@Test
@@ -86,7 +86,7 @@ public class ExpressionValueMethodArgumentResolverTests {
 		Object value = resolver.resolveArgument(paramSystemProperty, null, webRequest, null);
 		System.clearProperty("systemProperty");
 
-		assertThat(value).isEqualTo("22");
+		assertEquals("22", value);
 	}
 
 	@Test
@@ -94,11 +94,12 @@ public class ExpressionValueMethodArgumentResolverTests {
 		webRequest.getNativeRequest(MockHttpServletRequest.class).setContextPath("/contextPath");
 		Object value = resolver.resolveArgument(paramContextPath, null, webRequest, null);
 
-		assertThat(value).isEqualTo("/contextPath");
+		assertEquals("/contextPath", value);
 	}
 
 	public void params(@Value("#{systemProperties.systemProperty}") int param1,
-			@Value("#{request.contextPath}") String param2, String notSupported) {
+					   @Value("#{request.contextPath}") String param2,
+					   String notSupported) {
 	}
 
 }

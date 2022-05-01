@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,13 +20,12 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
-import org.junit.jupiter.api.Test;
-
+import org.junit.Test;
 import org.springframework.tests.sample.objects.TestObject;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
-class PrioritizedParameterNameDiscovererTests {
+public class PrioritizedParameterNameDiscovererTests {
 
 	private static final String[] FOO_BAR = new String[] { "foo", "bar" };
 
@@ -61,32 +60,32 @@ class PrioritizedParameterNameDiscovererTests {
 	}
 
 	@Test
-	void noParametersDiscoverers() {
+	public void noParametersDiscoverers() {
 		ParameterNameDiscoverer pnd = new PrioritizedParameterNameDiscoverer();
-		assertThat(pnd.getParameterNames(anyMethod)).isNull();
-		assertThat(pnd.getParameterNames((Constructor<?>) null)).isNull();
+		assertNull(pnd.getParameterNames(anyMethod));
+		assertNull(pnd.getParameterNames((Constructor<?>) null));
 	}
 
 	@Test
-	void orderedParameterDiscoverers1() {
+	public void orderedParameterDiscoverers1() {
 		PrioritizedParameterNameDiscoverer pnd = new PrioritizedParameterNameDiscoverer();
 		pnd.addDiscoverer(returnsFooBar);
-		assertThat(Arrays.equals(FOO_BAR, pnd.getParameterNames(anyMethod))).isTrue();
-		assertThat(Arrays.equals(FOO_BAR, pnd.getParameterNames((Constructor<?>) null))).isTrue();
+		assertTrue(Arrays.equals(FOO_BAR, pnd.getParameterNames(anyMethod)));
+		assertTrue(Arrays.equals(FOO_BAR, pnd.getParameterNames((Constructor<?>) null)));
 		pnd.addDiscoverer(returnsSomethingElse);
-		assertThat(Arrays.equals(FOO_BAR, pnd.getParameterNames(anyMethod))).isTrue();
-		assertThat(Arrays.equals(FOO_BAR, pnd.getParameterNames((Constructor<?>) null))).isTrue();
+		assertTrue(Arrays.equals(FOO_BAR, pnd.getParameterNames(anyMethod)));
+		assertTrue(Arrays.equals(FOO_BAR, pnd.getParameterNames((Constructor<?>) null)));
 	}
 
 	@Test
-	void orderedParameterDiscoverers2() {
+	public void orderedParameterDiscoverers2() {
 		PrioritizedParameterNameDiscoverer pnd = new PrioritizedParameterNameDiscoverer();
 		pnd.addDiscoverer(returnsSomethingElse);
-		assertThat(Arrays.equals(SOMETHING_ELSE, pnd.getParameterNames(anyMethod))).isTrue();
-		assertThat(Arrays.equals(SOMETHING_ELSE, pnd.getParameterNames((Constructor<?>) null))).isTrue();
+		assertTrue(Arrays.equals(SOMETHING_ELSE, pnd.getParameterNames(anyMethod)));
+		assertTrue(Arrays.equals(SOMETHING_ELSE, pnd.getParameterNames((Constructor<?>) null)));
 		pnd.addDiscoverer(returnsFooBar);
-		assertThat(Arrays.equals(SOMETHING_ELSE, pnd.getParameterNames(anyMethod))).isTrue();
-		assertThat(Arrays.equals(SOMETHING_ELSE, pnd.getParameterNames((Constructor<?>) null))).isTrue();
+		assertTrue(Arrays.equals(SOMETHING_ELSE, pnd.getParameterNames(anyMethod)));
+		assertTrue(Arrays.equals(SOMETHING_ELSE, pnd.getParameterNames((Constructor<?>) null)));
 	}
 
 }

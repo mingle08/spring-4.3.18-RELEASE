@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,27 +27,22 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.sql.DataSource;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.jdbc.Customer;
 import org.springframework.jdbc.core.SqlParameter;
-import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Trevor Cook
@@ -85,13 +80,16 @@ public class SqlQueryTests  {
 	private static final String[] COLUMN_NAMES = new String[] {"id", "forename"};
 	private static final int[] COLUMN_TYPES = new int[] {Types.INTEGER, Types.VARCHAR};
 
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
+
 	private Connection connection;
 	private DataSource dataSource;
 	private PreparedStatement preparedStatement;
 	private ResultSet resultSet;
 
 
-	@BeforeEach
+	@Before
 	public void setUp() throws Exception {
 		this.connection = mock(Connection.class);
 		this.dataSource = mock(DataSource.class);
@@ -107,12 +105,12 @@ public class SqlQueryTests  {
 		given(resultSet.next()).willReturn(true, false);
 		given(resultSet.getInt(1)).willReturn(1);
 
-		SqlQuery<Integer> query = new MappingSqlQueryWithParameters<>() {
+		SqlQuery<Integer> query = new MappingSqlQueryWithParameters<Integer>() {
 			@Override
-			protected Integer mapRow(ResultSet rs, int rownum, @Nullable Object[] params, @Nullable Map<? ,?> context)
+			protected Integer mapRow(ResultSet rs, int rownum, Object[] params, Map<? ,?> context)
 					throws SQLException {
-				assertThat(params == null).as("params were null").isTrue();
-				assertThat(context == null).as("context was null").isTrue();
+				assertTrue("params were null", params == null);
+				assertTrue("context was null", context == null);
 				return rs.getInt(1);
 			}
 		};
@@ -121,7 +119,7 @@ public class SqlQueryTests  {
 		query.compile();
 		List<Integer> list = query.execute();
 
-		assertThat(list).isEqualTo(Arrays.asList(1));
+		assertThat(list, is(equalTo(Arrays.asList(1))));
 		verify(connection).prepareStatement(SELECT_ID);
 		verify(resultSet).close();
 		verify(preparedStatement).close();
@@ -129,7 +127,7 @@ public class SqlQueryTests  {
 
 	@Test
 	public void testQueryWithoutEnoughParams() {
-		MappingSqlQuery<Integer> query = new MappingSqlQuery<>() {
+		MappingSqlQuery<Integer> query = new MappingSqlQuery<Integer>() {
 			@Override
 			protected Integer mapRow(ResultSet rs, int rownum) throws SQLException {
 				return rs.getInt(1);
@@ -141,13 +139,13 @@ public class SqlQueryTests  {
 		query.declareParameter(new SqlParameter(COLUMN_NAMES[1], COLUMN_TYPES[1]));
 		query.compile();
 
-		assertThatExceptionOfType(InvalidDataAccessApiUsageException.class).isThrownBy(
-				query::execute);
+		thrown.expect(InvalidDataAccessApiUsageException.class);
+		query.execute();
 	}
 
 	@Test
 	public void testQueryWithMissingMapParams() {
-		MappingSqlQuery<Integer> query = new MappingSqlQuery<>() {
+		MappingSqlQuery<Integer> query = new MappingSqlQuery<Integer>() {
 			@Override
 			protected Integer mapRow(ResultSet rs, int rownum) throws SQLException {
 				return rs.getInt(1);
@@ -159,8 +157,8 @@ public class SqlQueryTests  {
 		query.declareParameter(new SqlParameter(COLUMN_NAMES[1], COLUMN_TYPES[1]));
 		query.compile();
 
-		assertThatExceptionOfType(InvalidDataAccessApiUsageException.class).isThrownBy(() ->
-				query.executeByNamedParam(Collections.singletonMap(COLUMN_NAMES[0], "value")));
+		thrown.expect(InvalidDataAccessApiUsageException.class);
+		query.executeByNamedParam(Collections.singletonMap(COLUMN_NAMES[0], "value"));
 	}
 
 	@Test
@@ -171,7 +169,7 @@ public class SqlQueryTests  {
 		StringQuery query = new StringQuery(dataSource, SELECT_FORENAME);
 		query.setRowsExpected(3);
 		String[] results = query.run();
-		assertThat(results).isEqualTo(dbResults);
+		assertThat(results, is(equalTo(dbResults)));
 		verify(connection).prepareStatement(SELECT_FORENAME);
 		verify(resultSet).close();
 		verify(preparedStatement).close();
@@ -183,7 +181,7 @@ public class SqlQueryTests  {
 		given(resultSet.next()).willReturn(false);
 		StringQuery query = new StringQuery(dataSource, SELECT_FORENAME_EMPTY);
 		String[] results = query.run();
-		assertThat(results).isEqualTo(new String[0]);
+		assertThat(results, is(equalTo(new String[0])));
 		verify(connection).prepareStatement(SELECT_FORENAME_EMPTY);
 		verify(resultSet).close();
 		verify(preparedStatement).close();
@@ -221,8 +219,8 @@ public class SqlQueryTests  {
 		CustomerQuery query = new CustomerQuery(dataSource);
 		Customer cust = query.findCustomer(1, 1);
 
-		assertThat(cust.getId() == 1).as("Customer id was assigned correctly").isTrue();
-		assertThat(cust.getForename().equals("rod")).as("Customer forename was assigned correctly").isTrue();
+		assertTrue("Customer id was assigned correctly", cust.getId() == 1);
+		assertTrue("Customer forename was assigned correctly", cust.getForename().equals("rod"));
 		verify(preparedStatement).setObject(1, 1, Types.NUMERIC);
 		verify(preparedStatement).setObject(2, 1, Types.NUMERIC);
 		verify(connection).prepareStatement(SELECT_ID_WHERE);
@@ -261,8 +259,9 @@ public class SqlQueryTests  {
 		CustomerQuery query = new CustomerQuery(dataSource);
 		Customer cust = query.findCustomer("rod");
 
-		assertThat(cust.getId() == 1).as("Customer id was assigned correctly").isTrue();
-		assertThat(cust.getForename().equals("rod")).as("Customer forename was assigned correctly").isTrue();
+		assertTrue("Customer id was assigned correctly", cust.getId() == 1);
+		assertTrue("Customer forename was assigned correctly",
+				cust.getForename().equals("rod"));
 		verify(preparedStatement).setString(1, "rod");
 		verify(connection).prepareStatement(SELECT_ID_FORENAME_WHERE);
 		verify(resultSet).close();
@@ -307,11 +306,11 @@ public class SqlQueryTests  {
 		CustomerQuery query = new CustomerQuery(dataSource);
 
 		Customer cust1 = query.findCustomer(1, "rod");
-		assertThat(cust1 != null).as("Found customer").isTrue();
-		assertThat(cust1.getId() == 1).as("Customer id was assigned correctly").isTrue();
+		assertTrue("Found customer", cust1 != null);
+		assertTrue("Customer id was assigned correctly", cust1.getId() == 1);
 
 		Customer cust2 = query.findCustomer(1, "Roger");
-		assertThat(cust2 == null).as("No customer found").isTrue();
+		assertTrue("No customer found", cust2 == null);
 
 		verify(preparedStatement).setObject(1, 1, Types.INTEGER);
 		verify(preparedStatement).setString(2, "rod");
@@ -352,13 +351,17 @@ public class SqlQueryTests  {
 		}
 
 		CustomerQuery query = new CustomerQuery(dataSource);
-		assertThatExceptionOfType(IncorrectResultSizeDataAccessException.class).isThrownBy(() ->
-				query.findCustomer("rod"));
-		verify(preparedStatement).setString(1, "rod");
-		verify(connection).prepareStatement(SELECT_ID_FORENAME_WHERE);
-		verify(resultSet).close();
-		verify(preparedStatement).close();
-		verify(connection).close();
+		thrown.expect(IncorrectResultSizeDataAccessException.class);
+		try {
+			query.findCustomer("rod");
+		}
+		finally {
+			verify(preparedStatement).setString(1, "rod");
+			verify(connection).prepareStatement(SELECT_ID_FORENAME_WHERE);
+			verify(resultSet).close();
+			verify(preparedStatement).close();
+			verify(connection).close();
+		}
 	}
 
 	@Test
@@ -387,9 +390,9 @@ public class SqlQueryTests  {
 
 		CustomerQuery query = new CustomerQuery(dataSource);
 		List<Customer> list = query.execute(1, 1);
-		assertThat(list.size() == 2).as("2 results in list").isTrue();
-		assertThat(list.get(0).getForename()).isEqualTo("rod");
-		assertThat(list.get(1).getForename()).isEqualTo("dave");
+		assertTrue("2 results in list", list.size() == 2);
+		assertThat(list.get(0).getForename(), is("rod"));
+		assertThat(list.get(1).getForename(), is("dave"));
 		verify(preparedStatement).setObject(1, 1, Types.NUMERIC);
 		verify(preparedStatement).setObject(2, 1, Types.NUMERIC);
 		verify(connection).prepareStatement(SELECT_ID_WHERE);
@@ -423,9 +426,9 @@ public class SqlQueryTests  {
 
 		CustomerQuery query = new CustomerQuery(dataSource);
 		List<Customer> list = query.execute("one");
-		assertThat(list.size() == 2).as("2 results in list").isTrue();
-		assertThat(list.get(0).getForename()).isEqualTo("rod");
-		assertThat(list.get(1).getForename()).isEqualTo("dave");
+		assertTrue("2 results in list", list.size() == 2);
+		assertThat(list.get(0).getForename(), is("rod"));
+		assertThat(list.get(1).getForename(), is("dave"));
 		verify(preparedStatement).setString(1, "one");
 		verify(connection).prepareStatement(SELECT_ID_FORENAME_WHERE);
 		verify(resultSet).close();
@@ -467,8 +470,8 @@ public class SqlQueryTests  {
 
 		CustomerQuery query = new CustomerQuery(dataSource);
 		Customer cust = query.findCustomer(1);
-		assertThat(cust.getId() == 1).as("Customer id was assigned correctly").isTrue();
-		assertThat(cust.getForename().equals("rod")).as("Customer forename was assigned correctly").isTrue();
+		assertTrue("Customer id was assigned correctly", cust.getId() == 1);
+		assertTrue("Customer forename was assigned correctly", cust.getForename().equals("rod"));
 		verify(preparedStatement).setObject(1, 1, Types.NUMERIC);
 		verify(resultSet).close();
 		verify(preparedStatement).close();
@@ -496,7 +499,7 @@ public class SqlQueryTests  {
 			}
 
 			public Customer findCustomer(int id) {
-				Map<String, Integer> params = new HashMap<>();
+				Map<String, Integer> params = new HashMap<String, Integer>();
 				params.put("id", id);
 				return executeByNamedParam(params).get(0);
 			}
@@ -504,8 +507,8 @@ public class SqlQueryTests  {
 
 		// Query should not succeed since parameter declaration did not specify parameter name
 		CustomerQuery query = new CustomerQuery(dataSource);
-		assertThatExceptionOfType(InvalidDataAccessApiUsageException.class).isThrownBy(() ->
-				query.findCustomer(1));
+		thrown.expect(InvalidDataAccessApiUsageException.class);
+		query.findCustomer(1);
 	}
 
 	@Test
@@ -554,7 +557,7 @@ public class SqlQueryTests  {
 			}
 
 			public Customer findCustomer(int id, String country) {
-				Map<String, Object> params = new HashMap<>();
+				Map<String, Object> params = new HashMap<String, Object>();
 				params.put("id", id);
 				params.put("country", country);
 				return executeByNamedParam(params).get(0);
@@ -563,8 +566,8 @@ public class SqlQueryTests  {
 
 		CustomerQuery query = new CustomerQuery(dataSource);
 		Customer cust = query.findCustomer(1, "UK");
-		assertThat(cust.getId() == 1).as("Customer id was assigned correctly").isTrue();
-		assertThat(cust.getForename().equals("rod")).as("Customer forename was assigned correctly").isTrue();
+		assertTrue("Customer id was assigned correctly", cust.getId() == 1);
+		assertTrue("Customer forename was assigned correctly", cust.getForename().equals("rod"));
 		verify(preparedStatement).setObject(1, 1, Types.NUMERIC);
 		verify(preparedStatement).setString(2, "UK");
 		verify(resultSet).close();
@@ -600,23 +603,23 @@ public class SqlQueryTests  {
 			}
 
 			public List<Customer> findCustomers(List<Integer> ids) {
-				Map<String, Object> params = new HashMap<>();
+				Map<String, Object> params = new HashMap<String, Object>();
 				params.put("ids", ids);
 				return executeByNamedParam(params);
 			}
 		}
 
 		CustomerQuery query = new CustomerQuery(dataSource);
-		List<Integer> ids = new ArrayList<>();
+		List<Integer> ids = new ArrayList<Integer>();
 		ids.add(1);
 		ids.add(2);
 		List<Customer> cust = query.findCustomers(ids);
 
-		assertThat(cust.size()).as("We got two customers back").isEqualTo(2);
-		assertThat(1).as("First customer id was assigned correctly").isEqualTo(cust.get(0).getId());
-		assertThat("rod").as("First customer forename was assigned correctly").isEqualTo(cust.get(0).getForename());
-		assertThat(2).as("Second customer id was assigned correctly").isEqualTo(cust.get(1).getId());
-		assertThat("juergen").as("Second customer forename was assigned correctly").isEqualTo(cust.get(1).getForename());
+		assertEquals("We got two customers back", cust.size(), 2);
+		assertEquals("First customer id was assigned correctly", cust.get(0).getId(), 1);
+		assertEquals("First customer forename was assigned correctly", cust.get(0).getForename(), "rod");
+		assertEquals("Second customer id was assigned correctly", cust.get(1).getId(), 2);
+		assertEquals("Second customer forename was assigned correctly", cust.get(1).getForename(), "juergen");
 		verify(preparedStatement).setObject(1, 1, Types.NUMERIC);
 		verify(preparedStatement).setObject(2, 2, Types.NUMERIC);
 		verify(resultSet).close();
@@ -652,7 +655,7 @@ public class SqlQueryTests  {
 			}
 
 			public List<Customer> findCustomers(Integer id) {
-				Map<String, Object> params = new HashMap<>();
+				Map<String, Object> params = new HashMap<String, Object>();
 				params.put("id1", id);
 				return executeByNamedParam(params);
 			}
@@ -661,11 +664,11 @@ public class SqlQueryTests  {
 		CustomerQuery query = new CustomerQuery(dataSource);
 		List<Customer> cust = query.findCustomers(1);
 
-		assertThat(cust.size()).as("We got two customers back").isEqualTo(2);
-		assertThat(1).as("First customer id was assigned correctly").isEqualTo(cust.get(0).getId());
-		assertThat("rod").as("First customer forename was assigned correctly").isEqualTo(cust.get(0).getForename());
-		assertThat(2).as("Second customer id was assigned correctly").isEqualTo(cust.get(1).getId());
-		assertThat("juergen").as("Second customer forename was assigned correctly").isEqualTo(cust.get(1).getForename());
+		assertEquals("We got two customers back", cust.size(), 2);
+		assertEquals("First customer id was assigned correctly", cust.get(0).getId(), 1);
+		assertEquals("First customer forename was assigned correctly", cust.get(0).getForename(), "rod");
+		assertEquals("Second customer id was assigned correctly", cust.get(1).getId(), 2);
+		assertEquals("Second customer forename was assigned correctly", cust.get(1).getForename(), "juergen");
 
 		verify(preparedStatement).setObject(1, 1, Types.NUMERIC);
 		verify(preparedStatement).setObject(2, 1, Types.NUMERIC);
@@ -699,15 +702,15 @@ public class SqlQueryTests  {
 			}
 
 			public List<Customer> findCustomers(Integer id1) {
-				Map<String, Integer> params = new HashMap<>();
+				Map<String, Integer> params = new HashMap<String, Integer>();
 				params.put("id1", id1);
 				return executeByNamedParam(params);
 			}
 		}
 
 		CustomerQuery query = new CustomerQuery(dataSource);
-		assertThatExceptionOfType(InvalidDataAccessApiUsageException.class).isThrownBy(() ->
-				query.findCustomers(1));
+		thrown.expect(InvalidDataAccessApiUsageException.class);
+		query.findCustomers(1);
 	}
 
 	@Test
@@ -727,7 +730,7 @@ public class SqlQueryTests  {
 			}
 
 			@Override
-			protected Customer updateRow(ResultSet rs, int rownum, @Nullable Map<? ,?> context)
+			protected Customer updateRow(ResultSet rs, int rownum, Map<? ,?> context)
 					throws SQLException {
 				rs.updateString(2, "" + context.get(rs.getInt(COLUMN_NAMES[0])));
 				return null;
@@ -735,7 +738,7 @@ public class SqlQueryTests  {
 		}
 
 		CustomerUpdateQuery query = new CustomerUpdateQuery(dataSource);
-		Map<Integer, String> values = new HashMap<>(2);
+		Map<Integer, String> values = new HashMap<Integer, String>(2);
 		values.put(1, "Rod");
 		values.put(2, "Thomas");
 		query.execute(2, values);

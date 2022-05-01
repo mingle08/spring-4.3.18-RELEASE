@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,8 +19,8 @@ package org.springframework.expression.spel;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.expression.AccessException;
@@ -32,8 +32,7 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.expression.spel.testresources.PlaceOfBirth;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * Tests invocation of constructors.
@@ -104,15 +103,15 @@ public class ConstructorInvocationTests extends AbstractExpressionTests {
 		eContext.setRootObject(new Tester());
 		eContext.setVariable("bar", 3);
 		Object o = expr.getValue(eContext);
-		assertThat(o).isEqualTo(3);
-		assertThat(parser.parseExpression("counter").getValue(eContext)).isEqualTo(1);
+		assertEquals(o, 3);
+		assertEquals(1, parser.parseExpression("counter").getValue(eContext));
 
 		// Now the expression has cached that throwException(int) is the right thing to
 		// call. Let's change 'bar' to be a PlaceOfBirth which indicates the cached
 		// reference is out of date.
 		eContext.setVariable("bar", new PlaceOfBirth("London"));
 		o = expr.getValue(eContext);
-		assertThat(o).isEqualTo(0);
+		assertEquals(0, o);
 		// That confirms the logic to mark the cached reference stale and retry is working
 
 		// Now let's cause the method to exit via exception and ensure it doesn't cause
@@ -121,33 +120,46 @@ public class ConstructorInvocationTests extends AbstractExpressionTests {
 		// First, switch back to throwException(int)
 		eContext.setVariable("bar", 3);
 		o = expr.getValue(eContext);
-		assertThat(o).isEqualTo(3);
-		assertThat(parser.parseExpression("counter").getValue(eContext)).isEqualTo(2);
+		assertEquals(3, o);
+		assertEquals(2, parser.parseExpression("counter").getValue(eContext));
 
 		// 4 will make it throw a checked exception - this will be wrapped by spel on the
 		// way out
 		eContext.setVariable("bar", 4);
-		assertThatExceptionOfType(Exception.class).isThrownBy(() ->
-				expr.getValue(eContext))
-			.withMessageContaining("Tester");
-		// A problem occurred whilst attempting to construct an object of type
-		// 'org.springframework.expression.spel.ConstructorInvocationTests$Tester'
-		// using arguments '(java.lang.Integer)'
-
+		try {
+			o = expr.getValue(eContext);
+			fail("Should have failed");
+		}
+		catch (Exception e) {
+			// A problem occurred whilst attempting to construct an object of type
+			// 'org.springframework.expression.spel.ConstructorInvocationTests$Tester'
+			// using arguments '(java.lang.Integer)'
+			int idx = e.getMessage().indexOf("Tester");
+			if (idx == -1) {
+				fail("Expected reference to Tester in :" + e.getMessage());
+			}
+			// normal
+		}
 		// If counter is 4 then the method got called twice!
-		assertThat(parser.parseExpression("counter").getValue(eContext)).isEqualTo(3);
+		assertEquals(3, parser.parseExpression("counter").getValue(eContext));
 
 		// 1 will make it throw a RuntimeException - SpEL will let this through
 		eContext.setVariable("bar", 1);
-		assertThatExceptionOfType(Exception.class)
-			.isThrownBy(() -> expr.getValue(eContext))
-			.isNotInstanceOf(SpelEvaluationException.class);
-		// A problem occurred whilst attempting to construct an object of type
-		// 'org.springframework.expression.spel.ConstructorInvocationTests$Tester'
-		// using arguments '(java.lang.Integer)'
-
+		try {
+			o = expr.getValue(eContext);
+			fail("Should have failed");
+		}
+		catch (Exception e) {
+			// A problem occurred whilst attempting to construct an object of type
+			// 'org.springframework.expression.spel.ConstructorInvocationTests$Tester'
+			// using arguments '(java.lang.Integer)'
+			if (e instanceof SpelEvaluationException) {
+				e.printStackTrace();
+				fail("Should not have been wrapped");
+			}
+		}
 		// If counter is 5 then the method got called twice!
-		assertThat(parser.parseExpression("counter").getValue(eContext)).isEqualTo(4);
+		assertEquals(4, parser.parseExpression("counter").getValue(eContext));
 	}
 
 	@Test
@@ -156,19 +168,20 @@ public class ConstructorInvocationTests extends AbstractExpressionTests {
 
 		// reflective constructor accessor is the only one by default
 		List<ConstructorResolver> constructorResolvers = ctx.getConstructorResolvers();
-		assertThat(constructorResolvers.size()).isEqualTo(1);
+		assertEquals(1, constructorResolvers.size());
 
 		ConstructorResolver dummy = new DummyConstructorResolver();
 		ctx.addConstructorResolver(dummy);
-		assertThat(ctx.getConstructorResolvers().size()).isEqualTo(2);
+		assertEquals(2, ctx.getConstructorResolvers().size());
 
-		List<ConstructorResolver> copy = new ArrayList<>(ctx.getConstructorResolvers());
-		assertThat(ctx.removeConstructorResolver(dummy)).isTrue();
-		assertThat(ctx.removeConstructorResolver(dummy)).isFalse();
-		assertThat(ctx.getConstructorResolvers().size()).isEqualTo(1);
+		List<ConstructorResolver> copy = new ArrayList<ConstructorResolver>();
+		copy.addAll(ctx.getConstructorResolvers());
+		assertTrue(ctx.removeConstructorResolver(dummy));
+		assertFalse(ctx.removeConstructorResolver(dummy));
+		assertEquals(1, ctx.getConstructorResolvers().size());
 
 		ctx.setConstructorResolvers(copy);
-		assertThat(ctx.getConstructorResolvers().size()).isEqualTo(2);
+		assertEquals(2, ctx.getConstructorResolvers().size());
 	}
 
 
@@ -228,7 +241,7 @@ public class ConstructorInvocationTests extends AbstractExpressionTests {
 	}
 
 	@Test
-	@Disabled
+	@Ignore
 	public void testArgumentConversion01() {
 		// Closest ctor will be new String(String) and converter supports Double>String
 		// TODO currently failing as with new ObjectToArray converter closest constructor

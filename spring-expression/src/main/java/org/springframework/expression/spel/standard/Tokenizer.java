@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -65,15 +65,15 @@ class Tokenizer {
 	}
 
 
-	private final String expressionString;
+	private String expressionString;
 
-	private final char[] charsToProcess;
+	private char[] charsToProcess;
 
 	private int pos;
 
-	private final int max;
+	private int max;
 
-	private final List<Token> tokens = new ArrayList<>();
+	private List<Token> tokens = new ArrayList<Token>();
 
 
 	public Tokenizer(String inputData) {
@@ -501,7 +501,9 @@ class Tokenizer {
 	}
 
 	private char[] subarray(int start, int end) {
-		return Arrays.copyOfRange(this.charsToProcess, start, end);
+		char[] result = new char[end - start];
+		System.arraycopy(this.charsToProcess, start, result, 0, end - start);
+		return result;
 	}
 
 	/**

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,18 +20,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.io.Resource;
-import org.springframework.core.testfixture.stereotype.Component;
+import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.core.testfixture.io.ResourceTestUtils.qualifiedResource;
+import static org.junit.Assert.*;
+import static org.springframework.tests.TestResourceUtils.*;
 
 /**
  * @author Rob Harrop
@@ -51,8 +51,8 @@ public class FactoryBeanTests {
 	public void testFactoryBeanReturnsNull() throws Exception {
 		DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
 		new XmlBeanDefinitionReader(factory).loadBeanDefinitions(RETURNS_NULL_CONTEXT);
-
-		assertThat(factory.getBean("factoryBean").toString()).isEqualTo("null");
+		Object result = factory.getBean("factoryBean");
+		assertNull(result);
 	}
 
 	@Test
@@ -63,17 +63,17 @@ public class FactoryBeanTests {
 		BeanFactoryPostProcessor ppc = (BeanFactoryPostProcessor) factory.getBean("propertyPlaceholderConfigurer");
 		ppc.postProcessBeanFactory(factory);
 
-		assertThat(factory.getType("betaFactory")).isNull();
+		assertNull(factory.getType("betaFactory"));
 
 		Alpha alpha = (Alpha) factory.getBean("alpha");
 		Beta beta = (Beta) factory.getBean("beta");
 		Gamma gamma = (Gamma) factory.getBean("gamma");
 		Gamma gamma2 = (Gamma) factory.getBean("gammaFactory");
 
-		assertThat(alpha.getBeta()).isSameAs(beta);
-		assertThat(beta.getGamma()).isSameAs(gamma);
-		assertThat(beta.getGamma()).isSameAs(gamma2);
-		assertThat(beta.getName()).isEqualTo("yourName");
+		assertSame(beta, alpha.getBeta());
+		assertSame(gamma, beta.getGamma());
+		assertSame(gamma2, beta.getGamma());
+		assertEquals("yourName", beta.getName());
 	}
 
 	@Test
@@ -87,8 +87,8 @@ public class FactoryBeanTests {
 		Beta beta = (Beta) factory.getBean("beta");
 		Alpha alpha = (Alpha) factory.getBean("alpha");
 		Gamma gamma = (Gamma) factory.getBean("gamma");
-		assertThat(alpha.getBeta()).isSameAs(beta);
-		assertThat(beta.getGamma()).isSameAs(gamma);
+		assertSame(beta, alpha.getBeta());
+		assertSame(gamma, beta.getGamma());
 	}
 
 	@Test
@@ -114,12 +114,12 @@ public class FactoryBeanTests {
 		factory.addBeanPostProcessor(counter);
 
 		BeanImpl1 impl1 = factory.getBean(BeanImpl1.class);
-		assertThat(impl1).isNotNull();
-		assertThat(impl1.getImpl2()).isNotNull();
-		assertThat(impl1.getImpl2()).isNotNull();
-		assertThat(impl1.getImpl2().getImpl1()).isSameAs(impl1);
-		assertThat(counter.getCount("bean1")).isEqualTo(1);
-		assertThat(counter.getCount("bean2")).isEqualTo(1);
+		assertNotNull(impl1);
+		assertNotNull(impl1.getImpl2());
+		assertNotNull(impl1.getImpl2());
+		assertSame(impl1, impl1.getImpl2().getImpl1());
+		assertEquals(1, counter.getCount("bean1"));
+		assertEquals(1, counter.getCount("bean2"));
 	}
 
 
@@ -272,7 +272,7 @@ public class FactoryBeanTests {
 
 	public static class CountingPostProcessor implements BeanPostProcessor {
 
-		private final Map<String, AtomicInteger> count = new HashMap<>();
+		private final Map<String, AtomicInteger> count = new HashMap<String, AtomicInteger>();
 
 		@Override
 		public Object postProcessBeforeInitialization(Object bean, String beanName) {
@@ -286,7 +286,7 @@ public class FactoryBeanTests {
 			}
 			AtomicInteger c = count.get(beanName);
 			if (c == null) {
-				c = new AtomicInteger();
+				c = new AtomicInteger(0);
 				count.put(beanName, c);
 			}
 			c.incrementAndGet();

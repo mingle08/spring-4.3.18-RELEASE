@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,20 +18,18 @@ package org.springframework.web.multipart.support;
 
 import java.io.IOException;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Rick Evans
  * @author Sam Brannen
  */
-public class ByteArrayMultipartFileEditorTests {
+public final class ByteArrayMultipartFileEditorTests {
 
 	private final ByteArrayMultipartFileEditor editor = new ByteArrayMultipartFileEditor();
 
@@ -39,14 +37,14 @@ public class ByteArrayMultipartFileEditorTests {
 	public void setValueAsByteArray() throws Exception {
 		String expectedValue = "Shumwere, shumhow, a shuck ish washing you. - Drunken Far Side";
 		editor.setValue(expectedValue.getBytes());
-		assertThat(editor.getAsText()).isEqualTo(expectedValue);
+		assertEquals(expectedValue, editor.getAsText());
 	}
 
 	@Test
 	public void setValueAsString() throws Exception {
 		String expectedValue = "'Green Wing' - classic British comedy";
 		editor.setValue(expectedValue);
-		assertThat(editor.getAsText()).isEqualTo(expectedValue);
+		assertEquals(expectedValue, editor.getAsText());
 	}
 
 	@Test
@@ -60,13 +58,13 @@ public class ByteArrayMultipartFileEditorTests {
 		};
 
 		editor.setValue(object);
-		assertThat(editor.getAsText()).isEqualTo(expectedValue);
+		assertEquals(expectedValue, editor.getAsText());
 	}
 
 	@Test
 	public void setValueAsNullGetsBackEmptyString() throws Exception {
 		editor.setValue(null);
-		assertThat(editor.getAsText()).isEqualTo("");
+		assertEquals("", editor.getAsText());
 	}
 
 	@Test
@@ -75,15 +73,14 @@ public class ByteArrayMultipartFileEditorTests {
 		MultipartFile file = mock(MultipartFile.class);
 		given(file.getBytes()).willReturn(expectedValue.getBytes());
 		editor.setValue(file);
-		assertThat(editor.getAsText()).isEqualTo(expectedValue);
+		assertEquals(expectedValue, editor.getAsText());
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void setValueAsMultipartFileWithBadBytes() throws Exception {
 		MultipartFile file = mock(MultipartFile.class);
 		given(file.getBytes()).willThrow(new IOException());
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				editor.setValue(file));
+		editor.setValue(file);
 	}
 
 }

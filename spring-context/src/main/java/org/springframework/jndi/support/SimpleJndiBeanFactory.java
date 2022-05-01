@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,11 @@
 
 package org.springframework.jndi.support;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
@@ -30,12 +29,9 @@ import org.springframework.beans.factory.BeanDefinitionStoreException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanNotOfRequiredTypeException;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
-import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.ResolvableType;
 import org.springframework.jndi.JndiLocatorSupport;
 import org.springframework.jndi.TypeMismatchNamingException;
-import org.springframework.lang.Nullable;
 
 /**
  * Simple JNDI-based implementation of Spring's
@@ -44,7 +40,7 @@ import org.springframework.lang.Nullable;
  * the {@link org.springframework.beans.factory.ListableBeanFactory} interface.
  *
  * <p>This factory resolves given bean names as JNDI names within the
- * Jakarta EE application's "java:comp/env/" namespace. It caches the resolved
+ * J2EE application's "java:comp/env/" namespace. It caches the resolved
  * types for all obtained objects, and optionally also caches shareable
  * objects (if they are explicitly marked as
  * {@link #addShareableResource shareable resource}.
@@ -64,13 +60,13 @@ import org.springframework.lang.Nullable;
 public class SimpleJndiBeanFactory extends JndiLocatorSupport implements BeanFactory {
 
 	/** JNDI names of resources that are known to be shareable, i.e. can be cached */
-	private final Set<String> shareableResources = new HashSet<>();
+	private final Set<String> shareableResources = new HashSet<String>();
 
-	/** Cache of shareable singleton objects: bean name to bean instance. */
-	private final Map<String, Object> singletonObjects = new HashMap<>();
+	/** Cache of shareable singleton objects: bean name --> bean instance */
+	private final Map<String, Object> singletonObjects = new HashMap<String, Object>();
 
-	/** Cache of the types of nonshareable resources: bean name to bean type. */
-	private final Map<String, Class<?>> resourceTypes = new HashMap<>();
+	/** Cache of the types of nonshareable resources: bean name --> bean type */
+	private final Map<String, Class<?>> resourceTypes = new HashMap<String, Class<?>>();
 
 
 	public SimpleJndiBeanFactory() {
@@ -95,7 +91,7 @@ public class SimpleJndiBeanFactory extends JndiLocatorSupport implements BeanFac
 	 * (typically within the "java:comp/env/" namespace)
 	 */
 	public void setShareableResources(String... shareableResources) {
-		Collections.addAll(this.shareableResources, shareableResources);
+		this.shareableResources.addAll(Arrays.asList(shareableResources));
 	}
 
 
@@ -131,7 +127,12 @@ public class SimpleJndiBeanFactory extends JndiLocatorSupport implements BeanFac
 	}
 
 	@Override
-	public Object getBean(String name, @Nullable Object... args) throws BeansException {
+	public <T> T getBean(Class<T> requiredType) throws BeansException {
+		return getBean(requiredType.getSimpleName(), requiredType);
+	}
+
+	@Override
+	public Object getBean(String name, Object... args) throws BeansException {
 		if (args != null) {
 			throw new UnsupportedOperationException(
 					"SimpleJndiBeanFactory does not support explicit bean creation arguments");
@@ -140,60 +141,12 @@ public class SimpleJndiBeanFactory extends JndiLocatorSupport implements BeanFac
 	}
 
 	@Override
-	public <T> T getBean(Class<T> requiredType) throws BeansException {
-		return getBean(requiredType.getSimpleName(), requiredType);
-	}
-
-	@Override
-	public <T> T getBean(Class<T> requiredType, @Nullable Object... args) throws BeansException {
+	public <T> T getBean(Class<T> requiredType, Object... args) throws BeansException {
 		if (args != null) {
 			throw new UnsupportedOperationException(
 					"SimpleJndiBeanFactory does not support explicit bean creation arguments");
 		}
 		return getBean(requiredType);
-	}
-
-	@Override
-	public <T> ObjectProvider<T> getBeanProvider(Class<T> requiredType) {
-		return new ObjectProvider<>() {
-			@Override
-			public T getObject() throws BeansException {
-				return getBean(requiredType);
-			}
-			@Override
-			public T getObject(Object... args) throws BeansException {
-				return getBean(requiredType, args);
-			}
-			@Override
-			@Nullable
-			public T getIfAvailable() throws BeansException {
-				try {
-					return getBean(requiredType);
-				}
-				catch (NoUniqueBeanDefinitionException ex) {
-					throw ex;
-				}
-				catch (NoSuchBeanDefinitionException ex) {
-					return null;
-				}
-			}
-			@Override
-			@Nullable
-			public T getIfUnique() throws BeansException {
-				try {
-					return getBean(requiredType);
-				}
-				catch (NoSuchBeanDefinitionException ex) {
-					return null;
-				}
-			}
-		};
-	}
-
-	@Override
-	public <T> ObjectProvider<T> getBeanProvider(ResolvableType requiredType) {
-		throw new UnsupportedOperationException(
-				"SimpleJndiBeanFactory does not support resolution by ResolvableType");
 	}
 
 	@Override
@@ -227,20 +180,13 @@ public class SimpleJndiBeanFactory extends JndiLocatorSupport implements BeanFac
 	}
 
 	@Override
-	public boolean isTypeMatch(String name, @Nullable Class<?> typeToMatch) throws NoSuchBeanDefinitionException {
+	public boolean isTypeMatch(String name, Class<?> typeToMatch) throws NoSuchBeanDefinitionException {
 		Class<?> type = getType(name);
 		return (typeToMatch == null || (type != null && typeToMatch.isAssignableFrom(type)));
 	}
 
 	@Override
-	@Nullable
 	public Class<?> getType(String name) throws NoSuchBeanDefinitionException {
-		return getType(name, true);
-	}
-
-	@Override
-	@Nullable
-	public Class<?> getType(String name, boolean allowFactoryBeanInit) throws NoSuchBeanDefinitionException {
 		try {
 			return doGetType(name);
 		}
@@ -259,14 +205,15 @@ public class SimpleJndiBeanFactory extends JndiLocatorSupport implements BeanFac
 
 
 	@SuppressWarnings("unchecked")
-	private <T> T doGetSingleton(String name, @Nullable Class<T> requiredType) throws NamingException {
+	private <T> T doGetSingleton(String name, Class<T> requiredType) throws NamingException {
 		synchronized (this.singletonObjects) {
-			Object singleton = this.singletonObjects.get(name);
-			if (singleton != null) {
-				if (requiredType != null && !requiredType.isInstance(singleton)) {
-					throw new TypeMismatchNamingException(convertJndiName(name), requiredType, singleton.getClass());
+			if (this.singletonObjects.containsKey(name)) {
+				Object jndiObject = this.singletonObjects.get(name);
+				if (requiredType != null && !requiredType.isInstance(jndiObject)) {
+					throw new TypeMismatchNamingException(
+							convertJndiName(name), requiredType, (jndiObject != null ? jndiObject.getClass() : null));
 				}
-				return (T) singleton;
+				return (T) jndiObject;
 			}
 			T jndiObject = lookup(name, requiredType);
 			this.singletonObjects.put(name, jndiObject);
@@ -276,16 +223,20 @@ public class SimpleJndiBeanFactory extends JndiLocatorSupport implements BeanFac
 
 	private Class<?> doGetType(String name) throws NamingException {
 		if (isSingleton(name)) {
-			return doGetSingleton(name, null).getClass();
+			Object jndiObject = doGetSingleton(name, null);
+			return (jndiObject != null ? jndiObject.getClass() : null);
 		}
 		else {
 			synchronized (this.resourceTypes) {
-				Class<?> type = this.resourceTypes.get(name);
-				if (type == null) {
-					type = lookup(name, null).getClass();
-					this.resourceTypes.put(name, type);
+				if (this.resourceTypes.containsKey(name)) {
+					return this.resourceTypes.get(name);
 				}
-				return type;
+				else {
+					Object jndiObject = lookup(name, null);
+					Class<?> type = (jndiObject != null ? jndiObject.getClass() : null);
+					this.resourceTypes.put(name, type);
+					return type;
+				}
 			}
 		}
 	}

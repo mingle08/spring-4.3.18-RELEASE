@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,22 +18,15 @@ package org.springframework.test.web.client;
 
 import java.io.IOException;
 import java.net.URI;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -50,55 +43,42 @@ import org.springframework.util.Assert;
  */
 public abstract class AbstractRequestExpectationManager implements RequestExpectationManager {
 
-	private final List<RequestExpectation> expectations = new ArrayList<>();
+	private final List<RequestExpectation> expectations = new LinkedList<RequestExpectation>();
 
-	private final List<ClientHttpRequest> requests = new ArrayList<>();
-
-	private final Map<ClientHttpRequest, Throwable> requestFailures = new LinkedHashMap<>();
+	private final List<ClientHttpRequest> requests = new LinkedList<ClientHttpRequest>();
 
 
-	/**
-	 * Return a read-only list of the expectations.
-	 */
 	protected List<RequestExpectation> getExpectations() {
-		return Collections.unmodifiableList(this.expectations);
+		return this.expectations;
 	}
 
-	/**
-	 * Return a read-only list of requests executed so far.
-	 */
 	protected List<ClientHttpRequest> getRequests() {
-		return Collections.unmodifiableList(this.requests);
+		return this.requests;
 	}
 
 
 	@Override
 	public ResponseActions expectRequest(ExpectedCount count, RequestMatcher matcher) {
-		Assert.state(this.requests.isEmpty(), "Cannot add more expectations after actual requests are made");
+		Assert.state(getRequests().isEmpty(), "Cannot add more expectations after actual requests are made");
 		RequestExpectation expectation = new DefaultRequestExpectation(count, matcher);
-		this.expectations.add(expectation);
+		getExpectations().add(expectation);
 		return expectation;
 	}
 
 	@Override
 	public ClientHttpResponse validateRequest(ClientHttpRequest request) throws IOException {
-		RequestExpectation expectation;
-		synchronized (this.requests) {
-			if (this.requests.isEmpty()) {
+		List<ClientHttpRequest> requests = getRequests();
+		synchronized (requests) {
+			if (requests.isEmpty()) {
 				afterExpectationsDeclared();
 			}
 			try {
-				expectation = matchRequest(request);
-			}
-			catch (Throwable ex) {
-				this.requestFailures.put(request, ex);
-				throw ex;
+				return validateRequestInternal(request);
 			}
 			finally {
-				this.requests.add(request);
+				requests.add(request);
 			}
 		}
-		return expectation.createResponse(request);
 	}
 
 	/**
@@ -109,59 +89,27 @@ public abstract class AbstractRequestExpectationManager implements RequestExpect
 	}
 
 	/**
-	 * As of 5.0.3 subclasses should implement this method instead of
-	 * {@link #validateRequestInternal(ClientHttpRequest)} in order to match the
-	 * request to an expectation, leaving the call to create the response as a separate step
-	 * (to be invoked by this class).
-	 * @param request the current request
-	 * @return the matched expectation with its request count updated via
-	 * {@link RequestExpectation#incrementAndValidate()}.
-	 * @since 5.0.3
+	 * Subclasses must implement the actual validation of the request
+	 * matching to declared expectations.
 	 */
-	protected RequestExpectation matchRequest(ClientHttpRequest request) throws IOException {
-		throw new UnsupportedOperationException(
-				"It looks like neither the deprecated \"validateRequestInternal\"" +
-				"nor its replacement (this method) are implemented.");
-	}
+	protected abstract ClientHttpResponse validateRequestInternal(ClientHttpRequest request)
+			throws IOException;
 
 	@Override
 	public void verify() {
-		int count = verifyInternal();
-		if (count > 0) {
-			String message = "Further request(s) expected leaving " + count + " unsatisfied expectation(s).\n";
-			throw new AssertionError(message + getRequestDetails());
-		}
-	}
-
-	@Override
-	public void verify(Duration timeout) {
-		Instant endTime = Instant.now().plus(timeout);
-		do {
-			if (verifyInternal() == 0) {
-				return;
-			}
-		}
-		while (Instant.now().isBefore(endTime));
-		verify();
-	}
-
-	private int verifyInternal() {
-		if (this.expectations.isEmpty()) {
-			return 0;
-		}
-		if (!this.requestFailures.isEmpty()) {
-			throw new AssertionError("Some requests did not execute successfully.\n" +
-					this.requestFailures.entrySet().stream()
-							.map(entry -> "Failed request:\n" + entry.getKey() + "\n" + entry.getValue())
-							.collect(Collectors.joining("\n", "\n", "")));
+		if (getExpectations().isEmpty()) {
+			return;
 		}
 		int count = 0;
-		for (RequestExpectation expectation : this.expectations) {
+		for (RequestExpectation expectation : getExpectations()) {
 			if (!expectation.isSatisfied()) {
 				count++;
 			}
 		}
-		return count;
+		if (count > 0) {
+			String message = "Further request(s) expected leaving " + count + " unsatisfied expectation(s).\n";
+			throw new AssertionError(message + getRequestDetails());
+		}
 	}
 
 	/**
@@ -169,11 +117,11 @@ public abstract class AbstractRequestExpectationManager implements RequestExpect
 	 */
 	protected String getRequestDetails() {
 		StringBuilder sb = new StringBuilder();
-		sb.append(this.requests.size()).append(" request(s) executed");
-		if (!this.requests.isEmpty()) {
+		sb.append(getRequests().size()).append(" request(s) executed");
+		if (!getRequests().isEmpty()) {
 			sb.append(":\n");
-			for (ClientHttpRequest request : this.requests) {
-				sb.append(request.toString()).append('\n');
+			for (ClientHttpRequest request : getRequests()) {
+				sb.append(request.toString()).append("\n");
 			}
 		}
 		else {
@@ -197,7 +145,6 @@ public abstract class AbstractRequestExpectationManager implements RequestExpect
 	public void reset() {
 		this.expectations.clear();
 		this.requests.clear();
-		this.requestFailures.clear();
 	}
 
 
@@ -206,11 +153,7 @@ public abstract class AbstractRequestExpectationManager implements RequestExpect
 	 */
 	protected static class RequestExpectationGroup {
 
-		private final Set<RequestExpectation> expectations = new LinkedHashSet<>();
-
-		public void addAllExpectations(Collection<RequestExpectation> expectations) {
-			this.expectations.addAll(expectations);
-		}
+		private final Set<RequestExpectation> expectations = new LinkedHashSet<RequestExpectation>();
 
 		public Set<RequestExpectation> getExpectations() {
 			return this.expectations;
@@ -219,9 +162,8 @@ public abstract class AbstractRequestExpectationManager implements RequestExpect
 		/**
 		 * Return a matching expectation, or {@code null} if none match.
 		 */
-		@Nullable
 		public RequestExpectation findExpectation(ClientHttpRequest request) throws IOException {
-			for (RequestExpectation expectation : this.expectations) {
+			for (RequestExpectation expectation : getExpectations()) {
 				try {
 					expectation.match(request);
 					return expectation;
@@ -235,28 +177,30 @@ public abstract class AbstractRequestExpectationManager implements RequestExpect
 
 		/**
 		 * Invoke this for an expectation that has been matched.
-		 * <p>The count of the given expectation is incremented, then it is
-		 * either stored if remainingCount &gt; 0 or removed otherwise.
+		 * <p>The given expectation will either be stored if it has a remaining
+		 * count or it will be removed otherwise.
 		 */
 		public void update(RequestExpectation expectation) {
-			expectation.incrementAndValidate();
-			updateInternal(expectation);
-		}
-
-		private void updateInternal(RequestExpectation expectation) {
 			if (expectation.hasRemainingCount()) {
-				this.expectations.add(expectation);
+				getExpectations().add(expectation);
 			}
 			else {
-				this.expectations.remove(expectation);
+				getExpectations().remove(expectation);
 			}
 		}
 
 		/**
-		 * Reset all expectations for this group.
+		 * Collection variant of {@link #update(RequestExpectation)} that can
+		 * be used to insert expectations.
 		 */
+		public void updateAll(Collection<RequestExpectation> expectations) {
+			for (RequestExpectation expectation : expectations) {
+				update(expectation);
+			}
+		}
+
 		public void reset() {
-			this.expectations.clear();
+			getExpectations().clear();
 		}
 	}
 

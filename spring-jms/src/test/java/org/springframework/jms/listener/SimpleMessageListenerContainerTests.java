@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,28 +18,24 @@ package org.springframework.jms.listener;
 
 import java.util.HashSet;
 import java.util.Set;
+import javax.jms.Connection;
+import javax.jms.ConnectionFactory;
+import javax.jms.ExceptionListener;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageConsumer;
+import javax.jms.MessageListener;
+import javax.jms.Session;
 
-import jakarta.jms.Connection;
-import jakarta.jms.ConnectionFactory;
-import jakarta.jms.ExceptionListener;
-import jakarta.jms.JMSException;
-import jakarta.jms.Message;
-import jakarta.jms.MessageConsumer;
-import jakarta.jms.MessageListener;
-import jakarta.jms.Session;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.jms.StubQueue;
-import org.springframework.lang.Nullable;
 import org.springframework.util.ErrorHandler;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Rick Evans
@@ -58,38 +54,35 @@ public class SimpleMessageListenerContainerTests {
 	private final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testSettingMessageListenerToANullType() {
 		this.container.setMessageListener(null);
-		assertThat(this.container.getMessageListener()).isNull();
+		assertNull(this.container.getMessageListener());
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testSettingMessageListenerToAnUnsupportedType() {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				this.container.setMessageListener("Bingo"));
+		this.container.setMessageListener("Bingo");
 	}
 
 	@Test
 	public void testSessionTransactedModeReallyDoesDefaultToFalse() {
-		assertThat(this.container.isPubSubNoLocal()).as("The [pubSubLocal] property of SimpleMessageListenerContainer " +
-				"must default to false. Change this test (and the attendant javadoc) if you have changed the default.").isFalse();
+		assertFalse("The [pubSubLocal] property of SimpleMessageListenerContainer " +
+				"must default to false. Change this test (and the " +
+				"attendant Javadoc) if you have changed the default.",
+				this.container.isPubSubNoLocal());
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testSettingConcurrentConsumersToZeroIsNotAllowed() {
-		assertThatIllegalArgumentException().isThrownBy(() -> {
-				this.container.setConcurrentConsumers(0);
-				this.container.afterPropertiesSet();
-		});
+		this.container.setConcurrentConsumers(0);
+		this.container.afterPropertiesSet();
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testSettingConcurrentConsumersToANegativeValueIsNotAllowed() {
-		assertThatIllegalArgumentException().isThrownBy(() -> {
-				this.container.setConcurrentConsumers(-198);
-				this.container.afterPropertiesSet();
-		});
+		this.container.setConcurrentConsumers(-198);
+		this.container.afterPropertiesSet();
 	}
 
 	@Test
@@ -118,7 +111,6 @@ public class SimpleMessageListenerContainerTests {
 		GenericApplicationContext context = new GenericApplicationContext();
 		context.getBeanFactory().registerSingleton("messageListenerContainer", this.container);
 		context.refresh();
-		context.close();
 
 		verify(connection).setExceptionListener(this.container);
 	}
@@ -149,7 +141,6 @@ public class SimpleMessageListenerContainerTests {
 		GenericApplicationContext context = new GenericApplicationContext();
 		context.getBeanFactory().registerSingleton("messageListenerContainer", this.container);
 		context.refresh();
-		context.close();
 
 		verify(connection).setExceptionListener(this.container);
 		verify(connection).start();
@@ -181,13 +172,16 @@ public class SimpleMessageListenerContainerTests {
 
 		this.container.setConnectionFactory(connectionFactory);
 		this.container.setDestinationName(DESTINATION_NAME);
-		this.container.setMessageListener((SessionAwareMessageListener<Message>) (Message message, @Nullable Session sess) -> {
-			try {
-				// Check correct Session passed into SessionAwareMessageListener.
-				assertThat(session).isSameAs(sess);
-			}
-			catch (Throwable ex) {
-				failure.add("MessageListener execution failed: " + ex);
+		this.container.setMessageListener(new SessionAwareMessageListener<Message>() {
+			@Override
+			public void onMessage(Message message, Session sess) {
+				try {
+					// Check correct Session passed into SessionAwareMessageListener.
+					assertSame(sess, session);
+				}
+				catch (Throwable ex) {
+					failure.add("MessageListener execution failed: " + ex);
+				}
 			}
 		});
 
@@ -227,11 +221,14 @@ public class SimpleMessageListenerContainerTests {
 		this.container.setConnectionFactory(connectionFactory);
 		this.container.setDestinationName(DESTINATION_NAME);
 		this.container.setMessageListener(listener);
-		this.container.setTaskExecutor(task -> {
-			listener.executorInvoked = true;
-			assertThat(listener.listenerInvoked).isFalse();
-			task.run();
-			assertThat(listener.listenerInvoked).isTrue();
+		this.container.setTaskExecutor(new TaskExecutor() {
+			@Override
+			public void execute(Runnable task) {
+				listener.executorInvoked = true;
+				assertFalse(listener.listenerInvoked);
+				task.run();
+				assertTrue(listener.listenerInvoked);
+			}
 		});
 		this.container.afterPropertiesSet();
 		this.container.start();
@@ -239,8 +236,8 @@ public class SimpleMessageListenerContainerTests {
 		final Message message = mock(Message.class);
 		messageConsumer.sendMessage(message);
 
-		assertThat(listener.executorInvoked).isTrue();
-		assertThat(listener.listenerInvoked).isTrue();
+		assertTrue(listener.executorInvoked);
+		assertTrue(listener.listenerInvoked);
 
 		verify(connection).setExceptionListener(this.container);
 		verify(connection).start();
@@ -271,8 +268,11 @@ public class SimpleMessageListenerContainerTests {
 
 		this.container.setConnectionFactory(connectionFactory);
 		this.container.setDestinationName(DESTINATION_NAME);
-		this.container.setMessageListener((SessionAwareMessageListener<Message>) (Message message, @Nullable Session session1) -> {
-			throw theException;
+		this.container.setMessageListener(new SessionAwareMessageListener<Message>() {
+			@Override
+			public void onMessage(Message message, Session session) throws JMSException {
+				throw theException;
+			}
 		});
 
 		ExceptionListener exceptionListener = mock(ExceptionListener.class);
@@ -318,8 +318,11 @@ public class SimpleMessageListenerContainerTests {
 
 		this.container.setConnectionFactory(connectionFactory);
 		this.container.setDestinationName(DESTINATION_NAME);
-		this.container.setMessageListener((SessionAwareMessageListener<Message>) (Message message, @Nullable Session session1) -> {
-			throw theException;
+		this.container.setMessageListener(new SessionAwareMessageListener<Message>() {
+			@Override
+			public void onMessage(Message message, Session session) throws JMSException {
+				throw theException;
+			}
 		});
 
 		ErrorHandler errorHandler = mock(ErrorHandler.class);
@@ -361,8 +364,11 @@ public class SimpleMessageListenerContainerTests {
 
 		this.container.setConnectionFactory(connectionFactory);
 		this.container.setDestinationName(DESTINATION_NAME);
-		this.container.setMessageListener((MessageListener) message -> {
-			throw new UnsupportedOperationException();
+		this.container.setMessageListener(new MessageListener() {
+			@Override
+			public void onMessage(Message message) {
+				throw new UnsupportedOperationException();
+			}
 		});
 		this.container.afterPropertiesSet();
 		this.container.start();
@@ -387,7 +393,7 @@ public class SimpleMessageListenerContainerTests {
 		// Queue gets created in order to create MessageConsumer for that Destination...
 		given(session.createQueue(DESTINATION_NAME)).willReturn(QUEUE_DESTINATION);
 		// and then the MessageConsumer gets created...
-		given(session.createConsumer(QUEUE_DESTINATION, null)).willReturn(messageConsumer);  // no MessageSelector...
+		given(session.createConsumer(QUEUE_DESTINATION, null)).willReturn(messageConsumer); // no MessageSelector...
 		// an exception is thrown, so the rollback logic is being applied here...
 		given(session.getTransacted()).willReturn(true);
 
@@ -402,8 +408,11 @@ public class SimpleMessageListenerContainerTests {
 
 		this.container.setConnectionFactory(connectionFactory);
 		this.container.setDestinationName(DESTINATION_NAME);
-		this.container.setMessageListener((MessageListener) message -> {
-			throw new UnsupportedOperationException();
+		this.container.setMessageListener(new MessageListener() {
+			@Override
+			public void onMessage(Message message) {
+				throw new UnsupportedOperationException();
+			}
 		});
 		this.container.afterPropertiesSet();
 		this.container.start();

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,8 +22,7 @@ import org.springframework.expression.EvaluationException;
 import org.springframework.expression.TypedValue;
 import org.springframework.expression.spel.CodeFlow;
 import org.springframework.expression.spel.ExpressionState;
-import org.springframework.util.Assert;
-import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Represents the elvis operator ?:. For an expression "a?:b" if a is not null, the value
@@ -35,8 +34,8 @@ import org.springframework.util.ObjectUtils;
  */
 public class Elvis extends SpelNodeImpl {
 
-	public Elvis(int startPos, int endPos, SpelNodeImpl... args) {
-		super(startPos, endPos, args);
+	public Elvis(int pos, SpelNodeImpl... args) {
+		super(pos, args);
 	}
 
 
@@ -51,7 +50,7 @@ public class Elvis extends SpelNodeImpl {
 	public TypedValue getValueInternal(ExpressionState state) throws EvaluationException {
 		TypedValue value = this.children[0].getValueInternal(state);
 		// If this check is changed, the generateCode method will need changing too
-		if (value.getValue() != null && !"".equals(value.getValue())) {
+		if (!StringUtils.isEmpty(value.getValue())) {
 			return value;
 		}
 		else {
@@ -78,12 +77,8 @@ public class Elvis extends SpelNodeImpl {
 	public void generateCode(MethodVisitor mv, CodeFlow cf) {
 		// exit type descriptor can be null if both components are literal expressions
 		computeExitTypeDescriptor();
-		cf.enterCompilationScope();
 		this.children[0].generateCode(mv, cf);
-		String lastDesc = cf.lastDescriptor();
-		Assert.state(lastDesc != null, "No last descriptor");
-		CodeFlow.insertBoxIfNecessary(mv, lastDesc.charAt(0));
-		cf.exitCompilationScope();
+		CodeFlow.insertBoxIfNecessary(mv, cf.lastDescriptor().charAt(0));
 		Label elseTarget = new Label();
 		Label endOfIf = new Label();
 		mv.visitInsn(DUP);
@@ -96,14 +91,10 @@ public class Elvis extends SpelNodeImpl {
 		mv.visitJumpInsn(IFEQ, endOfIf);  // if not empty, drop through to elseTarget
 		mv.visitLabel(elseTarget);
 		mv.visitInsn(POP);
-		cf.enterCompilationScope();
 		this.children[1].generateCode(mv, cf);
 		if (!CodeFlow.isPrimitive(this.exitTypeDescriptor)) {
-			lastDesc = cf.lastDescriptor();
-			Assert.state(lastDesc != null, "No last descriptor");
-			CodeFlow.insertBoxIfNecessary(mv, lastDesc.charAt(0));
+			CodeFlow.insertBoxIfNecessary(mv, cf.lastDescriptor().charAt(0));
 		}
-		cf.exitCompilationScope();
 		mv.visitLabel(endOfIf);
 		cf.pushDescriptor(this.exitTypeDescriptor);
 	}
@@ -113,7 +104,7 @@ public class Elvis extends SpelNodeImpl {
 				this.children[1].exitTypeDescriptor != null) {
 			String conditionDescriptor = this.children[0].exitTypeDescriptor;
 			String ifNullValueDescriptor = this.children[1].exitTypeDescriptor;
-			if (ObjectUtils.nullSafeEquals(conditionDescriptor, ifNullValueDescriptor)) {
+			if (conditionDescriptor.equals(ifNullValueDescriptor)) {
 				this.exitTypeDescriptor = conditionDescriptor;
 			}
 			else {

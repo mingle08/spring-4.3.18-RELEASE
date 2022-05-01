@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,30 +22,27 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
-
-import jakarta.activation.DataHandler;
-import jakarta.activation.DataSource;
-import jakarta.activation.FileDataSource;
-import jakarta.activation.FileTypeMap;
-import jakarta.mail.BodyPart;
-import jakarta.mail.Message;
-import jakarta.mail.MessagingException;
-import jakarta.mail.Part;
-import jakarta.mail.internet.AddressException;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeBodyPart;
-import jakarta.mail.internet.MimeMessage;
-import jakarta.mail.internet.MimeMultipart;
-import jakarta.mail.internet.MimePart;
-import jakarta.mail.internet.MimeUtility;
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
+import javax.activation.FileDataSource;
+import javax.activation.FileTypeMap;
+import javax.mail.BodyPart;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+import javax.mail.internet.MimePart;
+import javax.mail.internet.MimeUtility;
 
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Helper class for populating a {@link jakarta.mail.internet.MimeMessage}.
+ * Helper class for populating a {@link javax.mail.internet.MimeMessage}.
  *
  * <p>Mirrors the simple setters of {@link org.springframework.mail.SimpleMailMessage},
  * directly applying the values to the underlying MimeMessage. Allows for defining
@@ -92,7 +89,6 @@ import org.springframework.util.Assert;
  * on the MULTIPART_MODE constants contains more detailed information.
  *
  * @author Juergen Hoeller
- * @author Sam Brannen
  * @since 19.01.2004
  * @see #setText(String, boolean)
  * @see #setText(String, String)
@@ -161,21 +157,18 @@ public class MimeMessageHelper {
 
 	private static final String HEADER_PRIORITY = "X-Priority";
 
+	private static final String HEADER_CONTENT_ID = "Content-ID";
+
 
 	private final MimeMessage mimeMessage;
 
-	@Nullable
 	private MimeMultipart rootMimeMultipart;
 
-	@Nullable
 	private MimeMultipart mimeMultipart;
 
-	@Nullable
 	private final String encoding;
 
 	private FileTypeMap fileTypeMap;
-
-	private boolean encodeFilenames = false;
 
 	private boolean validateAddresses = false;
 
@@ -187,9 +180,9 @@ public class MimeMessageHelper {
 	 * <p>The character encoding for the message will be taken from
 	 * the passed-in MimeMessage object, if carried there. Else,
 	 * JavaMail's default encoding will be used.
-	 * @param mimeMessage the mime message to work on
-	 * @see #MimeMessageHelper(jakarta.mail.internet.MimeMessage, boolean)
-	 * @see #getDefaultEncoding(jakarta.mail.internet.MimeMessage)
+	 * @param mimeMessage MimeMessage to work on
+	 * @see #MimeMessageHelper(javax.mail.internet.MimeMessage, boolean)
+	 * @see #getDefaultEncoding(javax.mail.internet.MimeMessage)
 	 * @see JavaMailSenderImpl#setDefaultEncoding
 	 */
 	public MimeMessageHelper(MimeMessage mimeMessage) {
@@ -200,11 +193,11 @@ public class MimeMessageHelper {
 	 * Create a new MimeMessageHelper for the given MimeMessage,
 	 * assuming a simple text message (no multipart content,
 	 * i.e. no alternative texts and no inline elements or attachments).
-	 * @param mimeMessage the mime message to work on
+	 * @param mimeMessage MimeMessage to work on
 	 * @param encoding the character encoding to use for the message
-	 * @see #MimeMessageHelper(jakarta.mail.internet.MimeMessage, boolean)
+	 * @see #MimeMessageHelper(javax.mail.internet.MimeMessage, boolean)
 	 */
-	public MimeMessageHelper(MimeMessage mimeMessage, @Nullable String encoding) {
+	public MimeMessageHelper(MimeMessage mimeMessage, String encoding) {
 		this.mimeMessage = mimeMessage;
 		this.encoding = (encoding != null ? encoding : getDefaultEncoding(mimeMessage));
 		this.fileTypeMap = getDefaultFileTypeMap(mimeMessage);
@@ -220,13 +213,13 @@ public class MimeMessageHelper {
 	 * <p>The character encoding for the message will be taken from
 	 * the passed-in MimeMessage object, if carried there. Else,
 	 * JavaMail's default encoding will be used.
-	 * @param mimeMessage the mime message to work on
+	 * @param mimeMessage MimeMessage to work on
 	 * @param multipart whether to create a multipart message that
 	 * supports alternative texts, inline elements and attachments
 	 * (corresponds to MULTIPART_MODE_MIXED_RELATED)
 	 * @throws MessagingException if multipart creation failed
-	 * @see #MimeMessageHelper(jakarta.mail.internet.MimeMessage, int)
-	 * @see #getDefaultEncoding(jakarta.mail.internet.MimeMessage)
+	 * @see #MimeMessageHelper(javax.mail.internet.MimeMessage, int)
+	 * @see #getDefaultEncoding(javax.mail.internet.MimeMessage)
 	 * @see JavaMailSenderImpl#setDefaultEncoding
 	 */
 	public MimeMessageHelper(MimeMessage mimeMessage, boolean multipart) throws MessagingException {
@@ -240,15 +233,15 @@ public class MimeMessageHelper {
 	 * <p>Consider using the MimeMessageHelper constructor that
 	 * takes a multipartMode argument to choose a specific multipart
 	 * mode other than MULTIPART_MODE_MIXED_RELATED.
-	 * @param mimeMessage the mime message to work on
+	 * @param mimeMessage MimeMessage to work on
 	 * @param multipart whether to create a multipart message that
 	 * supports alternative texts, inline elements and attachments
 	 * (corresponds to MULTIPART_MODE_MIXED_RELATED)
 	 * @param encoding the character encoding to use for the message
 	 * @throws MessagingException if multipart creation failed
-	 * @see #MimeMessageHelper(jakarta.mail.internet.MimeMessage, int, String)
+	 * @see #MimeMessageHelper(javax.mail.internet.MimeMessage, int, String)
 	 */
-	public MimeMessageHelper(MimeMessage mimeMessage, boolean multipart, @Nullable String encoding)
+	public MimeMessageHelper(MimeMessage mimeMessage, boolean multipart, String encoding)
 			throws MessagingException {
 
 		this(mimeMessage, (multipart ? MULTIPART_MODE_MIXED_RELATED : MULTIPART_MODE_NO), encoding);
@@ -261,7 +254,7 @@ public class MimeMessageHelper {
 	 * <p>The character encoding for the message will be taken from
 	 * the passed-in MimeMessage object, if carried there. Else,
 	 * JavaMail's default encoding will be used.
-	 * @param mimeMessage the mime message to work on
+	 * @param mimeMessage MimeMessage to work on
 	 * @param multipartMode which kind of multipart message to create
 	 * (MIXED, RELATED, MIXED_RELATED, or NO)
 	 * @throws MessagingException if multipart creation failed
@@ -269,7 +262,7 @@ public class MimeMessageHelper {
 	 * @see #MULTIPART_MODE_MIXED
 	 * @see #MULTIPART_MODE_RELATED
 	 * @see #MULTIPART_MODE_MIXED_RELATED
-	 * @see #getDefaultEncoding(jakarta.mail.internet.MimeMessage)
+	 * @see #getDefaultEncoding(javax.mail.internet.MimeMessage)
 	 * @see JavaMailSenderImpl#setDefaultEncoding
 	 */
 	public MimeMessageHelper(MimeMessage mimeMessage, int multipartMode) throws MessagingException {
@@ -280,7 +273,7 @@ public class MimeMessageHelper {
 	 * Create a new MimeMessageHelper for the given MimeMessage,
 	 * in multipart mode (supporting alternative texts, inline
 	 * elements and attachments) if requested.
-	 * @param mimeMessage the mime message to work on
+	 * @param mimeMessage MimeMessage to work on
 	 * @param multipartMode which kind of multipart message to create
 	 * (MIXED, RELATED, MIXED_RELATED, or NO)
 	 * @param encoding the character encoding to use for the message
@@ -290,7 +283,7 @@ public class MimeMessageHelper {
 	 * @see #MULTIPART_MODE_RELATED
 	 * @see #MULTIPART_MODE_MIXED_RELATED
 	 */
-	public MimeMessageHelper(MimeMessage mimeMessage, int multipartMode, @Nullable String encoding)
+	public MimeMessageHelper(MimeMessage mimeMessage, int multipartMode, String encoding)
 			throws MessagingException {
 
 		this.mimeMessage = mimeMessage;
@@ -333,18 +326,20 @@ public class MimeMessageHelper {
 	 */
 	protected void createMimeMultiparts(MimeMessage mimeMessage, int multipartMode) throws MessagingException {
 		switch (multipartMode) {
-			case MULTIPART_MODE_NO -> setMimeMultiparts(null, null);
-			case MULTIPART_MODE_MIXED -> {
+			case MULTIPART_MODE_NO:
+				setMimeMultiparts(null, null);
+				break;
+			case MULTIPART_MODE_MIXED:
 				MimeMultipart mixedMultipart = new MimeMultipart(MULTIPART_SUBTYPE_MIXED);
 				mimeMessage.setContent(mixedMultipart);
 				setMimeMultiparts(mixedMultipart, mixedMultipart);
-			}
-			case MULTIPART_MODE_RELATED -> {
+				break;
+			case MULTIPART_MODE_RELATED:
 				MimeMultipart relatedMultipart = new MimeMultipart(MULTIPART_SUBTYPE_RELATED);
 				mimeMessage.setContent(relatedMultipart);
 				setMimeMultiparts(relatedMultipart, relatedMultipart);
-			}
-			case MULTIPART_MODE_MIXED_RELATED -> {
+				break;
+			case MULTIPART_MODE_MIXED_RELATED:
 				MimeMultipart rootMixedMultipart = new MimeMultipart(MULTIPART_SUBTYPE_MIXED);
 				mimeMessage.setContent(rootMixedMultipart);
 				MimeMultipart nestedRelatedMultipart = new MimeMultipart(MULTIPART_SUBTYPE_RELATED);
@@ -352,8 +347,8 @@ public class MimeMessageHelper {
 				relatedBodyPart.setContent(nestedRelatedMultipart);
 				rootMixedMultipart.addBodyPart(relatedBodyPart);
 				setMimeMultiparts(rootMixedMultipart, nestedRelatedMultipart);
-			}
-			default ->
+				break;
+			default:
 				throw new IllegalArgumentException("Only multipart modes MIXED_RELATED, RELATED and NO supported");
 		}
 	}
@@ -366,7 +361,7 @@ public class MimeMessageHelper {
 	 * will be added to (can be the same as the root multipart object, or an element
 	 * nested underneath the root multipart element)
 	 */
-	protected final void setMimeMultiparts(@Nullable MimeMultipart root, @Nullable MimeMultipart main) {
+	protected final void setMimeMultiparts(MimeMultipart root, MimeMultipart main) {
 		this.rootMimeMultipart = root;
 		this.mimeMultipart = main;
 	}
@@ -381,6 +376,17 @@ public class MimeMessageHelper {
 	}
 
 	/**
+	 * Throw an IllegalStateException if this helper is not in multipart mode.
+	 */
+	private void checkMultipart() throws IllegalStateException {
+		if (!isMultipart()) {
+			throw new IllegalStateException("Not in multipart mode - " +
+				"create an appropriate MimeMessageHelper via a constructor that takes a 'multipart' flag " +
+				"if you need to set alternative texts or add inline elements or attachments.");
+		}
+	}
+
+	/**
 	 * Return the root MIME "multipart/mixed" object, if any.
 	 * Can be used to manually add attachments.
 	 * <p>This will be the direct content of the MimeMessage,
@@ -388,14 +394,10 @@ public class MimeMessageHelper {
 	 * @throws IllegalStateException if this helper is not in multipart mode
 	 * @see #isMultipart
 	 * @see #getMimeMessage
-	 * @see jakarta.mail.internet.MimeMultipart#addBodyPart
+	 * @see javax.mail.internet.MimeMultipart#addBodyPart
 	 */
 	public final MimeMultipart getRootMimeMultipart() throws IllegalStateException {
-		if (this.rootMimeMultipart == null) {
-			throw new IllegalStateException("Not in multipart mode - " +
-					"create an appropriate MimeMessageHelper via a constructor that takes a 'multipart' flag " +
-					"if you need to set alternative texts or add inline elements or attachments.");
-		}
+		checkMultipart();
 		return this.rootMimeMultipart;
 	}
 
@@ -407,14 +409,10 @@ public class MimeMessageHelper {
 	 * @throws IllegalStateException if this helper is not in multipart mode
 	 * @see #isMultipart
 	 * @see #getRootMimeMultipart
-	 * @see jakarta.mail.internet.MimeMultipart#addBodyPart
+	 * @see javax.mail.internet.MimeMultipart#addBodyPart
 	 */
 	public final MimeMultipart getMimeMultipart() throws IllegalStateException {
-		if (this.mimeMultipart == null) {
-			throw new IllegalStateException("Not in multipart mode - " +
-					"create an appropriate MimeMessageHelper via a constructor that takes a 'multipart' flag " +
-					"if you need to set alternative texts or add inline elements or attachments.");
-		}
+		checkMultipart();
 		return this.mimeMultipart;
 	}
 
@@ -425,10 +423,9 @@ public class MimeMessageHelper {
 	 * @return the default encoding associated with the MimeMessage,
 	 * or {@code null} if none found
 	 */
-	@Nullable
 	protected String getDefaultEncoding(MimeMessage mimeMessage) {
-		if (mimeMessage instanceof SmartMimeMessage smartMimeMessage) {
-			return smartMimeMessage.getDefaultEncoding();
+		if (mimeMessage instanceof SmartMimeMessage) {
+			return ((SmartMimeMessage) mimeMessage).getDefaultEncoding();
 		}
 		return null;
 	}
@@ -436,7 +433,6 @@ public class MimeMessageHelper {
 	/**
 	 * Return the specific character encoding used for this message, if any.
 	 */
-	@Nullable
 	public String getEncoding() {
 		return this.encoding;
 	}
@@ -449,8 +445,8 @@ public class MimeMessageHelper {
 	 * @see ConfigurableMimeFileTypeMap
 	 */
 	protected FileTypeMap getDefaultFileTypeMap(MimeMessage mimeMessage) {
-		if (mimeMessage instanceof SmartMimeMessage smartMimeMessage) {
-			FileTypeMap fileTypeMap = smartMimeMessage.getDefaultFileTypeMap();
+		if (mimeMessage instanceof SmartMimeMessage) {
+			FileTypeMap fileTypeMap = ((SmartMimeMessage) mimeMessage).getDefaultFileTypeMap();
 			if (fileTypeMap != null) {
 				return fileTypeMap;
 			}
@@ -464,23 +460,22 @@ public class MimeMessageHelper {
 	 * Set the Java Activation Framework {@code FileTypeMap} to use
 	 * for determining the content type of inline content and attachments
 	 * that get added to the message.
-	 * <p>The default is the {@code FileTypeMap} that the underlying
+	 * <p>Default is the {@code FileTypeMap} that the underlying
 	 * MimeMessage carries, if any, or the Activation Framework's default
 	 * {@code FileTypeMap} instance else.
 	 * @see #addInline
 	 * @see #addAttachment
-	 * @see #getDefaultFileTypeMap(jakarta.mail.internet.MimeMessage)
+	 * @see #getDefaultFileTypeMap(javax.mail.internet.MimeMessage)
 	 * @see JavaMailSenderImpl#setDefaultFileTypeMap
-	 * @see jakarta.activation.FileTypeMap#getDefaultFileTypeMap
+	 * @see javax.activation.FileTypeMap#getDefaultFileTypeMap
 	 * @see ConfigurableMimeFileTypeMap
 	 */
-	public void setFileTypeMap(@Nullable FileTypeMap fileTypeMap) {
+	public void setFileTypeMap(FileTypeMap fileTypeMap) {
 		this.fileTypeMap = (fileTypeMap != null ? fileTypeMap : getDefaultFileTypeMap(getMimeMessage()));
 	}
 
 	/**
 	 * Return the {@code FileTypeMap} used by this MimeMessageHelper.
-	 * @see #setFileTypeMap
 	 */
 	public FileTypeMap getFileTypeMap() {
 		return this.fileTypeMap;
@@ -488,34 +483,11 @@ public class MimeMessageHelper {
 
 
 	/**
-	 * Set whether to encode attachment filenames passed to this helper's
-	 * {@code #addAttachment} methods.
-	 * <p>The default is {@code false} for standard MIME behavior; turn this to
-	 * {@code true} for compatibility with older email clients. On a related note,
-	 * check out JavaMail's {@code mail.mime.encodefilename} system property.
-	 * <p><b>NOTE:</b> The default changed to {@code false} in 5.3, in favor of
-	 * JavaMail's standard {@code mail.mime.encodefilename} system property.
-	 * @since 5.2.9
-	 * @see #addAttachment(String, DataSource)
-	 * @see MimeBodyPart#setFileName(String)
-	 */
-	public void setEncodeFilenames(boolean encodeFilenames) {
-		this.encodeFilenames = encodeFilenames;
-	}
-
-	/**
-	 * Return whether to encode attachment filenames passed to this helper's
-	 * {@code #addAttachment} methods.
-	 * @since 5.2.9
-	 * @see #setEncodeFilenames
-	 */
-	public boolean isEncodeFilenames() {
-		return this.encodeFilenames;
-	}
-
-	/**
 	 * Set whether to validate all addresses which get passed to this helper.
-	 * <p>The default is {@code false}.
+	 * Default is "false".
+	 * <p>Note that this is by default just available for JavaMail >= 1.3.
+	 * You can override the default {@code validateAddress method} for
+	 * validation on older JavaMail versions (or for custom validation).
 	 * @see #validateAddress
 	 */
 	public void setValidateAddresses(boolean validateAddresses) {
@@ -524,7 +496,6 @@ public class MimeMessageHelper {
 
 	/**
 	 * Return whether this helper will validate all addresses passed to it.
-	 * @see #setValidateAddresses
 	 */
 	public boolean isValidateAddresses() {
 		return this.validateAddresses;
@@ -533,12 +504,14 @@ public class MimeMessageHelper {
 	/**
 	 * Validate the given mail address.
 	 * Called by all of MimeMessageHelper's address setters and adders.
-	 * <p>The default implementation invokes {@link InternetAddress#validate()},
+	 * <p>Default implementation invokes {@code InternetAddress.validate()},
 	 * provided that address validation is activated for the helper instance.
+	 * <p>Note that this method will just work on JavaMail >= 1.3. You can override
+	 * it for validation on older JavaMail versions or for custom validation.
 	 * @param address the address to validate
 	 * @throws AddressException if validation failed
 	 * @see #isValidateAddresses()
-	 * @see jakarta.mail.internet.InternetAddress#validate()
+	 * @see javax.mail.internet.InternetAddress#validate()
 	 */
 	protected void validateAddress(InternetAddress address) throws AddressException {
 		if (isValidateAddresses()) {
@@ -548,8 +521,7 @@ public class MimeMessageHelper {
 
 	/**
 	 * Validate all given mail addresses.
-	 * <p>The default implementation simply delegates to {@link #validateAddress}
-	 * for each address.
+	 * Default implementation simply delegates to validateAddress for each address.
 	 * @param addresses the addresses to validate
 	 * @throws AddressException if validation failed
 	 * @see #validateAddress(InternetAddress)
@@ -889,16 +861,16 @@ public class MimeMessageHelper {
 
 	/**
 	 * Add an inline element to the MimeMessage, taking the content from a
-	 * {@code jakarta.activation.DataSource}.
+	 * {@code javax.activation.DataSource}.
 	 * <p>Note that the InputStream returned by the DataSource implementation
 	 * needs to be a <i>fresh one on each call</i>, as JavaMail will invoke
 	 * {@code getInputStream()} multiple times.
 	 * <p><b>NOTE:</b> Invoke {@code addInline} <i>after</i> {@link #setText};
 	 * else, mail readers might not be able to resolve inline references correctly.
 	 * @param contentId the content ID to use. Will end up as "Content-ID" header
-	 * in the body part, surrounded by angle brackets: e.g. "myId" &rarr; "&lt;myId&gt;".
+	 * in the body part, surrounded by angle brackets: e.g. "myId" -> "&lt;myId&gt;".
 	 * Can be referenced in HTML source via src="cid:myId" expressions.
-	 * @param dataSource the {@code jakarta.activation.DataSource} to take
+	 * @param dataSource the {@code javax.activation.DataSource} to take
 	 * the content from, determining the InputStream and the content type
 	 * @throws MessagingException in case of errors
 	 * @see #addInline(String, java.io.File)
@@ -908,8 +880,10 @@ public class MimeMessageHelper {
 		Assert.notNull(contentId, "Content ID must not be null");
 		Assert.notNull(dataSource, "DataSource must not be null");
 		MimeBodyPart mimeBodyPart = new MimeBodyPart();
-		mimeBodyPart.setDisposition(Part.INLINE);
-		mimeBodyPart.setContentID("<" + contentId + ">");
+		mimeBodyPart.setDisposition(MimeBodyPart.INLINE);
+		// We're using setHeader here to remain compatible with JavaMail 1.2,
+		// rather than JavaMail 1.3's setContentID.
+		mimeBodyPart.setHeader(HEADER_CONTENT_ID, "<" + contentId + ">");
 		mimeBodyPart.setDataHandler(new DataHandler(dataSource));
 		getMimeMultipart().addBodyPart(mimeBodyPart);
 	}
@@ -923,13 +897,13 @@ public class MimeMessageHelper {
 	 * <p><b>NOTE:</b> Invoke {@code addInline} <i>after</i> {@link #setText};
 	 * else, mail readers might not be able to resolve inline references correctly.
 	 * @param contentId the content ID to use. Will end up as "Content-ID" header
-	 * in the body part, surrounded by angle brackets: e.g. "myId" &rarr; "&lt;myId&gt;".
+	 * in the body part, surrounded by angle brackets: e.g. "myId" -> "&lt;myId&gt;".
 	 * Can be referenced in HTML source via src="cid:myId" expressions.
 	 * @param file the File resource to take the content from
 	 * @throws MessagingException in case of errors
 	 * @see #setText
 	 * @see #addInline(String, org.springframework.core.io.Resource)
-	 * @see #addInline(String, jakarta.activation.DataSource)
+	 * @see #addInline(String, javax.activation.DataSource)
 	 */
 	public void addInline(String contentId, File file) throws MessagingException {
 		Assert.notNull(file, "File must not be null");
@@ -950,13 +924,13 @@ public class MimeMessageHelper {
 	 * <p><b>NOTE:</b> Invoke {@code addInline} <i>after</i> {@link #setText};
 	 * else, mail readers might not be able to resolve inline references correctly.
 	 * @param contentId the content ID to use. Will end up as "Content-ID" header
-	 * in the body part, surrounded by angle brackets: e.g. "myId" &rarr; "&lt;myId&gt;".
+	 * in the body part, surrounded by angle brackets: e.g. "myId" -> "&lt;myId&gt;".
 	 * Can be referenced in HTML source via src="cid:myId" expressions.
 	 * @param resource the resource to take the content from
 	 * @throws MessagingException in case of errors
 	 * @see #setText
 	 * @see #addInline(String, java.io.File)
-	 * @see #addInline(String, jakarta.activation.DataSource)
+	 * @see #addInline(String, javax.activation.DataSource)
 	 */
 	public void addInline(String contentId, Resource resource) throws MessagingException {
 		Assert.notNull(resource, "Resource must not be null");
@@ -976,7 +950,7 @@ public class MimeMessageHelper {
 	 * <p><b>NOTE:</b> Invoke {@code addInline} <i>after</i> {@code setText};
 	 * else, mail readers might not be able to resolve inline references correctly.
 	 * @param contentId the content ID to use. Will end up as "Content-ID" header
-	 * in the body part, surrounded by angle brackets: e.g. "myId" &rarr; "&lt;myId&gt;".
+	 * in the body part, surrounded by angle brackets: e.g. "myId" -> "&lt;myId&gt;".
 	 * Can be referenced in HTML source via src="cid:myId" expressions.
 	 * @param inputStreamSource the resource to take the content from
 	 * @param contentType the content type to use for the element
@@ -984,13 +958,13 @@ public class MimeMessageHelper {
 	 * @see #setText
 	 * @see #getFileTypeMap
 	 * @see #addInline(String, org.springframework.core.io.Resource)
-	 * @see #addInline(String, jakarta.activation.DataSource)
+	 * @see #addInline(String, javax.activation.DataSource)
 	 */
 	public void addInline(String contentId, InputStreamSource inputStreamSource, String contentType)
 			throws MessagingException {
 
 		Assert.notNull(inputStreamSource, "InputStreamSource must not be null");
-		if (inputStreamSource instanceof Resource resource && resource.isOpen()) {
+		if (inputStreamSource instanceof Resource && ((Resource) inputStreamSource).isOpen()) {
 			throw new IllegalArgumentException(
 					"Passed-in Resource contains an open stream: invalid argument. " +
 					"JavaMail requires an InputStreamSource that creates a fresh stream for every call.");
@@ -1001,13 +975,13 @@ public class MimeMessageHelper {
 
 	/**
 	 * Add an attachment to the MimeMessage, taking the content from a
-	 * {@code jakarta.activation.DataSource}.
+	 * {@code javax.activation.DataSource}.
 	 * <p>Note that the InputStream returned by the DataSource implementation
 	 * needs to be a <i>fresh one on each call</i>, as JavaMail will invoke
 	 * {@code getInputStream()} multiple times.
 	 * @param attachmentFilename the name of the attachment as it will
 	 * appear in the mail (the content type will be determined by this)
-	 * @param dataSource the {@code jakarta.activation.DataSource} to take
+	 * @param dataSource the {@code javax.activation.DataSource} to take
 	 * the content from, determining the InputStream and the content type
 	 * @throws MessagingException in case of errors
 	 * @see #addAttachment(String, org.springframework.core.io.InputStreamSource)
@@ -1018,9 +992,8 @@ public class MimeMessageHelper {
 		Assert.notNull(dataSource, "DataSource must not be null");
 		try {
 			MimeBodyPart mimeBodyPart = new MimeBodyPart();
-			mimeBodyPart.setDisposition(Part.ATTACHMENT);
-			mimeBodyPart.setFileName(isEncodeFilenames() ?
-					MimeUtility.encodeText(attachmentFilename) : attachmentFilename);
+			mimeBodyPart.setDisposition(MimeBodyPart.ATTACHMENT);
+			mimeBodyPart.setFileName(MimeUtility.encodeText(attachmentFilename));
 			mimeBodyPart.setDataHandler(new DataHandler(dataSource));
 			getRootMimeMultipart().addBodyPart(mimeBodyPart);
 		}
@@ -1040,7 +1013,7 @@ public class MimeMessageHelper {
 	 * @param file the File resource to take the content from
 	 * @throws MessagingException in case of errors
 	 * @see #addAttachment(String, org.springframework.core.io.InputStreamSource)
-	 * @see #addAttachment(String, jakarta.activation.DataSource)
+	 * @see #addAttachment(String, javax.activation.DataSource)
 	 */
 	public void addAttachment(String attachmentFilename, File file) throws MessagingException {
 		Assert.notNull(file, "File must not be null");
@@ -1064,7 +1037,7 @@ public class MimeMessageHelper {
 	 * (all of Spring's Resource implementations can be passed in here)
 	 * @throws MessagingException in case of errors
 	 * @see #addAttachment(String, java.io.File)
-	 * @see #addAttachment(String, jakarta.activation.DataSource)
+	 * @see #addAttachment(String, javax.activation.DataSource)
 	 * @see org.springframework.core.io.Resource
 	 */
 	public void addAttachment(String attachmentFilename, InputStreamSource inputStreamSource)
@@ -1087,7 +1060,7 @@ public class MimeMessageHelper {
 	 * @param contentType the content type to use for the element
 	 * @throws MessagingException in case of errors
 	 * @see #addAttachment(String, java.io.File)
-	 * @see #addAttachment(String, jakarta.activation.DataSource)
+	 * @see #addAttachment(String, javax.activation.DataSource)
 	 * @see org.springframework.core.io.Resource
 	 */
 	public void addAttachment(
@@ -1095,7 +1068,7 @@ public class MimeMessageHelper {
 			throws MessagingException {
 
 		Assert.notNull(inputStreamSource, "InputStreamSource must not be null");
-		if (inputStreamSource instanceof Resource resource && resource.isOpen()) {
+		if (inputStreamSource instanceof Resource && ((Resource) inputStreamSource).isOpen()) {
 			throw new IllegalArgumentException(
 					"Passed-in Resource contains an open stream: invalid argument. " +
 					"JavaMail requires an InputStreamSource that creates a fresh stream for every call.");
@@ -1121,7 +1094,7 @@ public class MimeMessageHelper {
 			}
 			@Override
 			public OutputStream getOutputStream() {
-				throw new UnsupportedOperationException("Read-only jakarta.activation.DataSource");
+				throw new UnsupportedOperationException("Read-only javax.activation.DataSource");
 			}
 			@Override
 			public String getContentType() {

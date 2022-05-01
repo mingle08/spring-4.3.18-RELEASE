@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,10 +17,10 @@
 package org.springframework.web.context;
 
 import java.util.Enumeration;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletContextEvent;
-import jakarta.servlet.ServletContextListener;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -54,26 +54,22 @@ public class ContextCleanupListener implements ServletContextListener {
 
 
 	/**
-	 * Find all Spring-internal ServletContext attributes which implement
-	 * {@link DisposableBean} and invoke the destroy method on them.
-	 * @param servletContext the ServletContext to check
-	 * @see DisposableBean#destroy()
+	 * Find all ServletContext attributes which implement {@link DisposableBean}
+	 * and destroy them, removing all affected ServletContext attributes eventually.
+	 * @param sc the ServletContext to check
 	 */
-	static void cleanupAttributes(ServletContext servletContext) {
-		Enumeration<String> attrNames = servletContext.getAttributeNames();
+	static void cleanupAttributes(ServletContext sc) {
+		Enumeration<String> attrNames = sc.getAttributeNames();
 		while (attrNames.hasMoreElements()) {
 			String attrName = attrNames.nextElement();
 			if (attrName.startsWith("org.springframework.")) {
-				Object attrValue = servletContext.getAttribute(attrName);
+				Object attrValue = sc.getAttribute(attrName);
 				if (attrValue instanceof DisposableBean) {
 					try {
 						((DisposableBean) attrValue).destroy();
 					}
 					catch (Throwable ex) {
-						if (logger.isWarnEnabled()) {
-							logger.warn("Invocation of destroy method failed on ServletContext " +
-									"attribute with name '" + attrName + "'", ex);
-						}
+						logger.error("Couldn't invoke destroy method of attribute with name '" + attrName + "'", ex);
 					}
 				}
 			}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,41 +30,34 @@ import org.springframework.transaction.interceptor.TransactionInterceptor;
  * necessary to enable proxy-based annotation-driven transaction management.
  *
  * @author Chris Beams
- * @author Sebastien Deleuze
  * @since 3.1
  * @see EnableTransactionManagement
  * @see TransactionManagementConfigurationSelector
  */
-@Configuration(proxyBeanMethods = false)
-@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+@Configuration
 public class ProxyTransactionManagementConfiguration extends AbstractTransactionManagementConfiguration {
 
 	@Bean(name = TransactionManagementConfigUtils.TRANSACTION_ADVISOR_BEAN_NAME)
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-	public BeanFactoryTransactionAttributeSourceAdvisor transactionAdvisor(
-			TransactionAttributeSource transactionAttributeSource, TransactionInterceptor transactionInterceptor) {
-
+	public BeanFactoryTransactionAttributeSourceAdvisor transactionAdvisor() {
 		BeanFactoryTransactionAttributeSourceAdvisor advisor = new BeanFactoryTransactionAttributeSourceAdvisor();
-		advisor.setTransactionAttributeSource(transactionAttributeSource);
-		advisor.setAdvice(transactionInterceptor);
-		if (this.enableTx != null) {
-			advisor.setOrder(this.enableTx.<Integer>getNumber("order"));
-		}
+		advisor.setTransactionAttributeSource(transactionAttributeSource());
+		advisor.setAdvice(transactionInterceptor());
+		advisor.setOrder(this.enableTx.<Integer>getNumber("order"));
 		return advisor;
 	}
 
 	@Bean
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	public TransactionAttributeSource transactionAttributeSource() {
-		// Accept protected @Transactional methods on CGLIB proxies, as of 6.0.
-		return new AnnotationTransactionAttributeSource(false);
+		return new AnnotationTransactionAttributeSource();
 	}
 
 	@Bean
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-	public TransactionInterceptor transactionInterceptor(TransactionAttributeSource transactionAttributeSource) {
+	public TransactionInterceptor transactionInterceptor() {
 		TransactionInterceptor interceptor = new TransactionInterceptor();
-		interceptor.setTransactionAttributeSource(transactionAttributeSource);
+		interceptor.setTransactionAttributeSource(transactionAttributeSource());
 		if (this.txManager != null) {
 			interceptor.setTransactionManager(this.txManager);
 		}

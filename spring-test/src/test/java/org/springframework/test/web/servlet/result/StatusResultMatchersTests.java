@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,8 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.core.Conventions;
 import org.springframework.http.HttpStatus;
@@ -32,7 +33,7 @@ import org.springframework.test.web.servlet.StubMvcResult;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
-import static org.assertj.core.api.Assertions.fail;
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link StatusResultMatchers}.
@@ -41,14 +42,23 @@ import static org.assertj.core.api.Assertions.fail;
  */
 public class StatusResultMatchersTests {
 
-	private final StatusResultMatchers matchers = new StatusResultMatchers();
+	private StatusResultMatchers matchers;
 
-	private final MockHttpServletRequest request = new MockHttpServletRequest();
+	private MockHttpServletRequest request;
+
+
+	@Before
+	public void setup() {
+		this.matchers = new StatusResultMatchers();
+		this.request = new MockHttpServletRequest();
+	}
 
 
 	@Test
 	public void testHttpStatusCodeResultMatchers() throws Exception {
-		List<AssertionError> failures = new ArrayList<>();
+
+		List<AssertionError> failures = new ArrayList<AssertionError>();
+
 		for (HttpStatus status : HttpStatus.values()) {
 			MockHttpServletResponse response = new MockHttpServletResponse();
 			response.setStatus(status.value());
@@ -67,6 +77,7 @@ public class StatusResultMatchersTests {
 				throw new Exception("Failed to obtain ResultMatcher for status " + status, ex);
 			}
 		}
+
 		if (!failures.isEmpty()) {
 			fail("Failed status codes: " + failures);
 		}

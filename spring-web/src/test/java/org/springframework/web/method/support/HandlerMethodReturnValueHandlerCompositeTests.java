@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,21 +16,22 @@
 
 package org.springframework.web.method.support;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.core.MethodParameter;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * Test fixture with {@link HandlerMethodReturnValueHandlerComposite}.
- *
  * @author Rossen Stoyanchev
  */
 @SuppressWarnings("unused")
@@ -47,13 +48,14 @@ public class HandlerMethodReturnValueHandlerCompositeTests {
 	private MethodParameter stringType;
 
 
-	@BeforeEach
-	public void setup() throws Exception {
+	@Before
+	public void setUp() throws Exception {
+
 		this.integerType = new MethodParameter(getClass().getDeclaredMethod("handleInteger"), -1);
 		this.stringType = new MethodParameter(getClass().getDeclaredMethod("handleString"), -1);
 
 		this.integerHandler = mock(HandlerMethodReturnValueHandler.class);
-		given(this.integerHandler.supportsReturnType(this.integerType)).willReturn(true);
+		when(this.integerHandler.supportsReturnType(this.integerType)).thenReturn(true);
 
 		this.handlers = new HandlerMethodReturnValueHandlerComposite();
 		this.handlers.addHandler(this.integerHandler);
@@ -61,11 +63,10 @@ public class HandlerMethodReturnValueHandlerCompositeTests {
 		mavContainer = new ModelAndViewContainer();
 	}
 
-
 	@Test
 	public void supportsReturnType() throws Exception {
-		assertThat(this.handlers.supportsReturnType(this.integerType)).isTrue();
-		assertThat(this.handlers.supportsReturnType(this.stringType)).isFalse();
+		assertTrue(this.handlers.supportsReturnType(this.integerType));
+		assertFalse(this.handlers.supportsReturnType(this.stringType));
 	}
 
 	@Test
@@ -77,7 +78,7 @@ public class HandlerMethodReturnValueHandlerCompositeTests {
 	@Test
 	public void handleReturnValueWithMultipleHandlers() throws Exception {
 		HandlerMethodReturnValueHandler anotherIntegerHandler = mock(HandlerMethodReturnValueHandler.class);
-		given(anotherIntegerHandler.supportsReturnType(this.integerType)).willReturn(true);
+		when(anotherIntegerHandler.supportsReturnType(this.integerType)).thenReturn(true);
 
 		this.handlers.handleReturnValue(55, this.integerType, this.mavContainer, null);
 
@@ -85,18 +86,21 @@ public class HandlerMethodReturnValueHandlerCompositeTests {
 		verifyNoMoreInteractions(anotherIntegerHandler);
 	}
 
-	@Test  // SPR-13083
+	// SPR-13083
+
+	@Test
 	public void handleReturnValueWithAsyncHandler() throws Exception {
+
 		Promise<Integer> promise = new Promise<>();
 		MethodParameter promiseType = new MethodParameter(getClass().getDeclaredMethod("handlePromise"), -1);
 
 		HandlerMethodReturnValueHandler responseBodyHandler = mock(HandlerMethodReturnValueHandler.class);
-		given(responseBodyHandler.supportsReturnType(promiseType)).willReturn(true);
+		when(responseBodyHandler.supportsReturnType(promiseType)).thenReturn(true);
 		this.handlers.addHandler(responseBodyHandler);
 
 		AsyncHandlerMethodReturnValueHandler promiseHandler = mock(AsyncHandlerMethodReturnValueHandler.class);
-		given(promiseHandler.supportsReturnType(promiseType)).willReturn(true);
-		given(promiseHandler.isAsyncReturnValue(promise, promiseType)).willReturn(true);
+		when(promiseHandler.supportsReturnType(promiseType)).thenReturn(true);
+		when(promiseHandler.isAsyncReturnValue(promise, promiseType)).thenReturn(true);
 		this.handlers.addHandler(promiseHandler);
 
 		this.handlers.handleReturnValue(promise, promiseType, this.mavContainer, null);
@@ -108,10 +112,9 @@ public class HandlerMethodReturnValueHandlerCompositeTests {
 		verifyNoMoreInteractions(responseBodyHandler);
 	}
 
-	@Test
+	@Test(expected=IllegalArgumentException.class)
 	public void noSuitableReturnValueHandler() throws Exception {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				this.handlers.handleReturnValue("value", this.stringType, null, null));
+		this.handlers.handleReturnValue("value", this.stringType, null, null);
 	}
 
 

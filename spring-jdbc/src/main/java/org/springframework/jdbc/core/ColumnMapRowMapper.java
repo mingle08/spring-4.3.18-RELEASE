@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,6 @@ import java.sql.SQLException;
 import java.util.Map;
 
 import org.springframework.jdbc.support.JdbcUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.util.LinkedCaseInsensitiveMap;
 
 /**
@@ -31,12 +30,15 @@ import org.springframework.util.LinkedCaseInsensitiveMap;
  * entry for each column, with the column name as key.
  *
  * <p>The Map implementation to use and the key to use for each column
- * in the column Map can be customized by overriding {@link #createColumnMap}
- * and {@link #getColumnKey}, respectively.
+ * in the column Map can be customized through overriding
+ * {@link #createColumnMap} and {@link #getColumnKey}, respectively.
  *
- * <p><b>Note:</b> By default, {@code ColumnMapRowMapper} will try to build a linked Map
+ * <p><b>Note:</b> By default, ColumnMapRowMapper will try to build a linked Map
  * with case-insensitive keys, to preserve column order as well as allow any
- * casing to be used for column names.
+ * casing to be used for column names. This requires Commons Collections on the
+ * classpath (which will be autodetected). Else, the fallback is a standard linked
+ * HashMap, which will still preserve column order but requires the application
+ * to specify the column names in the same casing as exposed by the driver.
  *
  * @author Juergen Hoeller
  * @since 1.2
@@ -52,7 +54,7 @@ public class ColumnMapRowMapper implements RowMapper<Map<String, Object>> {
 		Map<String, Object> mapOfColumnValues = createColumnMap(columnCount);
 		for (int i = 1; i <= columnCount; i++) {
 			String column = JdbcUtils.lookupColumnName(rsmd, i);
-			mapOfColumnValues.putIfAbsent(getColumnKey(column), getColumnValue(rs, i));
+			mapOfColumnValues.put(getColumnKey(column), getColumnValue(rs, i));
 		}
 		return mapOfColumnValues;
 	}
@@ -66,12 +68,11 @@ public class ColumnMapRowMapper implements RowMapper<Map<String, Object>> {
 	 * @see org.springframework.util.LinkedCaseInsensitiveMap
 	 */
 	protected Map<String, Object> createColumnMap(int columnCount) {
-		return new LinkedCaseInsensitiveMap<>(columnCount);
+		return new LinkedCaseInsensitiveMap<Object>(columnCount);
 	}
 
 	/**
 	 * Determine the key to use for the given column in the column Map.
-	 * <p>By default, the supplied column name will be returned unmodified.
 	 * @param columnName the column name as returned by the ResultSet
 	 * @return the column key to use
 	 * @see java.sql.ResultSetMetaData#getColumnName
@@ -84,13 +85,12 @@ public class ColumnMapRowMapper implements RowMapper<Map<String, Object>> {
 	 * Retrieve a JDBC object value for the specified column.
 	 * <p>The default implementation uses the {@code getObject} method.
 	 * Additionally, this implementation includes a "hack" to get around Oracle
-	 * returning a non standard object for their TIMESTAMP data type.
-	 * @param rs the ResultSet holding the data
-	 * @param index the column index
+	 * returning a non standard object for their TIMESTAMP datatype.
+	 * @param rs is the ResultSet holding the data
+	 * @param index is the column index
 	 * @return the Object returned
 	 * @see org.springframework.jdbc.support.JdbcUtils#getResultSetValue
 	 */
-	@Nullable
 	protected Object getColumnValue(ResultSet rs, int index) throws SQLException {
 		return JdbcUtils.getResultSetValue(rs, index);
 	}

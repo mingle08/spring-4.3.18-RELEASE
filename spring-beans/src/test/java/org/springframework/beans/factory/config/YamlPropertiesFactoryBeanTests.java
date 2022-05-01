@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,18 +19,20 @@ package org.springframework.beans.factory.config;
 import java.util.Map;
 import java.util.Properties;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.DuplicateKeyException;
+import org.yaml.snakeyaml.parser.ParserException;
 import org.yaml.snakeyaml.scanner.ScannerException;
 
-import org.springframework.beans.factory.config.YamlProcessor.MatchStatus;
-import org.springframework.beans.factory.config.YamlProcessor.ResolutionMethod;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+import static org.springframework.beans.factory.config.YamlProcessor.*;
 
 /**
  * Tests for {@link YamlPropertiesFactoryBean}.
@@ -38,78 +40,86 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  * @author Dave Syer
  * @author Juergen Hoeller
  */
-class YamlPropertiesFactoryBeanTests {
+public class YamlPropertiesFactoryBeanTests {
+
+	@Rule
+	public ExpectedException exception = ExpectedException.none();
+
 
 	@Test
-	void loadResource() {
+	public void testLoadResource() {
 		YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
 		factory.setResources(new ByteArrayResource("foo: bar\nspam:\n  foo: baz".getBytes()));
 		Properties properties = factory.getObject();
-		assertThat(properties.getProperty("foo")).isEqualTo("bar");
-		assertThat(properties.getProperty("spam.foo")).isEqualTo("baz");
+		assertThat(properties.getProperty("foo"), equalTo("bar"));
+		assertThat(properties.getProperty("spam.foo"), equalTo("baz"));
 	}
 
 	@Test
-	void badResource() {
+	public void testBadResource() {
 		YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
-		factory.setResources(new ByteArrayResource("foo: bar\ncd\nspam:\n  foo: baz".getBytes()));
-		assertThatExceptionOfType(ScannerException.class)
-			.isThrownBy(factory::getObject)
-			.withMessageContaining("line 3, column 1");
+		factory.setResources(new ByteArrayResource(
+				"foo: bar\ncd\nspam:\n  foo: baz".getBytes()));
+		this.exception.expect(ScannerException.class);
+		this.exception.expectMessage("line 3, column 1");
+		factory.getObject();
 	}
 
 	@Test
-	void loadResourcesWithOverride() {
+	public void testLoadResourcesWithOverride() {
 		YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
 		factory.setResources(
 				new ByteArrayResource("foo: bar\nspam:\n  foo: baz".getBytes()),
 				new ByteArrayResource("foo:\n  bar: spam".getBytes()));
 		Properties properties = factory.getObject();
-		assertThat(properties.getProperty("foo")).isEqualTo("bar");
-		assertThat(properties.getProperty("spam.foo")).isEqualTo("baz");
-		assertThat(properties.getProperty("foo.bar")).isEqualTo("spam");
+		assertThat(properties.getProperty("foo"), equalTo("bar"));
+		assertThat(properties.getProperty("spam.foo"), equalTo("baz"));
+		assertThat(properties.getProperty("foo.bar"), equalTo("spam"));
 	}
 
 	@Test
-	void loadResourcesWithInternalOverride() {
+	public void testLoadResourcesWithInternalOverride() {
 		YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
 		factory.setResources(new ByteArrayResource(
 				"foo: bar\nspam:\n  foo: baz\nfoo: bucket".getBytes()));
-		assertThatExceptionOfType(DuplicateKeyException.class).isThrownBy(factory::getObject);
+		exception.expect(ParserException.class);
+		factory.getObject();
 	}
 
 	@Test
-	void loadResourcesWithNestedInternalOverride() {
+	@Ignore("We can't fail on duplicate keys because the Map is created by the YAML library")
+	public void testLoadResourcesWithNestedInternalOverride() {
 		YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
 		factory.setResources(new ByteArrayResource(
 				"foo:\n  bar: spam\n  foo: baz\nbreak: it\nfoo: bucket".getBytes()));
-		assertThatExceptionOfType(DuplicateKeyException.class).isThrownBy(factory::getObject);
+		Properties properties = factory.getObject();
+		assertThat(properties.getProperty("foo.bar"), equalTo("spam"));
 	}
 
 	@Test
-	void loadResourceWithMultipleDocuments() {
+	public void testLoadResourceWithMultipleDocuments() {
 		YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
 		factory.setResources(new ByteArrayResource(
 				"foo: bar\nspam: baz\n---\nfoo: bag".getBytes()));
 		Properties properties = factory.getObject();
-		assertThat(properties.getProperty("foo")).isEqualTo("bag");
-		assertThat(properties.getProperty("spam")).isEqualTo("baz");
+		assertThat(properties.getProperty("foo"), equalTo("bag"));
+		assertThat(properties.getProperty("spam"), equalTo("baz"));
 	}
 
 	@Test
-	void loadResourceWithSelectedDocuments() {
+	public void testLoadResourceWithSelectedDocuments() {
 		YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
 		factory.setResources(new ByteArrayResource(
 				"foo: bar\nspam: baz\n---\nfoo: bag\nspam: bad".getBytes()));
 		factory.setDocumentMatchers(properties -> ("bag".equals(properties.getProperty("foo")) ?
 				MatchStatus.FOUND : MatchStatus.NOT_FOUND));
 		Properties properties = factory.getObject();
-		assertThat(properties.getProperty("foo")).isEqualTo("bag");
-		assertThat(properties.getProperty("spam")).isEqualTo("bad");
+		assertThat(properties.getProperty("foo"), equalTo("bag"));
+		assertThat(properties.getProperty("spam"), equalTo("bad"));
 	}
 
 	@Test
-	void loadResourceWithDefaultMatch() {
+	public void testLoadResourceWithDefaultMatch() {
 		YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
 		factory.setMatchDefault(true);
 		factory.setResources(new ByteArrayResource(
@@ -122,32 +132,35 @@ class YamlPropertiesFactoryBeanTests {
 					MatchStatus.FOUND : MatchStatus.NOT_FOUND);
 		});
 		Properties properties = factory.getObject();
-		assertThat(properties.getProperty("foo")).isEqualTo("bag");
-		assertThat(properties.getProperty("spam")).isEqualTo("bad");
-		assertThat(properties.getProperty("one")).isEqualTo("two");
+		assertThat(properties.getProperty("foo"), equalTo("bag"));
+		assertThat(properties.getProperty("spam"), equalTo("bad"));
+		assertThat(properties.getProperty("one"), equalTo("two"));
 	}
 
 	@Test
-	void loadResourceWithoutDefaultMatch() {
+	public void testLoadResourceWithoutDefaultMatch() {
 		YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
 		factory.setMatchDefault(false);
 		factory.setResources(new ByteArrayResource(
 				"one: two\n---\nfoo: bar\nspam: baz\n---\nfoo: bag\nspam: bad".getBytes()));
-		factory.setDocumentMatchers(properties -> {
+		factory.setDocumentMatchers(new DocumentMatcher() {
+			@Override
+			public MatchStatus matches(Properties properties) {
 				if (!properties.containsKey("foo")) {
 					return MatchStatus.ABSTAIN;
 				}
 				return ("bag".equals(properties.getProperty("foo")) ?
 						MatchStatus.FOUND : MatchStatus.NOT_FOUND);
+			}
 		});
 		Properties properties = factory.getObject();
-		assertThat(properties.getProperty("foo")).isEqualTo("bag");
-		assertThat(properties.getProperty("spam")).isEqualTo("bad");
-		assertThat(properties.getProperty("one")).isNull();
+		assertThat(properties.getProperty("foo"), equalTo("bag"));
+		assertThat(properties.getProperty("spam"), equalTo("bad"));
+		assertThat(properties.getProperty("one"), nullValue());
 	}
 
 	@Test
-	void loadResourceWithDefaultMatchSkippingMissedMatch() {
+	public void testLoadResourceWithDefaultMatchSkippingMissedMatch() {
 		YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
 		factory.setMatchDefault(true);
 		factory.setResources(new ByteArrayResource(
@@ -160,79 +173,70 @@ class YamlPropertiesFactoryBeanTests {
 					MatchStatus.FOUND : MatchStatus.NOT_FOUND);
 		});
 		Properties properties = factory.getObject();
-		assertThat(properties.getProperty("foo")).isEqualTo("bag");
-		assertThat(properties.getProperty("spam")).isEqualTo("bad");
-		assertThat(properties.getProperty("one")).isEqualTo("two");
+		assertThat(properties.getProperty("foo"), equalTo("bag"));
+		assertThat(properties.getProperty("spam"), equalTo("bad"));
+		assertThat(properties.getProperty("one"), equalTo("two"));
 	}
 
 	@Test
-	void loadNonExistentResource() {
+	public void testLoadNonExistentResource() {
 		YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
 		factory.setResolutionMethod(ResolutionMethod.OVERRIDE_AND_IGNORE);
 		factory.setResources(new ClassPathResource("no-such-file.yml"));
 		Properties properties = factory.getObject();
-		assertThat(properties).isEmpty();
+		assertThat(properties.size(), equalTo(0));
 	}
 
 	@Test
-	void loadNull() {
+	public void testLoadNull() {
 		YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
 		factory.setResources(new ByteArrayResource("foo: bar\nspam:".getBytes()));
 		Properties properties = factory.getObject();
-		assertThat(properties.getProperty("foo")).isEqualTo("bar");
-		assertThat(properties.getProperty("spam")).isEqualTo("");
+		assertThat(properties.getProperty("foo"), equalTo("bar"));
+		assertThat(properties.getProperty("spam"), equalTo(""));
 	}
 
 	@Test
-	void loadEmptyArrayValue() {
-		YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
-		factory.setResources(new ByteArrayResource("a: alpha\ntest: []".getBytes()));
-		Properties properties = factory.getObject();
-		assertThat(properties.getProperty("a")).isEqualTo("alpha");
-		assertThat(properties.getProperty("test")).isEqualTo("");
-	}
-
-	@Test
-	void loadArrayOfString() {
+	public void testLoadArrayOfString() {
 		YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
 		factory.setResources(new ByteArrayResource("foo:\n- bar\n- baz".getBytes()));
 		Properties properties = factory.getObject();
-		assertThat(properties.getProperty("foo[0]")).isEqualTo("bar");
-		assertThat(properties.getProperty("foo[1]")).isEqualTo("baz");
-		assertThat(properties.get("foo")).isNull();
+		assertThat(properties.getProperty("foo[0]"), equalTo("bar"));
+		assertThat(properties.getProperty("foo[1]"), equalTo("baz"));
+		assertThat(properties.get("foo"), is(nullValue()));
 	}
 
 	@Test
-	void loadArrayOfInteger() {
+	public void testLoadArrayOfInteger() {
 		YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
 		factory.setResources(new ByteArrayResource("foo:\n- 1\n- 2".getBytes()));
 		Properties properties = factory.getObject();
-		assertThat(properties.getProperty("foo[0]")).isEqualTo("1");
-		assertThat(properties.getProperty("foo[1]")).isEqualTo("2");
-		assertThat(properties.get("foo")).isNull();
+		assertThat(properties.getProperty("foo[0]"), equalTo("1"));
+		assertThat(properties.getProperty("foo[1]"), equalTo("2"));
+		assertThat(properties.get("foo"), is(nullValue()));
 	}
 
 	@Test
-	void loadArrayOfObject() {
+	public void testLoadArrayOfObject() {
 		YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
 		factory.setResources(new ByteArrayResource(
 				"foo:\n- bar:\n    spam: crap\n- baz\n- one: two\n  three: four".getBytes()
 		));
 		Properties properties = factory.getObject();
-		assertThat(properties.getProperty("foo[0].bar.spam")).isEqualTo("crap");
-		assertThat(properties.getProperty("foo[1]")).isEqualTo("baz");
-		assertThat(properties.getProperty("foo[2].one")).isEqualTo("two");
-		assertThat(properties.getProperty("foo[2].three")).isEqualTo("four");
-		assertThat(properties.get("foo")).isNull();
+		assertThat(properties.getProperty("foo[0].bar.spam"), equalTo("crap"));
+		assertThat(properties.getProperty("foo[1]"), equalTo("baz"));
+		assertThat(properties.getProperty("foo[2].one"), equalTo("two"));
+		assertThat(properties.getProperty("foo[2].three"), equalTo("four"));
+		assertThat(properties.get("foo"), is(nullValue()));
 	}
 
-	@Test
 	@SuppressWarnings("unchecked")
-	void yaml() {
+	@Test
+	public void testYaml() {
 		Yaml yaml = new Yaml();
 		Map<String, ?> map = yaml.loadAs("foo: bar\nspam:\n  foo: baz", Map.class);
-		assertThat(map.get("foo")).isEqualTo("bar");
-		assertThat(((Map<String, Object>) map.get("spam")).get("foo")).isEqualTo("baz");
+		assertThat(map.get("foo"), equalTo("bar"));
+		assertThat(((Map<String, Object>) map.get("spam")).get("foo"), equalTo("baz"));
 	}
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,64 +20,66 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import com.rometools.rome.feed.rss.Channel;
 import com.rometools.rome.feed.rss.Description;
 import com.rometools.rome.feed.rss.Item;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
-import org.springframework.core.testfixture.xml.XmlContent;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
-import org.springframework.web.testfixture.servlet.MockHttpServletResponse;
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.mock.web.test.MockHttpServletResponse;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.custommonkey.xmlunit.XMLAssert.*;
+import static org.custommonkey.xmlunit.XMLUnit.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Arjen Poutsma
  */
 public class RssFeedViewTests {
 
-	private final AbstractRssFeedView view = new MyRssFeedView();
+	private AbstractRssFeedView view;
 
+	@Before
+	public void createView() throws Exception {
+		view = new MyRssFeedView();
+		setIgnoreWhitespace(true);
+	}
 
 	@Test
 	public void render() throws Exception {
 		MockHttpServletRequest request = new MockHttpServletRequest();
 		MockHttpServletResponse response = new MockHttpServletResponse();
 
-		Map<String, String> model = new LinkedHashMap<>();
+		Map<String, String> model = new LinkedHashMap<String, String>();
 		model.put("2", "This is entry 2");
 		model.put("1", "This is entry 1");
 
 		view.render(model, request, response);
-		assertThat(response.getContentType()).as("Invalid content-type").isEqualTo("application/rss+xml");
+		assertEquals("Invalid content-type", "application/rss+xml", response.getContentType());
 		String expected = "<rss version=\"2.0\">" +
-				"<channel><title>Test Feed</title>" +
-				"<link>https://example.com</link>" +
-				"<description>Test feed description</description>" +
+				"<channel><title>Test Feed</title><link>http://example.com</link><description>Test feed description</description>" +
 				"<item><title>2</title><description>This is entry 2</description></item>" +
-				"<item><title>1</title><description>This is entry 1</description></item>" +
-				"</channel></rss>";
-		assertThat(XmlContent.of(response.getContentAsString())).isSimilarToIgnoringWhitespace(expected);
+				"<item><title>1</title><description>This is entry 1</description></item>" + "</channel></rss>";
+		assertXMLEqual(expected, response.getContentAsString());
 	}
 
 
 	private static class MyRssFeedView extends AbstractRssFeedView {
 
 		@Override
-		protected void buildFeedMetadata(Map<String, Object> model, Channel channel, HttpServletRequest request) {
+		protected void buildFeedMetadata(Map model, Channel channel, HttpServletRequest request) {
 			channel.setTitle("Test Feed");
 			channel.setDescription("Test feed description");
-			channel.setLink("https://example.com");
+			channel.setLink("http://example.com");
 		}
 
 		@Override
-		protected List<Item> buildFeedItems(Map<String, Object> model,
-				HttpServletRequest request, HttpServletResponse response) throws Exception {
-
-			List<Item> items = new ArrayList<>();
+		protected List<Item> buildFeedItems(Map<String, Object> model, HttpServletRequest request, HttpServletResponse response) throws Exception {
+			List<Item> items = new ArrayList<Item>();
 			for (String name : model.keySet()) {
 				Item item = new Item();
 				item.setTitle(name);

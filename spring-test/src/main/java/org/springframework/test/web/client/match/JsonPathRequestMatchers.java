@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -61,7 +61,7 @@ public class JsonPathRequestMatchers {
 	 * Evaluate the JSON path expression against the request content and
 	 * assert the resulting value with the given Hamcrest {@link Matcher}.
 	 */
-	public <T> RequestMatcher value(Matcher<? super T> matcher) {
+	public <T> RequestMatcher value(final Matcher<T> matcher) {
 		return new AbstractJsonPathRequestMatcher() {
 			@Override
 			protected void matchInternal(MockClientHttpRequest request) throws IOException, ParseException {
@@ -78,7 +78,7 @@ public class JsonPathRequestMatchers {
 	 * to coerce an integer into a double.
 	 * @since 4.3.3
 	 */
-	public <T> RequestMatcher value(Matcher<? super T> matcher, Class<T> targetType) {
+	public <T> RequestMatcher value(final Matcher<T> matcher, final Class<T> targetType) {
 		return new AbstractJsonPathRequestMatcher() {
 			@Override
 			protected void matchInternal(MockClientHttpRequest request) throws IOException, ParseException {
@@ -92,7 +92,7 @@ public class JsonPathRequestMatchers {
 	 * Evaluate the JSON path expression against the request content and
 	 * assert that the result is equal to the supplied value.
 	 */
-	public RequestMatcher value(Object expectedValue) {
+	public RequestMatcher value(final Object expectedValue) {
 		return new AbstractJsonPathRequestMatcher() {
 			@Override
 			protected void matchInternal(MockClientHttpRequest request) throws IOException, ParseException {
@@ -129,45 +129,6 @@ public class JsonPathRequestMatchers {
 			@Override
 			protected void matchInternal(MockClientHttpRequest request) throws IOException, ParseException {
 				JsonPathRequestMatchers.this.jsonPathHelper.doesNotExist(request.getBodyAsString());
-			}
-		};
-	}
-
-	/**
-	 * Evaluate the JSON path expression against the response content
-	 * and assert that a value, possibly {@code null}, exists.
-	 * <p>If the JSON path expression is not
-	 * {@linkplain JsonPath#isDefinite() definite}, this method asserts
-	 * that the list of values at the given path is not <em>empty</em>.
-	 * @since 5.0.3
-	 * @see #exists()
-	 * @see #isNotEmpty()
-	 */
-	public RequestMatcher hasJsonPath() {
-		return new AbstractJsonPathRequestMatcher() {
-			@Override
-			protected void matchInternal(MockClientHttpRequest request) {
-				JsonPathRequestMatchers.this.jsonPathHelper.hasJsonPath(request.getBodyAsString());
-			}
-		};
-	}
-
-	/**
-	 * Evaluate the JSON path expression against the supplied {@code content}
-	 * and assert that a value, including {@code null} values, does not exist
-	 * at the given path.
-	 * <p>If the JSON path expression is not
-	 * {@linkplain JsonPath#isDefinite() definite}, this method asserts
-	 * that the list of values at the given path is <em>empty</em>.
-	 * @since 5.0.3
-	 * @see #doesNotExist()
-	 * @see #isEmpty()
-	 */
-	public RequestMatcher doesNotHaveJsonPath() {
-		return new AbstractJsonPathRequestMatcher() {
-			@Override
-			protected void matchInternal(MockClientHttpRequest request) {
-				JsonPathRequestMatchers.this.jsonPathHelper.doesNotHaveJsonPath(request.getBodyAsString());
 			}
 		};
 	}
@@ -281,7 +242,7 @@ public class JsonPathRequestMatchers {
 
 
 	/**
-	 * Abstract base class for {@code JsonPath}-based {@link RequestMatcher RequestMatchers}.
+	 * Abstract base class for {@code JsonPath}-based {@link RequestMatcher}s.
 	 * @see #matchInternal
 	 */
 	private abstract static class AbstractJsonPathRequestMatcher implements RequestMatcher {
@@ -293,7 +254,7 @@ public class JsonPathRequestMatchers {
 				matchInternal(mockRequest);
 			}
 			catch (ParseException ex) {
-				throw new AssertionError("Failed to parse JSON request content", ex);
+				throw new AssertionError("Failed to parse JSON request content: " + ex.getMessage());
 			}
 		}
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,13 +18,11 @@ package org.springframework.test.web.client.match;
 
 import java.io.IOException;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.mock.http.client.MockClientHttpRequest;
 
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.hamcrest.Matchers.equalTo;
-
+import static org.hamcrest.CoreMatchers.*;
 
 /**
  * Unit tests for {@link JsonPathRequestMatchers}.
@@ -57,10 +55,9 @@ public class JsonPathRequestMatchersTests {
 	}
 
 
-	@Test
+	@Test(expected = AssertionError.class)
 	public void valueWithMismatch() throws Exception {
-		assertThatExceptionOfType(AssertionError.class).isThrownBy(() ->
-				new JsonPathRequestMatchers("$.str").value("bogus").match(request));
+		new JsonPathRequestMatchers("$.str").value("bogus").match(request);
 	}
 
 	@Test
@@ -83,10 +80,9 @@ public class JsonPathRequestMatchersTests {
 		new JsonPathRequestMatchers("$.num").value(equalTo(5.0f), Float.class).match(request);
 	}
 
-	@Test
+	@Test(expected = AssertionError.class)
 	public void valueWithMatcherAndMismatch() throws Exception {
-		assertThatExceptionOfType(AssertionError.class).isThrownBy(() ->
-				new JsonPathRequestMatchers("$.str").value(equalTo("bogus")).match(request));
+		new JsonPathRequestMatchers("$.str").value(equalTo("bogus")).match(request);
 	}
 
 	@Test
@@ -104,10 +100,9 @@ public class JsonPathRequestMatchersTests {
 		new JsonPathRequestMatchers("$.emptyMap").exists().match(request);
 	}
 
-	@Test
+	@Test(expected = AssertionError.class)
 	public void existsNoMatch() throws Exception {
-		assertThatExceptionOfType(AssertionError.class).isThrownBy(() ->
-				new JsonPathRequestMatchers("$.bogus").exists().match(request));
+		new JsonPathRequestMatchers("$.bogus").exists().match(request);
 	}
 
 	@Test
@@ -115,22 +110,19 @@ public class JsonPathRequestMatchersTests {
 		new JsonPathRequestMatchers("$.bogus").doesNotExist().match(request);
 	}
 
-	@Test
+	@Test(expected = AssertionError.class)
 	public void doesNotExistNoMatch() throws Exception {
-		assertThatExceptionOfType(AssertionError.class).isThrownBy(() ->
-				new JsonPathRequestMatchers("$.str").doesNotExist().match(request));
+		new JsonPathRequestMatchers("$.str").doesNotExist().match(request);
 	}
 
-	@Test
+	@Test(expected = AssertionError.class)
 	public void doesNotExistForAnEmptyArray() throws Exception {
-		assertThatExceptionOfType(AssertionError.class).isThrownBy(() ->
-				new JsonPathRequestMatchers("$.emptyArray").doesNotExist().match(request));
+		new JsonPathRequestMatchers("$.emptyArray").doesNotExist().match(request);
 	}
 
-	@Test
+	@Test(expected = AssertionError.class)
 	public void doesNotExistForAnEmptyMap() throws Exception {
-		assertThatExceptionOfType(AssertionError.class).isThrownBy(() ->
-				new JsonPathRequestMatchers("$.emptyMap").doesNotExist().match(request));
+		new JsonPathRequestMatchers("$.emptyMap").doesNotExist().match(request);
 	}
 
 	@Test
@@ -173,22 +165,19 @@ public class JsonPathRequestMatchersTests {
 		new JsonPathRequestMatchers("$.colorMap").isNotEmpty().match(request);
 	}
 
-	@Test
+	@Test(expected = AssertionError.class)
 	public void isNotEmptyForAnEmptyString() throws Exception {
-		assertThatExceptionOfType(AssertionError.class).isThrownBy(() ->
-				new JsonPathRequestMatchers("$.emptyString").isNotEmpty().match(request));
+		new JsonPathRequestMatchers("$.emptyString").isNotEmpty().match(request);
 	}
 
-	@Test
+	@Test(expected = AssertionError.class)
 	public void isNotEmptyForAnEmptyArray() throws Exception {
-		assertThatExceptionOfType(AssertionError.class).isThrownBy(() ->
-				new JsonPathRequestMatchers("$.emptyArray").isNotEmpty().match(request));
+		new JsonPathRequestMatchers("$.emptyArray").isNotEmpty().match(request);
 	}
 
-	@Test
+	@Test(expected = AssertionError.class)
 	public void isNotEmptyForAnEmptyMap() throws Exception {
-		assertThatExceptionOfType(AssertionError.class).isThrownBy(() ->
-				new JsonPathRequestMatchers("$.emptyMap").isNotEmpty().match(request));
+		new JsonPathRequestMatchers("$.emptyMap").isNotEmpty().match(request);
 	}
 
 	@Test
@@ -201,10 +190,9 @@ public class JsonPathRequestMatchersTests {
 		new JsonPathRequestMatchers("$.emptyArray").isArray().match(request);
 	}
 
-	@Test
+	@Test(expected = AssertionError.class)
 	public void isArrayNoMatch() throws Exception {
-		assertThatExceptionOfType(AssertionError.class).isThrownBy(() ->
-				new JsonPathRequestMatchers("$.str").isArray().match(request));
+		new JsonPathRequestMatchers("$.str").isArray().match(request);
 	}
 
 	@Test
@@ -217,10 +205,9 @@ public class JsonPathRequestMatchersTests {
 		new JsonPathRequestMatchers("$.emptyMap").isMap().match(request);
 	}
 
-	@Test
+	@Test(expected = AssertionError.class)
 	public void isMapNoMatch() throws Exception {
-		assertThatExceptionOfType(AssertionError.class).isThrownBy(() ->
-				new JsonPathRequestMatchers("$.str").isMap().match(request));
+		new JsonPathRequestMatchers("$.str").isMap().match(request);
 	}
 
 	@Test
@@ -228,10 +215,9 @@ public class JsonPathRequestMatchersTests {
 		new JsonPathRequestMatchers("$.bool").isBoolean().match(request);
 	}
 
-	@Test
+	@Test(expected = AssertionError.class)
 	public void isBooleanNoMatch() throws Exception {
-		assertThatExceptionOfType(AssertionError.class).isThrownBy(() ->
-				new JsonPathRequestMatchers("$.str").isBoolean().match(request));
+		new JsonPathRequestMatchers("$.str").isBoolean().match(request);
 	}
 
 	@Test
@@ -239,10 +225,9 @@ public class JsonPathRequestMatchersTests {
 		new JsonPathRequestMatchers("$.num").isNumber().match(request);
 	}
 
-	@Test
+	@Test(expected = AssertionError.class)
 	public void isNumberNoMatch() throws Exception {
-		assertThatExceptionOfType(AssertionError.class).isThrownBy(() ->
-				new JsonPathRequestMatchers("$.str").isNumber().match(request));
+		new JsonPathRequestMatchers("$.str").isNumber().match(request);
 	}
 
 	@Test
@@ -250,10 +235,9 @@ public class JsonPathRequestMatchersTests {
 		new JsonPathRequestMatchers("$.str").isString().match(request);
 	}
 
-	@Test
+	@Test(expected = AssertionError.class)
 	public void isStringNoMatch() throws Exception {
-		assertThatExceptionOfType(AssertionError.class).isThrownBy(() ->
-				new JsonPathRequestMatchers("$.arr").isString().match(request));
+		new JsonPathRequestMatchers("$.arr").isString().match(request);
 	}
 
 }

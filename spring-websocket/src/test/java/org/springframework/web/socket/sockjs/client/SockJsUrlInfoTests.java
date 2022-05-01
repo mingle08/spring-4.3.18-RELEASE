@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,65 +18,71 @@ package org.springframework.web.socket.sockjs.client;
 
 import java.net.URI;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.Assert;
+import org.junit.Test;
 
 import org.springframework.web.socket.sockjs.transport.TransportType;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@code SockJsUrlInfo}.
- *
  * @author Rossen Stoyanchev
- * @author Sam Brannen
  */
-class SockJsUrlInfoTests {
+public class SockJsUrlInfoTests {
+
 
 	@Test
-	void serverId() throws Exception {
-		SockJsUrlInfo info = new SockJsUrlInfo(new URI("https://example.com"));
-		int serverId = Integer.parseInt(info.getServerId());
-		assertThat(serverId).isGreaterThanOrEqualTo(0).isLessThan(1000);
+	public void serverId() throws Exception {
+		SockJsUrlInfo info = new SockJsUrlInfo(new URI("http://example.com"));
+		int serverId = Integer.valueOf(info.getServerId());
+		assertTrue("Invalid serverId: " + serverId, serverId >= 0 && serverId < 1000);
 	}
 
 	@Test
-	void sessionId() throws Exception {
-		SockJsUrlInfo info = new SockJsUrlInfo(new URI("https://example.com"));
-		assertThat(info.getSessionId()).as("Invalid sessionId: " + info.getSessionId()).hasSize(32);
+	public void sessionId() throws Exception {
+		SockJsUrlInfo info = new SockJsUrlInfo(new URI("http://example.com"));
+		assertEquals("Invalid sessionId: " + info.getSessionId(), 32, info.getSessionId().length());
 	}
 
-	@ParameterizedTest
-	@CsvSource(textBlock = """
-		http, http
-		https, https
-		ws, http
-		wss, https
-	""")
-	void infoUrl(String scheme, String expectedScheme) throws Exception {
+	@Test
+	public void infoUrl() throws Exception {
+		testInfoUrl("http", "http");
+		testInfoUrl("http", "http");
+		testInfoUrl("https", "https");
+		testInfoUrl("https", "https");
+		testInfoUrl("ws", "http");
+		testInfoUrl("ws", "http");
+		testInfoUrl("wss", "https");
+		testInfoUrl("wss", "https");
+	}
+
+	private void testInfoUrl(String scheme, String expectedScheme) throws Exception {
 		SockJsUrlInfo info = new SockJsUrlInfo(new URI(scheme + "://example.com"));
-		assertThat(info.getInfoUrl()).isEqualTo(new URI(expectedScheme + "://example.com/info"));
+		Assert.assertThat(info.getInfoUrl(), is(equalTo(new URI(expectedScheme + "://example.com/info"))));
 	}
 
-	@ParameterizedTest
-	@CsvSource(textBlock = """
-		http, http, XHR_STREAMING
-		http, ws, WEBSOCKET
-		https, https, XHR_STREAMING
-		https, wss, WEBSOCKET
-		ws, http, XHR_STREAMING
-		ws, ws, WEBSOCKET
-		wss, https, XHR_STREAMING
-		wss, wss, WEBSOCKET
-	""")
-	void transportUrl(String scheme, String expectedScheme, TransportType transportType) throws Exception {
+	@Test
+	public void transportUrl() throws Exception {
+		testTransportUrl("http", "http", TransportType.XHR_STREAMING);
+		testTransportUrl("http", "ws", TransportType.WEBSOCKET);
+		testTransportUrl("https", "https", TransportType.XHR_STREAMING);
+		testTransportUrl("https", "wss", TransportType.WEBSOCKET);
+		testTransportUrl("ws", "http", TransportType.XHR_STREAMING);
+		testTransportUrl("ws", "ws", TransportType.WEBSOCKET);
+		testTransportUrl("wss", "https", TransportType.XHR_STREAMING);
+		testTransportUrl("wss", "wss", TransportType.WEBSOCKET);
+	}
+
+	private void testTransportUrl(String scheme, String expectedScheme, TransportType transportType) throws Exception {
 		SockJsUrlInfo info = new SockJsUrlInfo(new URI(scheme + "://example.com"));
 		String serverId = info.getServerId();
 		String sessionId = info.getSessionId();
 		String transport = transportType.toString().toLowerCase();
 		URI expected = new URI(expectedScheme + "://example.com/" + serverId + "/" + sessionId + "/" + transport);
-		assertThat(info.getTransportUrl(transportType)).isEqualTo(expected);
+		assertThat(info.getTransportUrl(transportType), equalTo(expected));
 	}
 
 }

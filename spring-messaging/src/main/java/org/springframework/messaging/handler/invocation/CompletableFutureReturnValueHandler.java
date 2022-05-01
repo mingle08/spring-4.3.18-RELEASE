@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.springframework.core.MethodParameter;
+import org.springframework.lang.UsesJava8;
 import org.springframework.util.concurrent.CompletableToListenableFutureAdapter;
 import org.springframework.util.concurrent.ListenableFuture;
 
@@ -31,6 +32,7 @@ import org.springframework.util.concurrent.ListenableFuture;
  * @author Juergen Hoeller
  * @since 4.2
  */
+@UsesJava8
 public class CompletableFutureReturnValueHandler extends AbstractAsyncReturnValueHandler {
 
 	@Override
@@ -41,7 +43,7 @@ public class CompletableFutureReturnValueHandler extends AbstractAsyncReturnValu
 	@Override
 	@SuppressWarnings("unchecked")
 	public ListenableFuture<?> toListenableFuture(Object returnValue, MethodParameter returnType) {
-		return new CompletableToListenableFutureAdapter<>((CompletionStage<Object>) returnValue);
+		return new CompletableToListenableFutureAdapter<Object>((CompletionStage<Object>) returnValue);
 	}
 
 }

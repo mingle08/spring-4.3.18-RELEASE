@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,13 +16,11 @@
 
 package org.springframework.web.util;
 
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
+import java.io.UnsupportedEncodingException;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.*;
 
 /**
  * @author Arjen Poutsma
@@ -31,109 +29,101 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  */
 public class UriUtilsTests {
 
-	private static final Charset CHARSET = StandardCharsets.UTF_8;
+	private static final String ENC = "UTF-8";
 
 
 	@Test
-	public void encodeScheme() {
-		assertThat(UriUtils.encodeScheme("foobar+-.", CHARSET)).as("Invalid encoded result").isEqualTo("foobar+-.");
-		assertThat(UriUtils.encodeScheme("foo bar", CHARSET)).as("Invalid encoded result").isEqualTo("foo%20bar");
+	public void encodeScheme() throws UnsupportedEncodingException {
+		assertEquals("Invalid encoded result", "foobar+-.", UriUtils.encodeScheme("foobar+-.", ENC));
+		assertEquals("Invalid encoded result", "foo%20bar", UriUtils.encodeScheme("foo bar", ENC));
 	}
 
 	@Test
-	public void encodeUserInfo() {
-		assertThat(UriUtils.encodeUserInfo("foobar:", CHARSET)).as("Invalid encoded result").isEqualTo("foobar:");
-		assertThat(UriUtils.encodeUserInfo("foo bar", CHARSET)).as("Invalid encoded result").isEqualTo("foo%20bar");
+	public void encodeUserInfo() throws UnsupportedEncodingException {
+		assertEquals("Invalid encoded result", "foobar:", UriUtils.encodeUserInfo("foobar:", ENC));
+		assertEquals("Invalid encoded result", "foo%20bar", UriUtils.encodeUserInfo("foo bar", ENC));
 	}
 
 	@Test
-	public void encodeHost() {
-		assertThat(UriUtils.encodeHost("foobar", CHARSET)).as("Invalid encoded result").isEqualTo("foobar");
-		assertThat(UriUtils.encodeHost("foo bar", CHARSET)).as("Invalid encoded result").isEqualTo("foo%20bar");
+	public void encodeHost() throws UnsupportedEncodingException {
+		assertEquals("Invalid encoded result", "foobar", UriUtils.encodeHost("foobar", ENC));
+		assertEquals("Invalid encoded result", "foo%20bar", UriUtils.encodeHost("foo bar", ENC));
 	}
 
 	@Test
-	public void encodePort() {
-		assertThat(UriUtils.encodePort("80", CHARSET)).as("Invalid encoded result").isEqualTo("80");
+	public void encodePort() throws UnsupportedEncodingException {
+		assertEquals("Invalid encoded result", "80", UriUtils.encodePort("80", ENC));
 	}
 
 	@Test
-	public void encodePath() {
-		assertThat(UriUtils.encodePath("/foo/bar", CHARSET)).as("Invalid encoded result").isEqualTo("/foo/bar");
-		assertThat(UriUtils.encodePath("/foo bar", CHARSET)).as("Invalid encoded result").isEqualTo("/foo%20bar");
-		assertThat(UriUtils.encodePath("/Z\u00fcrich", CHARSET)).as("Invalid encoded result").isEqualTo("/Z%C3%BCrich");
+	public void encodePath() throws UnsupportedEncodingException {
+		assertEquals("Invalid encoded result", "/foo/bar", UriUtils.encodePath("/foo/bar", ENC));
+		assertEquals("Invalid encoded result", "/foo%20bar", UriUtils.encodePath("/foo bar", ENC));
+		assertEquals("Invalid encoded result", "/Z%C3%BCrich", UriUtils.encodePath("/Z\u00fcrich", ENC));
 	}
 
 	@Test
-	public void encodePathSegment() {
-		assertThat(UriUtils.encodePathSegment("foobar", CHARSET)).as("Invalid encoded result").isEqualTo("foobar");
-		assertThat(UriUtils.encodePathSegment("/foo/bar", CHARSET)).as("Invalid encoded result").isEqualTo("%2Ffoo%2Fbar");
+	public void encodePathSegment() throws UnsupportedEncodingException {
+		assertEquals("Invalid encoded result", "foobar", UriUtils.encodePathSegment("foobar", ENC));
+		assertEquals("Invalid encoded result", "%2Ffoo%2Fbar", UriUtils.encodePathSegment("/foo/bar", ENC));
 	}
 
 	@Test
-	public void encodeQuery() {
-		assertThat(UriUtils.encodeQuery("foobar", CHARSET)).as("Invalid encoded result").isEqualTo("foobar");
-		assertThat(UriUtils.encodeQuery("foo bar", CHARSET)).as("Invalid encoded result").isEqualTo("foo%20bar");
-		assertThat(UriUtils.encodeQuery("foobar/+", CHARSET)).as("Invalid encoded result").isEqualTo("foobar/+");
-		assertThat(UriUtils.encodeQuery("T\u014dky\u014d", CHARSET)).as("Invalid encoded result").isEqualTo("T%C5%8Dky%C5%8D");
+	public void encodeQuery() throws UnsupportedEncodingException {
+		assertEquals("Invalid encoded result", "foobar", UriUtils.encodeQuery("foobar", ENC));
+		assertEquals("Invalid encoded result", "foo%20bar", UriUtils.encodeQuery("foo bar", ENC));
+		assertEquals("Invalid encoded result", "foobar/+", UriUtils.encodeQuery("foobar/+", ENC));
+		assertEquals("Invalid encoded result", "T%C5%8Dky%C5%8D", UriUtils.encodeQuery("T\u014dky\u014d", ENC));
 	}
 
 	@Test
-	public void encodeQueryParam() {
-		assertThat(UriUtils.encodeQueryParam("foobar", CHARSET)).as("Invalid encoded result").isEqualTo("foobar");
-		assertThat(UriUtils.encodeQueryParam("foo bar", CHARSET)).as("Invalid encoded result").isEqualTo("foo%20bar");
-		assertThat(UriUtils.encodeQueryParam("foo&bar", CHARSET)).as("Invalid encoded result").isEqualTo("foo%26bar");
+	public void encodeQueryParam() throws UnsupportedEncodingException {
+		assertEquals("Invalid encoded result", "foobar", UriUtils.encodeQueryParam("foobar", ENC));
+		assertEquals("Invalid encoded result", "foo%20bar", UriUtils.encodeQueryParam("foo bar", ENC));
+		assertEquals("Invalid encoded result", "foo%26bar", UriUtils.encodeQueryParam("foo&bar", ENC));
 	}
 
 	@Test
-	public void encodeFragment() {
-		assertThat(UriUtils.encodeFragment("foobar", CHARSET)).as("Invalid encoded result").isEqualTo("foobar");
-		assertThat(UriUtils.encodeFragment("foo bar", CHARSET)).as("Invalid encoded result").isEqualTo("foo%20bar");
-		assertThat(UriUtils.encodeFragment("foobar/", CHARSET)).as("Invalid encoded result").isEqualTo("foobar/");
+	public void encodeFragment() throws UnsupportedEncodingException {
+		assertEquals("Invalid encoded result", "foobar", UriUtils.encodeFragment("foobar", ENC));
+		assertEquals("Invalid encoded result", "foo%20bar", UriUtils.encodeFragment("foo bar", ENC));
+		assertEquals("Invalid encoded result", "foobar/", UriUtils.encodeFragment("foobar/", ENC));
 	}
 
 	@Test
-	public void encode() {
-		assertThat(UriUtils.encode("foo", CHARSET)).as("Invalid encoded result").isEqualTo("foo");
-		assertThat(UriUtils.encode("https://example.com/foo bar", CHARSET)).as("Invalid encoded result").isEqualTo("https%3A%2F%2Fexample.com%2Ffoo%20bar");
+	public void decode() throws UnsupportedEncodingException {
+		assertEquals("Invalid encoded URI", "", UriUtils.decode("", ENC));
+		assertEquals("Invalid encoded URI", "foobar", UriUtils.decode("foobar", ENC));
+		assertEquals("Invalid encoded URI", "foo bar", UriUtils.decode("foo%20bar", ENC));
+		assertEquals("Invalid encoded URI", "foo+bar", UriUtils.decode("foo%2bbar", ENC));
+		assertEquals("Invalid encoded result", "T\u014dky\u014d", UriUtils.decode("T%C5%8Dky%C5%8D", ENC));
+		assertEquals("Invalid encoded result", "/Z\u00fcrich", UriUtils.decode("/Z%C3%BCrich", ENC));
+		assertEquals("Invalid encoded result", "T\u014dky\u014d", UriUtils.decode("T\u014dky\u014d", ENC));
 	}
 
-	@Test
-	public void decode() {
-		assertThat(UriUtils.decode("", CHARSET)).as("Invalid encoded URI").isEqualTo("");
-		assertThat(UriUtils.decode("foobar", CHARSET)).as("Invalid encoded URI").isEqualTo("foobar");
-		assertThat(UriUtils.decode("foo%20bar", CHARSET)).as("Invalid encoded URI").isEqualTo("foo bar");
-		assertThat(UriUtils.decode("foo%2bbar", CHARSET)).as("Invalid encoded URI").isEqualTo("foo+bar");
-		assertThat(UriUtils.decode("T%C5%8Dky%C5%8D", CHARSET)).as("Invalid encoded result").isEqualTo("T\u014dky\u014d");
-		assertThat(UriUtils.decode("/Z%C3%BCrich", CHARSET)).as("Invalid encoded result").isEqualTo("/Z\u00fcrich");
-		assertThat(UriUtils.decode("T\u014dky\u014d", CHARSET)).as("Invalid encoded result").isEqualTo("T\u014dky\u014d");
-	}
-
-	@Test
-	public void decodeInvalidSequence() {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				UriUtils.decode("foo%2", CHARSET));
+	@Test(expected = IllegalArgumentException.class)
+	public void decodeInvalidSequence() throws UnsupportedEncodingException {
+		UriUtils.decode("foo%2", ENC);
 	}
 
 	@Test
 	public void extractFileExtension() {
-		assertThat(UriUtils.extractFileExtension("index.html")).isEqualTo("html");
-		assertThat(UriUtils.extractFileExtension("/index.html")).isEqualTo("html");
-		assertThat(UriUtils.extractFileExtension("/products/view.html")).isEqualTo("html");
-		assertThat(UriUtils.extractFileExtension("/products/view.html#/a")).isEqualTo("html");
-		assertThat(UriUtils.extractFileExtension("/products/view.html#/path/a")).isEqualTo("html");
-		assertThat(UriUtils.extractFileExtension("/products/view.html#/path/a.do")).isEqualTo("html");
-		assertThat(UriUtils.extractFileExtension("/products/view.html#aaa?bbb")).isEqualTo("html");
-		assertThat(UriUtils.extractFileExtension("/products/view.html#aaa.xml?bbb")).isEqualTo("html");
-		assertThat(UriUtils.extractFileExtension("/products/view.html?param=a")).isEqualTo("html");
-		assertThat(UriUtils.extractFileExtension("/products/view.html?param=/path/a")).isEqualTo("html");
-		assertThat(UriUtils.extractFileExtension("/products/view.html?param=/path/a.do")).isEqualTo("html");
-		assertThat(UriUtils.extractFileExtension("/products/view.html?param=/path/a#/path/a")).isEqualTo("html");
-		assertThat(UriUtils.extractFileExtension("/products/view.html?param=/path/a.do#/path/a.do")).isEqualTo("html");
-		assertThat(UriUtils.extractFileExtension("/products;q=11/view.html?param=/path/a.do")).isEqualTo("html");
-		assertThat(UriUtils.extractFileExtension("/products;q=11/view.html;r=22?param=/path/a.do")).isEqualTo("html");
-		assertThat(UriUtils.extractFileExtension("/products;q=11/view.html;r=22;s=33?param=/path/a.do")).isEqualTo("html");
-		assertThat(UriUtils.extractFileExtension("/products/.html")).isEqualTo("html");
+		assertEquals("html", UriUtils.extractFileExtension("index.html"));
+		assertEquals("html", UriUtils.extractFileExtension("/index.html"));
+		assertEquals("html", UriUtils.extractFileExtension("/products/view.html"));
+		assertEquals("html", UriUtils.extractFileExtension("/products/view.html#/a"));
+		assertEquals("html", UriUtils.extractFileExtension("/products/view.html#/path/a"));
+		assertEquals("html", UriUtils.extractFileExtension("/products/view.html#/path/a.do"));
+		assertEquals("html", UriUtils.extractFileExtension("/products/view.html#aaa?bbb"));
+		assertEquals("html", UriUtils.extractFileExtension("/products/view.html#aaa.xml?bbb"));
+		assertEquals("html", UriUtils.extractFileExtension("/products/view.html?param=a"));
+		assertEquals("html", UriUtils.extractFileExtension("/products/view.html?param=/path/a"));
+		assertEquals("html", UriUtils.extractFileExtension("/products/view.html?param=/path/a.do"));
+		assertEquals("html", UriUtils.extractFileExtension("/products/view.html?param=/path/a#/path/a"));
+		assertEquals("html", UriUtils.extractFileExtension("/products/view.html?param=/path/a.do#/path/a.do"));
+		assertEquals("html", UriUtils.extractFileExtension("/products;q=11/view.html?param=/path/a.do"));
+		assertEquals("html", UriUtils.extractFileExtension("/products;q=11/view.html;r=22?param=/path/a.do"));
+		assertEquals("html", UriUtils.extractFileExtension("/products;q=11/view.html;r=22;s=33?param=/path/a.do"));
 	}
 
 }

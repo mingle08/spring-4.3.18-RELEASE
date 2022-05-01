@@ -3,8 +3,8 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:mvc="http://www.springframework.org/schema/mvc"
 	xsi:schemaLocation="
-	   	http://www.springframework.org/schema/mvc https://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
-		http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans-4.3.xsd">
+	   	http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd">
 
 	<!--
 		View resolution finds the ContentNegotiationManager created by or
@@ -21,14 +21,22 @@
 		</mvc:content-negotiation>
 		<mvc:bean-name/>
 		<mvc:jsp/>
+		<mvc:tiles/>
 		<mvc:freemarker/>
+		<mvc:velocity/>
 		<mvc:groovy/>
 		<mvc:script-template/>
 	</mvc:view-resolvers>
 
+	<mvc:tiles-configurer check-refresh="true">
+		<mvc:definitions location="/org/springframework/web/servlet/resource/tiles/tiles1.xml"/>
+	</mvc:tiles-configurer>
+
 	<mvc:freemarker-configurer>
 		<mvc:template-loader-path location="/org/springframework/web/servlet/view"/>
 	</mvc:freemarker-configurer>
+
+	<mvc:velocity-configurer resource-loader-path="/org/springframework/web/servlet/view"/>
 
 	<mvc:groovy-configurer/>
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,27 +17,25 @@
 package org.springframework.web.servlet.mvc;
 
 import java.util.Properties;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.Servlet;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.Servlet;
-import jakarta.servlet.ServletConfig;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.mock.web.test.MockHttpServletResponse;
 import org.springframework.web.context.support.StaticWebApplicationContext;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
-import org.springframework.web.testfixture.servlet.MockHttpServletResponse;
 import org.springframework.web.util.WebUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Rod Johnson
@@ -52,9 +50,9 @@ public class ControllerTests {
 		pvc.setViewName(viewName);
 		// We don't care about the params.
 		ModelAndView mv = pvc.handleRequest(new MockHttpServletRequest("GET", "foo.html"), new MockHttpServletResponse());
-		assertThat(mv.getModel().size() == 0).as("model has no data").isTrue();
-		assertThat(mv.getViewName().equals(viewName)).as("model has correct viewname").isTrue();
-		assertThat(pvc.getViewName().equals(viewName)).as("getViewName matches").isTrue();
+		assertTrue("model has no data", mv.getModel().size() == 0);
+		assertTrue("model has correct viewname", mv.getViewName().equals(viewName));
+		assertTrue("getViewName matches", pvc.getViewName().equals(viewName));
 	}
 
 	@Test
@@ -98,7 +96,7 @@ public class ControllerTests {
 		StaticWebApplicationContext sac = new StaticWebApplicationContext();
 		sac.setServletContext(context);
 		sfc.setApplicationContext(sac);
-		assertThat(sfc.handleRequest(request, response)).isNull();
+		assertNull(sfc.handleRequest(request, response));
 
 		if (include) {
 			verify(dispatcher).include(request, response);
@@ -121,19 +119,19 @@ public class ControllerTests {
 		swc.setInitParameters(props);
 
 		swc.afterPropertiesSet();
-		assertThat(TestServlet.config).isNotNull();
-		assertThat(TestServlet.config.getServletName()).isEqualTo("action");
-		assertThat(TestServlet.config.getInitParameter("config")).isEqualTo("myValue");
-		assertThat(TestServlet.request).isNull();
-		assertThat(TestServlet.destroyed).isFalse();
+		assertNotNull(TestServlet.config);
+		assertEquals("action", TestServlet.config.getServletName());
+		assertEquals("myValue", TestServlet.config.getInitParameter("config"));
+		assertNull(TestServlet.request);
+		assertFalse(TestServlet.destroyed);
 
-		assertThat(swc.handleRequest(request, response)).isNull();
-		assertThat(TestServlet.request).isEqualTo(request);
-		assertThat(TestServlet.response).isEqualTo(response);
-		assertThat(TestServlet.destroyed).isFalse();
+		assertNull(swc.handleRequest(request, response));
+		assertEquals(request, TestServlet.request);
+		assertEquals(response, TestServlet.response);
+		assertFalse(TestServlet.destroyed);
 
 		swc.destroy();
-		assertThat(TestServlet.destroyed).isTrue();
+		assertTrue(TestServlet.destroyed);
 	}
 
 	@Test
@@ -146,18 +144,18 @@ public class ControllerTests {
 		swc.setBeanName("action");
 
 		swc.afterPropertiesSet();
-		assertThat(TestServlet.config).isNotNull();
-		assertThat(TestServlet.config.getServletName()).isEqualTo("action");
-		assertThat(TestServlet.request).isNull();
-		assertThat(TestServlet.destroyed).isFalse();
+		assertNotNull(TestServlet.config);
+		assertEquals("action", TestServlet.config.getServletName());
+		assertNull(TestServlet.request);
+		assertFalse(TestServlet.destroyed);
 
-		assertThat(swc.handleRequest(request, response)).isNull();
-		assertThat(TestServlet.request).isEqualTo(request);
-		assertThat(TestServlet.response).isEqualTo(response);
-		assertThat(TestServlet.destroyed).isFalse();
+		assertNull(swc.handleRequest(request, response));
+		assertEquals(request, TestServlet.request);
+		assertEquals(response, TestServlet.response);
+		assertFalse(TestServlet.destroyed);
 
 		swc.destroy();
-		assertThat(TestServlet.destroyed).isTrue();
+		assertTrue(TestServlet.destroyed);
 	}
 
 

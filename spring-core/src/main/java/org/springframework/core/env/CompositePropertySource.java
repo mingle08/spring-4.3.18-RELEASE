@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,7 +23,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 /**
@@ -42,7 +41,7 @@ import org.springframework.util.StringUtils;
  */
 public class CompositePropertySource extends EnumerablePropertySource<Object> {
 
-	private final Set<PropertySource<?>> propertySources = new LinkedHashSet<>();
+	private final Set<PropertySource<?>> propertySources = new LinkedHashSet<PropertySource<?>>();
 
 
 	/**
@@ -55,7 +54,6 @@ public class CompositePropertySource extends EnumerablePropertySource<Object> {
 
 
 	@Override
-	@Nullable
 	public Object getProperty(String name) {
 		for (PropertySource<?> propertySource : this.propertySources) {
 			Object candidate = propertySource.getProperty(name);
@@ -78,7 +76,7 @@ public class CompositePropertySource extends EnumerablePropertySource<Object> {
 
 	@Override
 	public String[] getPropertyNames() {
-		Set<String> names = new LinkedHashSet<>();
+		Set<String> names = new LinkedHashSet<String>();
 		for (PropertySource<?> propertySource : this.propertySources) {
 			if (!(propertySource instanceof EnumerablePropertySource)) {
 				throw new IllegalStateException(
@@ -104,7 +102,7 @@ public class CompositePropertySource extends EnumerablePropertySource<Object> {
 	 * @since 4.1
 	 */
 	public void addFirstPropertySource(PropertySource<?> propertySource) {
-		List<PropertySource<?>> existing = new ArrayList<>(this.propertySources);
+		List<PropertySource<?>> existing = new ArrayList<PropertySource<?>>(this.propertySources);
 		this.propertySources.clear();
 		this.propertySources.add(propertySource);
 		this.propertySources.addAll(existing);
@@ -121,7 +119,8 @@ public class CompositePropertySource extends EnumerablePropertySource<Object> {
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + " {name='" + this.name + "', propertySources=" + this.propertySources + "}";
+		return String.format("%s [name='%s', propertySources=%s]",
+				getClass().getSimpleName(), this.name, this.propertySources);
 	}
 
 }

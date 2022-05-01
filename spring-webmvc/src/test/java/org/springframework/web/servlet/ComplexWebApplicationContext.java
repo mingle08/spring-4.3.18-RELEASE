@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,25 +21,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
-
-import jakarta.servlet.Servlet;
-import jakarta.servlet.ServletConfig;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.Servlet;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.support.ManagedList;
+import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.ApplicationObjectSupport;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
-import org.springframework.lang.Nullable;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.context.WebApplicationContext;
@@ -67,6 +66,7 @@ import org.springframework.web.servlet.support.RequestContextUtils;
 import org.springframework.web.servlet.theme.SessionThemeResolver;
 import org.springframework.web.servlet.theme.ThemeChangeInterceptor;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
+import org.springframework.web.servlet.view.ResourceBundleViewResolver;
 import org.springframework.web.util.WebUtils;
 
 /**
@@ -76,7 +76,6 @@ import org.springframework.web.util.WebUtils;
 public class ComplexWebApplicationContext extends StaticWebApplicationContext {
 
 	@Override
-	@SuppressWarnings("deprecation")
 	public void refresh() throws BeansException {
 		registerSingleton(DispatcherServlet.LOCALE_RESOLVER_BEAN_NAME, SessionLocaleResolver.class);
 		registerSingleton(DispatcherServlet.THEME_RESOLVER_BEAN_NAME, SessionThemeResolver.class);
@@ -126,7 +125,7 @@ public class ComplexWebApplicationContext extends StaticWebApplicationContext {
 		pvs = new MutablePropertyValues();
 		pvs.add("order", 0);
 		pvs.add("basename", "org.springframework.web.servlet.complexviews");
-		registerSingleton("viewResolver", org.springframework.web.servlet.view.ResourceBundleViewResolver.class, pvs);
+		registerSingleton("viewResolver", ResourceBundleViewResolver.class, pvs);
 
 		pvs = new MutablePropertyValues();
 		pvs.add("suffix", ".jsp");
@@ -158,7 +157,9 @@ public class ComplexWebApplicationContext extends StaticWebApplicationContext {
 		pvs = new MutablePropertyValues();
 		pvs.add("order", "0");
 		pvs.add("exceptionMappings", "java.lang.Exception=failed1");
-		pvs.add("mappedHandlers", ManagedList.of(new RuntimeBeanReference("anotherLocaleHandler")));
+		List<RuntimeBeanReference> mappedHandlers = new ManagedList<RuntimeBeanReference>();
+		mappedHandlers.add(new RuntimeBeanReference("anotherLocaleHandler"));
+		pvs.add("mappedHandlers", mappedHandlers);
 		pvs.add("defaultStatusCode", "500");
 		pvs.add("defaultErrorView", "failed2");
 		registerSingleton("handlerExceptionResolver", SimpleMappingExceptionResolver.class, pvs);
@@ -264,7 +265,6 @@ public class ComplexWebApplicationContext extends StaticWebApplicationContext {
 		}
 
 		@Override
-		@SuppressWarnings("deprecation")
 		public long getLastModified(HttpServletRequest request, Object delegate) {
 			return ((MyHandler) delegate).lastModified();
 		}
@@ -285,7 +285,6 @@ public class ComplexWebApplicationContext extends StaticWebApplicationContext {
 		}
 
 		@Override
-		@SuppressWarnings("deprecation")
 		public long getLastModified(HttpServletRequest request, Object delegate) {
 			return -1;
 		}
@@ -309,7 +308,7 @@ public class ComplexWebApplicationContext extends StaticWebApplicationContext {
 
 		@Override
 		public void postHandle(
-				HttpServletRequest request, HttpServletResponse response, Object handler, @Nullable ModelAndView modelAndView)
+				HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView)
 				throws ServletException {
 
 			if (request.getAttribute("test2x") != null) {
@@ -357,7 +356,7 @@ public class ComplexWebApplicationContext extends StaticWebApplicationContext {
 
 		@Override
 		public void postHandle(
-				HttpServletRequest request, HttpServletResponse response, Object handler, @Nullable ModelAndView modelAndView)
+				HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView)
 				throws ServletException {
 
 			if (request.getParameter("noView") != null) {
@@ -396,12 +395,12 @@ public class ComplexWebApplicationContext extends StaticWebApplicationContext {
 		}
 
 		@Override
-		public void postHandle(WebRequest request, @Nullable ModelMap model) throws Exception {
+		public void postHandle(WebRequest request, ModelMap model) throws Exception {
 			request.setAttribute("test3x", "test3x", WebRequest.SCOPE_REQUEST);
 		}
 
 		@Override
-		public void afterCompletion(WebRequest request, @Nullable Exception ex) throws Exception {
+		public void afterCompletion(WebRequest request, Exception ex) throws Exception {
 			request.setAttribute("test3y", "test3y", WebRequest.SCOPE_REQUEST);
 		}
 	}
@@ -410,8 +409,9 @@ public class ComplexWebApplicationContext extends StaticWebApplicationContext {
 	public static class ComplexLocaleChecker implements MyHandler {
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public void doSomething(HttpServletRequest request) throws ServletException, IllegalAccessException {
-			WebApplicationContext wac = RequestContextUtils.findWebApplicationContext(request);
+			WebApplicationContext wac = RequestContextUtils.getWebApplicationContext(request);
 			if (!(wac instanceof ComplexWebApplicationContext)) {
 				throw new ServletException("Incorrect WebApplicationContext");
 			}
@@ -519,13 +519,15 @@ public class ComplexWebApplicationContext extends StaticWebApplicationContext {
 	}
 
 
-	public static class TestApplicationListener implements ApplicationListener<RequestHandledEvent> {
+	public static class TestApplicationListener implements ApplicationListener<ApplicationEvent> {
 
 		public int counter = 0;
 
 		@Override
-		public void onApplicationEvent(RequestHandledEvent event) {
-			this.counter++;
+		public void onApplicationEvent(ApplicationEvent event) {
+			if (event instanceof RequestHandledEvent) {
+				this.counter++;
+			}
 		}
 	}
 

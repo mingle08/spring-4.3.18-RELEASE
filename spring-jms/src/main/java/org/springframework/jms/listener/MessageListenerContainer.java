@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,10 +17,8 @@
 package org.springframework.jms.listener;
 
 import org.springframework.context.SmartLifecycle;
-import org.springframework.jms.support.QosSettings;
 import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.jms.support.destination.DestinationResolver;
-import org.springframework.lang.Nullable;
 
 /**
  * Internal abstraction used by the framework representing a message
@@ -40,38 +38,28 @@ public interface MessageListenerContainer extends SmartLifecycle {
 
 	/**
 	 * Return the {@link MessageConverter} that can be used to
-	 * convert {@link jakarta.jms.Message}, if any.
+	 * convert {@link javax.jms.Message}, if any.
 	 */
-	@Nullable
 	MessageConverter getMessageConverter();
 
 	/**
 	 * Return the {@link DestinationResolver} to use to resolve
 	 * destinations by names.
 	 */
-	@Nullable
 	DestinationResolver getDestinationResolver();
 
 	/**
-	 * Return whether the Publish/Subscribe domain ({@link jakarta.jms.Topic Topics}) is used.
-	 * Otherwise, the Point-to-Point domain ({@link jakarta.jms.Queue Queues}) is used.
+	 * Return whether the Publish/Subscribe domain ({@link javax.jms.Topic Topics}) is used.
+	 * Otherwise, the Point-to-Point domain ({@link javax.jms.Queue Queues}) is used.
 	 */
 	boolean isPubSubDomain();
 
 	/**
 	 * Return whether the reply destination uses Publish/Subscribe domain
-	 * ({@link jakarta.jms.Topic Topics}). Otherwise, the Point-to-Point domain
-	 * ({@link jakarta.jms.Queue Queues}) is used.
+	 * ({@link javax.jms.Topic Topics}). Otherwise, the Point-to-Point domain
+	 * ({@link javax.jms.Queue Queues}) is used.
 	 * <p>By default, the value is identical to {@link #isPubSubDomain()}.
 	 */
 	boolean isReplyPubSubDomain();
-
-	/**
-	 * Return the {@link QosSettings} to use when sending a reply,
-	 * or {@code null} if the broker's defaults should be used.
-	 * @since 5.0
-	 */
-	@Nullable
-	QosSettings getReplyQosSettings();
 
 }

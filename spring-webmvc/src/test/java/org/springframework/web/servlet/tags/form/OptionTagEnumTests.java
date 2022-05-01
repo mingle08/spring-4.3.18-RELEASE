@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,15 +16,15 @@
 
 package org.springframework.web.servlet.tags.form;
 
-import jakarta.servlet.jsp.tagext.BodyTag;
-import jakarta.servlet.jsp.tagext.Tag;
-import org.junit.jupiter.api.Test;
+import javax.servlet.jsp.tagext.BodyTag;
+import javax.servlet.jsp.tagext.Tag;
 
-import org.springframework.beans.testfixture.beans.CustomEnum;
-import org.springframework.beans.testfixture.beans.GenericBean;
+import org.junit.Test;
+import org.springframework.tests.sample.beans.CustomEnum;
+import org.springframework.tests.sample.beans.GenericBean;
 import org.springframework.web.servlet.support.BindStatus;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Juergen Hoeller
@@ -63,15 +63,14 @@ public class OptionTagEnumTests extends AbstractHtmlElementTagTests {
 		testBean.setCustomEnum(CustomEnum.VALUE_1);
 		getPageContext().getRequest().setAttribute("testBean", testBean);
 		String selectName = "testBean.customEnum";
-		getPageContext().setAttribute(SelectTag.LIST_VALUE_PAGE_ATTRIBUTE,
-				new BindStatus(getRequestContext(), selectName, false));
+		getPageContext().setAttribute(SelectTag.LIST_VALUE_PAGE_ATTRIBUTE, new BindStatus(getRequestContext(), selectName, false));
 
 		this.tag.setValue("VALUE_1");
 
 		int result = this.tag.doStartTag();
-		assertThat(result).isEqualTo(BodyTag.EVAL_BODY_BUFFERED);
+		assertEquals(BodyTag.EVAL_BODY_BUFFERED, result);
 		result = this.tag.doEndTag();
-		assertThat(result).isEqualTo(Tag.EVAL_PAGE);
+		assertEquals(Tag.EVAL_PAGE, result);
 
 		String output = getWriter().toString();
 
@@ -82,11 +81,11 @@ public class OptionTagEnumTests extends AbstractHtmlElementTagTests {
 	}
 
 	private void assertOptionTagOpened(String output) {
-		assertThat(output.startsWith("<option")).isTrue();
+		assertTrue(output.startsWith("<option"));
 	}
 
 	private void assertOptionTagClosed(String output) {
-		assertThat(output.endsWith("</option>")).isTrue();
+		assertTrue(output.endsWith("</option>"));
 	}
 
 }

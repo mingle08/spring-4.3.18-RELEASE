@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,10 +17,7 @@
 package org.springframework.web.servlet.support;
 
 import java.util.Map;
-
-import jakarta.servlet.http.HttpServletRequest;
-
-import org.springframework.lang.Nullable;
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * A contract for inspecting and potentially modifying request data values such
@@ -52,19 +49,18 @@ public interface RequestDataValueProcessor {
 	/**
 	 * Invoked when a form field value is rendered.
 	 * @param request the current request
-	 * @param name the form field name (if any)
+	 * @param name the form field name
 	 * @param value the form field value
 	 * @param type the form field type ("text", "hidden", etc.)
 	 * @return the form field value to use, possibly modified
 	 */
-	String processFormFieldValue(HttpServletRequest request, @Nullable String name, String value, String type);
+	String processFormFieldValue(HttpServletRequest request, String name, String value, String type);
 
 	/**
 	 * Invoked after all form fields have been rendered.
 	 * @param request the current request
-	 * @return additional hidden form fields to be added, or {@code null} if none
+	 * @return additional hidden form fields to be added, or {@code null}
 	 */
-	@Nullable
 	Map<String, String> getExtraHiddenFields(HttpServletRequest request);
 
 	/**

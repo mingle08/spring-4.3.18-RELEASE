@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,15 +18,10 @@ package org.springframework.aop.interceptor;
 
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.logging.Log;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * Unit tests for the {@link SimpleTraceInterceptor} class.
@@ -34,7 +29,7 @@ import static org.mockito.Mockito.verify;
  * @author Rick Evans
  * @author Chris Beams
  */
-public class SimpleTraceInterceptorTests {
+public final class SimpleTraceInterceptorTests {
 
 	@Test
 	public void testSunnyDayPathLogsCorrectly() throws Throwable {
@@ -61,8 +56,13 @@ public class SimpleTraceInterceptorTests {
 		Log log = mock(Log.class);
 
 		final SimpleTraceInterceptor interceptor = new SimpleTraceInterceptor(true);
-		assertThatIllegalArgumentException().isThrownBy(() ->
-			interceptor.invokeUnderTrace(mi, log));
+
+		try {
+			interceptor.invokeUnderTrace(mi, log);
+			fail("Must have propagated the IllegalArgumentException.");
+		}
+		catch (IllegalArgumentException expected) {
+		}
 
 		verify(log).trace(anyString());
 		verify(log).trace(anyString(), eq(exception));

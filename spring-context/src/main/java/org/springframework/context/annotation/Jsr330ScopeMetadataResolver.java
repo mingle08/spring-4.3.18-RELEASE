@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,11 +22,10 @@ import java.util.Set;
 
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.lang.Nullable;
 
 /**
  * Simple {@link ScopeMetadataResolver} implementation that follows JSR-330 scoping rules:
- * defaulting to prototype scope unless {@link jakarta.inject.Singleton} is present.
+ * defaulting to prototype scope unless {@link javax.inject.Singleton} is present.
  *
  * <p>This scope resolver can be used with {@link ClassPathBeanDefinitionScanner} and
  * {@link AnnotatedBeanDefinitionReader} for standard JSR-330 compliance. However,
@@ -42,11 +41,11 @@ import org.springframework.lang.Nullable;
  */
 public class Jsr330ScopeMetadataResolver implements ScopeMetadataResolver {
 
-	private final Map<String, String> scopeMap = new HashMap<>();
+	private final Map<String, String> scopeMap = new HashMap<String, String>();
 
 
 	public Jsr330ScopeMetadataResolver() {
-		registerScope("jakarta.inject.Singleton", BeanDefinition.SCOPE_SINGLETON);
+		registerScope("javax.inject.Singleton", BeanDefinition.SCOPE_SINGLETON);
 	}
 
 
@@ -77,7 +76,6 @@ public class Jsr330ScopeMetadataResolver implements ScopeMetadataResolver {
 	 * @param annotationType the JSR-330 annotation type
 	 * @return the Spring scope name
 	 */
-	@Nullable
 	protected String resolveScopeName(String annotationType) {
 		return this.scopeMap.get(annotationType);
 	}
@@ -87,12 +85,13 @@ public class Jsr330ScopeMetadataResolver implements ScopeMetadataResolver {
 	public ScopeMetadata resolveScopeMetadata(BeanDefinition definition) {
 		ScopeMetadata metadata = new ScopeMetadata();
 		metadata.setScopeName(BeanDefinition.SCOPE_PROTOTYPE);
-		if (definition instanceof AnnotatedBeanDefinition annDef) {
+		if (definition instanceof AnnotatedBeanDefinition) {
+			AnnotatedBeanDefinition annDef = (AnnotatedBeanDefinition) definition;
 			Set<String> annTypes = annDef.getMetadata().getAnnotationTypes();
 			String found = null;
 			for (String annType : annTypes) {
 				Set<String> metaAnns = annDef.getMetadata().getMetaAnnotationTypes(annType);
-				if (metaAnns.contains("jakarta.inject.Scope")) {
+				if (metaAnns.contains("javax.inject.Scope")) {
 					if (found != null) {
 						throw new IllegalStateException("Found ambiguous scope annotations on bean class [" +
 								definition.getBeanClassName() + "]: " + found + ", " + annType);

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,14 +20,16 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.Collections;
 import java.util.Map;
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.jsp.JspException;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.jsp.JspException;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.Before;
 
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.mock.web.test.MockPageContext;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.Errors;
-import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.StaticWebApplicationContext;
 import org.springframework.web.servlet.support.JspAwareRequestContext;
 import org.springframework.web.servlet.support.RequestContext;
@@ -36,11 +38,9 @@ import org.springframework.web.servlet.support.RequestDataValueProcessor;
 import org.springframework.web.servlet.support.RequestDataValueProcessorWrapper;
 import org.springframework.web.servlet.tags.AbstractTagTests;
 import org.springframework.web.servlet.tags.RequestContextAwareTag;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
-import org.springframework.web.testfixture.servlet.MockPageContext;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Rob Harrop
@@ -55,7 +55,7 @@ public abstract class AbstractHtmlElementTagTests extends AbstractTagTests {
 	private MockPageContext pageContext;
 
 
-	@BeforeEach
+	@Before
 	public final void setUp() throws Exception {
 		// set up a writer for the tag content to be written to
 		this.writer = new StringWriter();
@@ -69,8 +69,8 @@ public abstract class AbstractHtmlElementTagTests extends AbstractTagTests {
 	protected MockPageContext createAndPopulatePageContext() throws JspException {
 		MockPageContext pageContext = createPageContext();
 		MockHttpServletRequest request = (MockHttpServletRequest) pageContext.getRequest();
-		((StaticWebApplicationContext) RequestContextUtils.findWebApplicationContext(request))
-				.registerSingleton("requestDataValueProcessor", RequestDataValueProcessorWrapper.class);
+		StaticWebApplicationContext wac = (StaticWebApplicationContext) RequestContextUtils.findWebApplicationContext(request);
+		wac.registerSingleton("requestDataValueProcessor", RequestDataValueProcessorWrapper.class);
 		extendRequest(request);
 		extendPageContext(pageContext);
 		RequestContext requestContext = new JspAwareRequestContext(pageContext);
@@ -103,10 +103,11 @@ public abstract class AbstractHtmlElementTagTests extends AbstractTagTests {
 		return (RequestContext) getPageContext().getAttribute(RequestContextAwareTag.REQUEST_CONTEXT_PAGE_ATTRIBUTE);
 	}
 
+	@SuppressWarnings("deprecation")
 	protected RequestDataValueProcessor getMockRequestDataValueProcessor() {
 		RequestDataValueProcessor mockProcessor = mock(RequestDataValueProcessor.class);
-		HttpServletRequest request = (HttpServletRequest) getPageContext().getRequest();
-		WebApplicationContext wac = RequestContextUtils.findWebApplicationContext(request);
+		ServletRequest request = getPageContext().getRequest();
+		StaticWebApplicationContext wac = (StaticWebApplicationContext) RequestContextUtils.getWebApplicationContext(request);
 		wac.getBean(RequestDataValueProcessorWrapper.class).setRequestDataValueProcessor(mockProcessor);
 		return mockProcessor;
 	}
@@ -124,19 +125,21 @@ public abstract class AbstractHtmlElementTagTests extends AbstractTagTests {
 
 	protected final void assertContainsAttribute(String output, String attributeName, String attributeValue) {
 		String attributeString = attributeName + "=\"" + attributeValue + "\"";
-		assertThat(output.contains(attributeString)).as("Expected to find attribute '" + attributeName +
+		assertTrue("Expected to find attribute '" + attributeName +
 				"' with value '" + attributeValue +
-				"' in output + '" + output + "'").isTrue();
+				"' in output + '" + output + "'",
+				output.indexOf(attributeString) > -1);
 	}
 
 	protected final void assertAttributeNotPresent(String output, String attributeName) {
-		boolean condition = !output.contains(attributeName + "=\"");
-		assertThat(condition).as("Unexpected attribute '" + attributeName + "' in output '" + output + "'.").isTrue();
+		assertTrue("Unexpected attribute '" + attributeName + "' in output '" + output + "'.",
+				output.indexOf(attributeName + "=\"") < 0);
 	}
 
 	protected final void assertBlockTagContains(String output, String desiredContents) {
-		String contents = output.substring(output.indexOf(">") + 1, output.lastIndexOf('<'));
-		assertThat(contents.contains(desiredContents)).as("Expected to find '" + desiredContents + "' in the contents of block tag '" + output + "'").isTrue();
+		String contents = output.substring(output.indexOf(">") + 1, output.lastIndexOf("<"));
+		assertTrue("Expected to find '" + desiredContents + "' in the contents of block tag '" + output + "'",
+				contents.indexOf(desiredContents) > -1);
 	}
 
 }

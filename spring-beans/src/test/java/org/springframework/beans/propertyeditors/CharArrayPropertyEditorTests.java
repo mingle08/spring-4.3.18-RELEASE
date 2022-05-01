@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,16 +18,16 @@ package org.springframework.beans.propertyeditors;
 
 import java.beans.PropertyEditor;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for the {@link CharArrayPropertyEditor} class.
  *
  * @author Rick Evans
  */
-public class CharArrayPropertyEditorTests {
+public final class CharArrayPropertyEditorTests {
 
 	private final PropertyEditor charEditor = new CharArrayPropertyEditor();
 
@@ -37,20 +37,21 @@ public class CharArrayPropertyEditorTests {
 		charEditor.setAsText(text);
 
 		Object value = charEditor.getValue();
-		assertThat(value).isNotNull().isInstanceOf(char[].class);
+		assertNotNull(value);
+		assertTrue(value instanceof char[]);
 		char[] chars = (char[]) value;
 		for (int i = 0; i < text.length(); ++i) {
-			assertThat(chars[i]).as("char[] differs at index '" + i + "'").isEqualTo(text.charAt(i));
+			assertEquals("char[] differs at index '" + i + "'", text.charAt(i), chars[i]);
 		}
-		assertThat(charEditor.getAsText()).isEqualTo(text);
+		assertEquals(text, charEditor.getAsText());
 	}
 
 	@Test
 	public void getAsTextReturnsEmptyStringIfValueIsNull() throws Exception {
-		assertThat(charEditor.getAsText()).isEqualTo("");
+		assertEquals("", charEditor.getAsText());
 
 		charEditor.setAsText(null);
-		assertThat(charEditor.getAsText()).isEqualTo("");
+		assertEquals("", charEditor.getAsText());
 	}
 
 }

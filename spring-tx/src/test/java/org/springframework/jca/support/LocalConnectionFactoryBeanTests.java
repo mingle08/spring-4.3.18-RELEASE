@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,15 +16,13 @@
 
 package org.springframework.jca.support;
 
-import jakarta.resource.spi.ConnectionManager;
-import jakarta.resource.spi.ManagedConnectionFactory;
-import org.junit.jupiter.api.Test;
+import javax.resource.spi.ConnectionManager;
+import javax.resource.spi.ManagedConnectionFactory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * Unit tests for the {@link LocalConnectionFactoryBean} class.
@@ -32,24 +30,23 @@ import static org.mockito.Mockito.verify;
  * @author Rick Evans
  * @author Chris Beams
  */
-public class LocalConnectionFactoryBeanTests {
+public final class LocalConnectionFactoryBeanTests {
 
-	@Test
+	@Test(expected=IllegalArgumentException.class)
 	public void testManagedConnectionFactoryIsRequired() throws Exception {
-		assertThatIllegalArgumentException().isThrownBy(
-				new LocalConnectionFactoryBean()::afterPropertiesSet);
+		new LocalConnectionFactoryBean().afterPropertiesSet();
 	}
 
 	@Test
 	public void testIsSingleton() throws Exception {
 		LocalConnectionFactoryBean factory = new LocalConnectionFactoryBean();
-		assertThat(factory.isSingleton()).isTrue();
+		assertTrue(factory.isSingleton());
 	}
 
 	@Test
 	public void testGetObjectTypeIsNullIfConnectionFactoryHasNotBeenConfigured() throws Exception {
 		LocalConnectionFactoryBean factory = new LocalConnectionFactoryBean();
-		assertThat(factory.getObjectType()).isNull();
+		assertNull(factory.getObjectType());
 	}
 
 	@Test
@@ -60,7 +57,7 @@ public class LocalConnectionFactoryBeanTests {
 		LocalConnectionFactoryBean factory = new LocalConnectionFactoryBean();
 		factory.setManagedConnectionFactory(managedConnectionFactory);
 		factory.afterPropertiesSet();
-		assertThat(factory.getObject()).isEqualTo(CONNECTION_FACTORY);
+		assertEquals(CONNECTION_FACTORY, factory.getObject());
 	}
 
 	@Test

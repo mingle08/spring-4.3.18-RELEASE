@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -43,7 +43,7 @@ import org.springframework.core.Ordered;
  * }</pre>
  *
  * {@code MyAsyncBean} is a user-defined type with one or more methods annotated with
- * either Spring's {@code @Async} annotation, the EJB 3.1 {@code @jakarta.ejb.Asynchronous}
+ * either Spring's {@code @Async} annotation, the EJB 3.1 {@code @javax.ejb.Asynchronous}
  * annotation, or any custom annotation specified via the {@link #annotation} attribute.
  * The aspect is added transparently for any registered bean, for instance via this
  * configuration:
@@ -76,11 +76,6 @@ import org.springframework.core.Ordered;
  * method.</li>
  * </ul>
  *
- * <p><b>NOTE: {@link AsyncConfigurer} configuration classes get initialized early
- * in the application context bootstrap. If you need any dependencies on other beans
- * there, make sure to declare them 'lazy' as far as possible in order to let them
- * go through other post-processors as well.</b>
- *
  * <pre class="code">
  * &#064;Configuration
  * &#064;EnableAsync
@@ -99,12 +94,13 @@ import org.springframework.core.Ordered;
  *
  *     &#064;Override
  *     public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
- *         return new MyAsyncUncaughtExceptionHandler();
+ *         return MyAsyncUncaughtExceptionHandler();
  *     }
  * }</pre>
  *
  * <p>If only one item needs to be customized, {@code null} can be returned to
- * keep the default settings.
+ * keep the default settings. Consider also extending from {@link AsyncConfigurerSupport}
+ * when possible.
  *
  * <p>Note: In the above example the {@code ThreadPoolTaskExecutor} is not a fully managed
  * Spring bean. Add the {@code @Bean} annotation to the {@code getAsyncExecutor()} method
@@ -116,24 +112,25 @@ import org.springframework.core.Ordered;
  * configuration:
  *
  * <pre class="code">
- * &lt;beans&gt;
+ * {@code
+ * <beans>
  *
- *     &lt;task:annotation-driven executor="myExecutor" exception-handler="exceptionHandler"/&gt;
+ *     <task:annotation-driven executor="myExecutor" exception-handler="exceptionHandler"/>
  *
- *     &lt;task:executor id="myExecutor" pool-size="7-42" queue-capacity="11"/&gt;
+ *     <task:executor id="myExecutor" pool-size="7-42" queue-capacity="11"/>
  *
- *     &lt;bean id="asyncBean" class="com.foo.MyAsyncBean"/&gt;
+ *     <bean id="asyncBean" class="com.foo.MyAsyncBean"/>
  *
- *     &lt;bean id="exceptionHandler" class="com.foo.MyAsyncUncaughtExceptionHandler"/&gt;
+ *     <bean id="exceptionHandler" class="com.foo.MyAsyncUncaughtExceptionHandler"/>
  *
- * &lt;/beans&gt;
- * </pre>
+ * </beans>
+ * }</pre>
  *
  * The above XML-based and JavaConfig-based examples are equivalent except for the
  * setting of the <em>thread name prefix</em> of the {@code Executor}; this is because
  * the {@code <task:executor>} element does not expose such an attribute. This
  * demonstrates how the JavaConfig-based approach allows for maximum configurability
- * through direct access to the actual component.
+ * through direct access to actual componentry.
  *
  * <p>The {@link #mode} attribute controls how advice is applied: If the mode is
  * {@link AdviceMode#PROXY} (the default), then the other attributes control the behavior
@@ -165,7 +162,7 @@ public @interface EnableAsync {
 	 * Indicate the 'async' annotation type to be detected at either class
 	 * or method level.
 	 * <p>By default, both Spring's @{@link Async} annotation and the EJB 3.1
-	 * {@code @jakarta.ejb.Asynchronous} annotation will be detected.
+	 * {@code @javax.ejb.Asynchronous} annotation will be detected.
 	 * <p>This attribute exists so that developers can provide their own
 	 * custom annotation type to indicate that a method (or all methods of
 	 * a given class) should be invoked asynchronously.

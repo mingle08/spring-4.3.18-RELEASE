@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,8 +23,6 @@ import java.util.List;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 
-import org.springframework.lang.Nullable;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -42,7 +40,7 @@ import org.springframework.util.StringUtils;
  *     parser.accepts("option1");
  *     parser.accepts("option2").withRequiredArg();
  *     OptionSet options = parser.parse(args);
- *     PropertySource&lt;?&gt; ps = new JOptCommandLinePropertySource(options);
+ *     PropertySource<?> ps = new JOptCommandLinePropertySource(options);
  *     // ...
  * }</pre>
  *
@@ -86,27 +84,26 @@ public class JOptCommandLinePropertySource extends CommandLinePropertySource<Opt
 
 	@Override
 	public String[] getPropertyNames() {
-		List<String> names = new ArrayList<>();
+		List<String> names = new ArrayList<String>();
 		for (OptionSpec<?> spec : this.source.specs()) {
-			String lastOption = CollectionUtils.lastElement(spec.options());
-			if (lastOption != null) {
+			List<String> aliases = spec.options();
+			if (!aliases.isEmpty()) {
 				// Only the longest name is used for enumerating
-				names.add(lastOption);
+				names.add(aliases.get(aliases.size() - 1));
 			}
 		}
 		return StringUtils.toStringArray(names);
 	}
 
 	@Override
-	@Nullable
 	public List<String> getOptionValues(String name) {
 		List<?> argValues = this.source.valuesOf(name);
-		List<String> stringArgValues = new ArrayList<>();
+		List<String> stringArgValues = new ArrayList<String>();
 		for (Object argValue : argValues) {
 			stringArgValues.add(argValue.toString());
 		}
 		if (stringArgValues.isEmpty()) {
-			return (this.source.has(name) ? Collections.emptyList() : null);
+			return (this.source.has(name) ? Collections.<String>emptyList() : null);
 		}
 		return Collections.unmodifiableList(stringArgValues);
 	}
@@ -114,11 +111,11 @@ public class JOptCommandLinePropertySource extends CommandLinePropertySource<Opt
 	@Override
 	protected List<String> getNonOptionArgs() {
 		List<?> argValues = this.source.nonOptionArguments();
-		List<String> stringArgValues = new ArrayList<>();
+		List<String> stringArgValues = new ArrayList<String>();
 		for (Object argValue : argValues) {
 			stringArgValues.add(argValue.toString());
 		}
-		return (stringArgValues.isEmpty() ? Collections.emptyList() :
+		return (stringArgValues.isEmpty() ? Collections.<String>emptyList() :
 				Collections.unmodifiableList(stringArgValues));
 	}
 

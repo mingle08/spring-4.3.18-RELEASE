@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -36,9 +36,9 @@ import org.springframework.util.Assert;
 public abstract class StaticMethodMatcherPointcutAdvisor extends StaticMethodMatcherPointcut
 		implements PointcutAdvisor, Ordered, Serializable {
 
-	private Advice advice = EMPTY_ADVICE;
+	private Advice advice;
 
-	private int order = Ordered.LOWEST_PRECEDENCE;
+	private int order = Integer.MAX_VALUE;
 
 
 	/**

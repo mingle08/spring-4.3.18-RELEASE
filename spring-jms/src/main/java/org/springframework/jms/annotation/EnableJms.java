@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -74,8 +74,8 @@ import org.springframework.context.annotation.Import;
  * is set a {@code JmsListenerContainerFactory} bean with name {@code jmsListenerContainerFactory} is
  * assumed to be present.
  *
- * <p>the following configuration would ensure that every time a {@link jakarta.jms.Message}
- * is received on the {@link jakarta.jms.Destination} named "myQueue", {@code MyService.process()}
+ * <p>the following configuration would ensure that every time a {@link javax.jms.Message}
+ * is received on the {@link javax.jms.Destination} named "myQueue", {@code MyService.process()}
  * is called with the content of the message:
  *
  * <pre class="code">
@@ -138,7 +138,7 @@ import org.springframework.context.annotation.Import;
  *     }
  *
  *     &#064;Bean
- *     public JmsListenerContainerFactory&lt;?&gt; myJmsListenerContainerFactory() {
+ *     public JmsListenerContainerFactory<?> myJmsListenerContainerFactory() {
  *         // factory settings
  *     }
  *
@@ -152,17 +152,17 @@ import org.springframework.context.annotation.Import;
  * configuration:
  *
  * <pre class="code">
- * &lt;beans&gt;
+ * {@code <beans>
  *
- *     &lt;jms:annotation-driven container-factory="myJmsListenerContainerFactory"/&gt;
+ *     <jms:annotation-driven container-factory="myJmsListenerContainerFactory"/>
  *
- *     &lt;bean id="myJmsListenerContainerFactory" class="org.springframework.jms.config.DefaultJmsListenerContainerFactory"&gt;
+ *     <bean id="myJmsListenerContainerFactory" class="org.springframework.jms.config.DefaultJmsListenerContainerFactory">
  *           // factory settings
- *     &lt;/bean&gt;
+ *     </bean>
  *
- *     &lt;bean id="myService" class="com.acme.foo.MyService"/&gt;
+ *     <bean id="myService" class="com.acme.foo.MyService"/>
  *
- * &lt;/beans&gt;
+ * </beans>
  * }</pre>
  *
  * It is also possible to specify a custom {@link org.springframework.jms.config.JmsListenerEndpointRegistry
@@ -184,7 +184,7 @@ import org.springframework.context.annotation.Import;
  *     }
  *
  *     &#064;Bean
- *     public JmsListenerEndpointRegistry&lt;?&gt; myJmsListenerEndpointRegistry() {
+ *     public JmsListenerEndpointRegistry<?> myJmsListenerEndpointRegistry() {
  *         // registry configuration
  *     }
  *
@@ -204,25 +204,25 @@ import org.springframework.context.annotation.Import;
  * For reference, the example above can be compared to the following Spring XML
  * configuration:
  * <pre class="code">
- * &lt;beans&gt;
+ * {@code <beans>
  *
- *     &lt;jms:annotation-driven registry="myJmsListenerEndpointRegistry"
+ *     <jms:annotation-driven registry="myJmsListenerEndpointRegistry"
  *         handler-method-factory="myJmsHandlerMethodFactory"/&gt;
  *
- *     &lt;bean id="myJmsListenerEndpointRegistry"
- *           class="org.springframework.jms.config.JmsListenerEndpointRegistry"&gt;
+ *     <bean id="myJmsListenerEndpointRegistry"
+ *           class="org.springframework.jms.config.JmsListenerEndpointRegistry">
  *           // registry configuration
- *     &lt;/bean&gt;
+ *     </bean>
  *
- *     &lt;bean id="myJmsHandlerMethodFactory"
- *           class="org.springframework.messaging.handler.support.DefaultJmsHandlerMethodFactory"&gt;
- *         &lt;property name="validator" ref="myValidator"/&gt;
- *     &lt;/bean&gt;
+ *     <bean id="myJmsHandlerMethodFactory"
+ *           class="org.springframework.messaging.handler.support.DefaultJmsHandlerMethodFactory">
+ *         <property name="validator" ref="myValidator"/>
+ *     </bean>
  *
- *     &lt;bean id="myService" class="com.acme.foo.MyService"/&gt;
+ *     <bean id="myService" class="com.acme.foo.MyService"/>
  *
- * &lt;/beans&gt;
- * </pre>
+ * </beans>
+ * }</pre>
  *
  * Implementing {@code JmsListenerConfigurer} also allows for fine-grained
  * control over endpoints registration via the {@code JmsListenerEndpointRegistrar}.
@@ -246,7 +246,7 @@ import org.springframework.context.annotation.Import;
  *     }
  *
  *     &#064;Bean
- *     public JmsListenerContainerFactory&lt;?&gt; anotherJmsListenerContainerFactory() {
+ *     public JmsListenerContainerFactory<?> anotherJmsListenerContainerFactory() {
  *         // ...
  *     }
  *

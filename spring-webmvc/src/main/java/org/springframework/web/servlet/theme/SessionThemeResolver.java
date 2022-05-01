@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,10 +16,9 @@
 
 package org.springframework.web.servlet.theme;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.WebUtils;
 
@@ -58,9 +57,7 @@ public class SessionThemeResolver extends AbstractThemeResolver {
 	}
 
 	@Override
-	public void setThemeName(
-			HttpServletRequest request, @Nullable HttpServletResponse response, @Nullable String themeName) {
-
+	public void setThemeName(HttpServletRequest request, HttpServletResponse response, String themeName) {
 		WebUtils.setSessionAttribute(request, THEME_SESSION_ATTRIBUTE_NAME,
 				(StringUtils.hasText(themeName) ? themeName : null));
 	}

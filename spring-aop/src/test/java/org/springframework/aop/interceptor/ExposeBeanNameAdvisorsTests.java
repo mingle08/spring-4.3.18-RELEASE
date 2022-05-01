@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,20 +16,20 @@
 
 package org.springframework.aop.interceptor;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.factory.NamedBean;
-import org.springframework.beans.testfixture.beans.ITestBean;
-import org.springframework.beans.testfixture.beans.TestBean;
+import org.springframework.tests.sample.beans.ITestBean;
+import org.springframework.tests.sample.beans.TestBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Rod Johnson
  * @author Chris Beams
  */
-public class ExposeBeanNameAdvisorsTests {
+public final class ExposeBeanNameAdvisorsTests {
 
 	private class RequiresBeanNameBoundTestBean extends TestBean {
 		private final String beanName;
@@ -40,7 +40,7 @@ public class ExposeBeanNameAdvisorsTests {
 
 		@Override
 		public int getAge() {
-			assertThat(ExposeBeanNameAdvisors.getBeanName()).isEqualTo(beanName);
+			assertEquals(beanName, ExposeBeanNameAdvisors.getBeanName());
 			return super.getAge();
 		}
 	}
@@ -54,8 +54,7 @@ public class ExposeBeanNameAdvisorsTests {
 		pf.addAdvisor(ExposeBeanNameAdvisors.createAdvisorWithoutIntroduction(beanName));
 		ITestBean proxy = (ITestBean) pf.getProxy();
 
-		boolean condition = proxy instanceof NamedBean;
-		assertThat(condition).as("No introduction").isFalse();
+		assertFalse("No introduction", proxy instanceof NamedBean);
 		// Requires binding
 		proxy.getAge();
 	}
@@ -69,13 +68,12 @@ public class ExposeBeanNameAdvisorsTests {
 		pf.addAdvisor(ExposeBeanNameAdvisors.createAdvisorIntroducingNamedBean(beanName));
 		ITestBean proxy = (ITestBean) pf.getProxy();
 
-		boolean condition = proxy instanceof NamedBean;
-		assertThat(condition).as("Introduction was made").isTrue();
+		assertTrue("Introduction was made", proxy instanceof NamedBean);
 		// Requires binding
 		proxy.getAge();
 
 		NamedBean nb = (NamedBean) proxy;
-		assertThat(nb.getBeanName()).as("Name returned correctly").isEqualTo(beanName);
+		assertEquals("Name returned correctly", beanName, nb.getBeanName());
 	}
 
 }

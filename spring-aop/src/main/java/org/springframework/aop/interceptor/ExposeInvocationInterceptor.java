@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,7 +25,6 @@ import org.springframework.aop.Advisor;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.core.NamedThreadLocal;
 import org.springframework.core.PriorityOrdered;
-import org.springframework.lang.Nullable;
 
 /**
  * Interceptor that exposes the current {@link org.aopalliance.intercept.MethodInvocation}
@@ -42,9 +41,9 @@ import org.springframework.lang.Nullable;
  * @author Juergen Hoeller
  */
 @SuppressWarnings("serial")
-public final class ExposeInvocationInterceptor implements MethodInterceptor, PriorityOrdered, Serializable {
+public class ExposeInvocationInterceptor implements MethodInterceptor, PriorityOrdered, Serializable {
 
-	/** Singleton instance of this class. */
+	/** Singleton instance of this class */
 	public static final ExposeInvocationInterceptor INSTANCE = new ExposeInvocationInterceptor();
 
 	/**
@@ -59,7 +58,7 @@ public final class ExposeInvocationInterceptor implements MethodInterceptor, Pri
 	};
 
 	private static final ThreadLocal<MethodInvocation> invocation =
-			new NamedThreadLocal<>("Current AOP method invocation");
+			new NamedThreadLocal<MethodInvocation>("Current AOP method invocation");
 
 
 	/**
@@ -70,14 +69,11 @@ public final class ExposeInvocationInterceptor implements MethodInterceptor, Pri
 	 */
 	public static MethodInvocation currentInvocation() throws IllegalStateException {
 		MethodInvocation mi = invocation.get();
-		if (mi == null) {
+		if (mi == null)
 			throw new IllegalStateException(
-					"No MethodInvocation found: Check that an AOP invocation is in progress and that the " +
+					"No MethodInvocation found: Check that an AOP invocation is in progress, and that the " +
 					"ExposeInvocationInterceptor is upfront in the interceptor chain. Specifically, note that " +
-					"advices with order HIGHEST_PRECEDENCE will execute before ExposeInvocationInterceptor! " +
-					"In addition, ExposeInvocationInterceptor and ExposeInvocationInterceptor.currentInvocation() " +
-					"must be invoked from the same thread.");
-		}
+					"advices with order HIGHEST_PRECEDENCE will execute before ExposeInvocationInterceptor!");
 		return mi;
 	}
 
@@ -89,7 +85,6 @@ public final class ExposeInvocationInterceptor implements MethodInterceptor, Pri
 	}
 
 	@Override
-	@Nullable
 	public Object invoke(MethodInvocation mi) throws Throwable {
 		MethodInvocation oldInvocation = invocation.get();
 		invocation.set(mi);

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,18 +18,18 @@ package org.springframework.util;
 
 import java.io.File;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Rob Harrop
  */
-class FileSystemUtilsTests {
+public class FileSystemUtilsTests {
 
 	@Test
-	void deleteRecursively() throws Exception {
+	public void deleteRecursively() throws Exception {
 		File root = new File("./tmp/root");
 		File child = new File(root, "child");
 		File grandchild = new File(child, "grandchild");
@@ -39,21 +39,21 @@ class FileSystemUtilsTests {
 		File bar = new File(child, "bar.txt");
 		bar.createNewFile();
 
-		assertThat(root.exists()).isTrue();
-		assertThat(child.exists()).isTrue();
-		assertThat(grandchild.exists()).isTrue();
-		assertThat(bar.exists()).isTrue();
+		assertTrue(root.exists());
+		assertTrue(child.exists());
+		assertTrue(grandchild.exists());
+		assertTrue(bar.exists());
 
 		FileSystemUtils.deleteRecursively(root);
 
-		assertThat(root.exists()).isFalse();
-		assertThat(child.exists()).isFalse();
-		assertThat(grandchild.exists()).isFalse();
-		assertThat(bar.exists()).isFalse();
+		assertFalse(root.exists());
+		assertFalse(child.exists());
+		assertFalse(grandchild.exists());
+		assertFalse(bar.exists());
 	}
 
 	@Test
-	void copyRecursively() throws Exception {
+	public void copyRecursively() throws Exception {
 		File src = new File("./tmp/src");
 		File child = new File(src, "child");
 		File grandchild = new File(child, "grandchild");
@@ -63,24 +63,24 @@ class FileSystemUtilsTests {
 		File bar = new File(child, "bar.txt");
 		bar.createNewFile();
 
-		assertThat(src.exists()).isTrue();
-		assertThat(child.exists()).isTrue();
-		assertThat(grandchild.exists()).isTrue();
-		assertThat(bar.exists()).isTrue();
+		assertTrue(src.exists());
+		assertTrue(child.exists());
+		assertTrue(grandchild.exists());
+		assertTrue(bar.exists());
 
 		File dest = new File("./dest");
 		FileSystemUtils.copyRecursively(src, dest);
 
-		assertThat(dest.exists()).isTrue();
-		assertThat(new File(dest, child.getName()).exists()).isTrue();
+		assertTrue(dest.exists());
+		assertTrue(new File(dest, child.getName()).exists());
 
 		FileSystemUtils.deleteRecursively(src);
-		assertThat(src.exists()).isFalse();
+		assertFalse(src.exists());
 	}
 
 
-	@AfterEach
-	void tearDown() throws Exception {
+	@After
+	public void tearDown() throws Exception {
 		File tmp = new File("./tmp");
 		if (tmp.exists()) {
 			FileSystemUtils.deleteRecursively(tmp);

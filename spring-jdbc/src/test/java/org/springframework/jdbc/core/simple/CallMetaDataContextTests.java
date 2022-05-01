@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,12 +22,11 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import javax.sql.DataSource;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.jdbc.core.SqlInOutParameter;
 import org.springframework.jdbc.core.SqlOutParameter;
@@ -35,10 +34,8 @@ import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.jdbc.core.metadata.CallMetaDataContext;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * Mock object based tests for CallMetaDataContext.
@@ -56,7 +53,7 @@ public class CallMetaDataContextTests {
 	private CallMetaDataContext context = new CallMetaDataContext();
 
 
-	@BeforeEach
+	@Before
 	public void setUp() throws Exception {
 		connection = mock(Connection.class);
 		databaseMetaData = mock(DatabaseMetaData.class);
@@ -65,7 +62,7 @@ public class CallMetaDataContextTests {
 		given(dataSource.getConnection()).willReturn(connection);
 	}
 
-	@AfterEach
+	@After
 	public void verifyClosed() throws Exception {
 		verify(connection).close();
 	}
@@ -79,7 +76,7 @@ public class CallMetaDataContextTests {
 		given(databaseMetaData.getUserName()).willReturn(USER);
 		given(databaseMetaData.storesLowerCaseIdentifiers()).willReturn(true);
 
-		List<SqlParameter> parameters = new ArrayList<>();
+		List<SqlParameter> parameters = new ArrayList<SqlParameter>();
 		parameters.add(new SqlParameter("id", Types.NUMERIC));
 		parameters.add(new SqlInOutParameter("name", Types.NUMERIC));
 		parameters.add(new SqlOutParameter("customer_no", Types.NUMERIC));
@@ -94,17 +91,16 @@ public class CallMetaDataContextTests {
 		context.processParameters(parameters);
 
 		Map<String, Object> inParameters = context.matchInParameterValuesWithCallParameters(parameterSource);
-		assertThat(inParameters.size()).as("Wrong number of matched in parameter values").isEqualTo(2);
-		assertThat(inParameters.containsKey("id")).as("in parameter value missing").isTrue();
-		assertThat(inParameters.containsKey("name")).as("in out parameter value missing").isTrue();
-		boolean condition = !inParameters.containsKey("customer_no");
-		assertThat(condition).as("out parameter value matched").isTrue();
+		assertEquals("Wrong number of matched in parameter values", 2, inParameters.size());
+		assertTrue("in parameter value missing", inParameters.containsKey("id"));
+		assertTrue("in out parameter value missing", inParameters.containsKey("name"));
+		assertTrue("out parameter value matched", !inParameters.containsKey("customer_no"));
 
 		List<String> names = context.getOutParameterNames();
-		assertThat(names.size()).as("Wrong number of out parameters").isEqualTo(2);
+		assertEquals("Wrong number of out parameters", 2, names.size());
 
 		List<SqlParameter> callParameters = context.getCallParameters();
-		assertThat(callParameters.size()).as("Wrong number of call parameters").isEqualTo(3);
+		assertEquals("Wrong number of call parameters", 3, callParameters.size());
 	}
 
 }

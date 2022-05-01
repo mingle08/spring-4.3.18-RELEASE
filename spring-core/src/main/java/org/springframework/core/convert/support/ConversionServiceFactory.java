@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,6 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.converter.ConverterFactory;
 import org.springframework.core.convert.converter.ConverterRegistry;
 import org.springframework.core.convert.converter.GenericConverter;
-import org.springframework.lang.Nullable;
 
 /**
  * A factory for common {@link org.springframework.core.convert.ConversionService}
@@ -33,11 +32,7 @@ import org.springframework.lang.Nullable;
  * @author Chris Beams
  * @since 3.0
  */
-public final class ConversionServiceFactory {
-
-	private ConversionServiceFactory() {
-	}
-
+public abstract class ConversionServiceFactory {
 
 	/**
 	 * Register the given Converter objects with the given target ConverterRegistry.
@@ -45,7 +40,7 @@ public final class ConversionServiceFactory {
 	 * {@link ConverterFactory}, or {@link GenericConverter}
 	 * @param registry the target registry
 	 */
-	public static void registerConverters(@Nullable Set<?> converters, ConverterRegistry registry) {
+	public static void registerConverters(Set<?> converters, ConverterRegistry registry) {
 		if (converters != null) {
 			for (Object converter : converters) {
 				if (converter instanceof GenericConverter) {

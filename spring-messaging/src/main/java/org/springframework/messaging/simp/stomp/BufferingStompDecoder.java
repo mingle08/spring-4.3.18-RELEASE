@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
@@ -52,9 +51,8 @@ public class BufferingStompDecoder {
 
 	private final int bufferSizeLimit;
 
-	private final Queue<ByteBuffer> chunks = new LinkedBlockingQueue<>();
+	private final Queue<ByteBuffer> chunks = new LinkedBlockingQueue<ByteBuffer>();
 
-	@Nullable
 	private volatile Integer expectedContentLength;
 
 
@@ -88,7 +86,7 @@ public class BufferingStompDecoder {
 
 	/**
 	 * Decodes one or more STOMP frames from the given {@code ByteBuffer} into a
-	 * list of {@link Message Messages}.
+	 * list of {@link Message}s.
 	 * <p>If there was enough data to parse a "content-length" header, then the
 	 * value is used to determine how much more data is needed before a new
 	 * attempt to decode is made.
@@ -104,13 +102,12 @@ public class BufferingStompDecoder {
 		this.chunks.add(newBuffer);
 		checkBufferLimits();
 
-		Integer contentLength = this.expectedContentLength;
-		if (contentLength != null && getBufferSize() < contentLength) {
-			return Collections.emptyList();
+		if (this.expectedContentLength != null && getBufferSize() < this.expectedContentLength) {
+			return Collections.<Message<byte[]>>emptyList();
 		}
 
 		ByteBuffer bufferToDecode = assembleChunksAndReset();
-		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
 		List<Message<byte[]>> messages = this.stompDecoder.decode(bufferToDecode, headers);
 
 		if (bufferToDecode.hasRemaining()) {
@@ -139,11 +136,12 @@ public class BufferingStompDecoder {
 	}
 
 	private void checkBufferLimits() {
-		Integer contentLength = this.expectedContentLength;
-		if (contentLength != null && contentLength > this.bufferSizeLimit) {
-			throw new StompConversionException(
-					"STOMP 'content-length' header value " + this.expectedContentLength +
-					"  exceeds configured buffer size limit " + this.bufferSizeLimit);
+		if (this.expectedContentLength != null) {
+			if (this.expectedContentLength > this.bufferSizeLimit) {
+				throw new StompConversionException(
+						"STOMP 'content-length' header value " + this.expectedContentLength +
+						"  exceeds configured buffer size limit " + this.bufferSizeLimit);
+			}
 		}
 		if (getBufferSize() > this.bufferSizeLimit) {
 			throw new StompConversionException("The configured STOMP buffer size limit of " +
@@ -165,7 +163,6 @@ public class BufferingStompDecoder {
 	/**
 	 * Get the expected content length of the currently buffered, incomplete STOMP frame.
 	 */
-	@Nullable
 	public Integer getExpectedContentLength() {
 		return this.expectedContentLength;
 	}

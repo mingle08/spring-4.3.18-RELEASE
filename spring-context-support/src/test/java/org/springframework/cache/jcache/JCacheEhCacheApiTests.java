@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,15 +22,15 @@ import javax.cache.Caching;
 import javax.cache.configuration.MutableConfiguration;
 import javax.cache.spi.CachingProvider;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.After;
+import org.junit.Before;
 
-import org.springframework.context.testfixture.cache.AbstractValueAdaptingCacheTests;
+import org.springframework.cache.AbstractCacheTests;
 
 /**
  * @author Stephane Nicoll
  */
-public class JCacheEhCacheApiTests extends AbstractValueAdaptingCacheTests<JCacheCache> {
+public class JCacheEhCacheApiTests extends AbstractCacheTests<JCacheCache> {
 
 	private CacheManager cacheManager;
 
@@ -38,26 +38,20 @@ public class JCacheEhCacheApiTests extends AbstractValueAdaptingCacheTests<JCach
 
 	private JCacheCache cache;
 
-	private JCacheCache cacheNoNull;
 
-
-	@BeforeEach
+	@Before
 	public void setup() {
 		this.cacheManager = getCachingProvider().getCacheManager();
 		this.cacheManager.createCache(CACHE_NAME, new MutableConfiguration<>());
-		this.cacheManager.createCache(CACHE_NAME_NO_NULL, new MutableConfiguration<>());
 		this.nativeCache = this.cacheManager.getCache(CACHE_NAME);
 		this.cache = new JCacheCache(this.nativeCache);
-		Cache<Object, Object> nativeCacheNoNull =
-				this.cacheManager.getCache(CACHE_NAME_NO_NULL);
-		this.cacheNoNull = new JCacheCache(nativeCacheNoNull, false);
 	}
 
 	protected CachingProvider getCachingProvider() {
-		return Caching.getCachingProvider("org.ehcache.jsr107.EhcacheCachingProvider");
+		return Caching.getCachingProvider("org.ehcache.jcache.JCacheCachingProvider");
 	}
 
-	@AfterEach
+	@After
 	public void shutdown() {
 		if (this.cacheManager != null) {
 			this.cacheManager.close();
@@ -66,12 +60,7 @@ public class JCacheEhCacheApiTests extends AbstractValueAdaptingCacheTests<JCach
 
 	@Override
 	protected JCacheCache getCache() {
-		return getCache(true);
-	}
-
-	@Override
-	protected JCacheCache getCache(boolean allowNull) {
-		return allowNull ? this.cache : this.cacheNoNull;
+		return this.cache;
 	}
 
 	@Override

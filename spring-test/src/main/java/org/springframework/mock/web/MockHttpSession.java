@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,34 +24,31 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionBindingEvent;
+import javax.servlet.http.HttpSessionBindingListener;
 
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.http.HttpSession;
-import jakarta.servlet.http.HttpSessionBindingEvent;
-import jakarta.servlet.http.HttpSessionBindingListener;
-
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * Mock implementation of the {@link jakarta.servlet.http.HttpSession} interface.
+ * Mock implementation of the {@link javax.servlet.http.HttpSession} interface.
  *
- * <p>As of Spring 5.0, this set of mocks is designed on a Servlet 4.0 baseline.
+ * <p>As of Spring 4.0, this set of mocks is designed on a Servlet 3.0 baseline.
+ *
+ * <p>Used for testing the web framework; also useful for testing application
+ * controllers.
  *
  * @author Juergen Hoeller
  * @author Rod Johnson
  * @author Mark Fisher
  * @author Sam Brannen
- * @author Vedran Pavic
  * @since 1.0.2
  */
 @SuppressWarnings("deprecation")
 public class MockHttpSession implements HttpSession {
 
-	/**
-	 * The session cookie name.
-	 */
 	public static final String SESSION_COOKIE_NAME = "JSESSION";
 
 
@@ -67,7 +64,7 @@ public class MockHttpSession implements HttpSession {
 
 	private final ServletContext servletContext;
 
-	private final Map<String, Object> attributes = new LinkedHashMap<>();
+	private final Map<String, Object> attributes = new LinkedHashMap<String, Object>();
 
 	private boolean invalid = false;
 
@@ -86,7 +83,7 @@ public class MockHttpSession implements HttpSession {
 	 * Create a new MockHttpSession.
 	 * @param servletContext the ServletContext that the session runs in
 	 */
-	public MockHttpSession(@Nullable ServletContext servletContext) {
+	public MockHttpSession(ServletContext servletContext) {
 		this(servletContext, null);
 	}
 
@@ -95,7 +92,7 @@ public class MockHttpSession implements HttpSession {
 	 * @param servletContext the ServletContext that the session runs in
 	 * @param id a unique identifier for this session
 	 */
-	public MockHttpSession(@Nullable ServletContext servletContext, @Nullable String id) {
+	public MockHttpSession(ServletContext servletContext, String id) {
 		this.servletContext = (servletContext != null ? servletContext : new MockServletContext());
 		this.id = (id != null ? id : Integer.toString(nextId++));
 	}
@@ -149,7 +146,7 @@ public class MockHttpSession implements HttpSession {
 	}
 
 	@Override
-	public jakarta.servlet.http.HttpSessionContext getSessionContext() {
+	public javax.servlet.http.HttpSessionContext getSessionContext() {
 		throw new UnsupportedOperationException("getSessionContext");
 	}
 
@@ -168,7 +165,7 @@ public class MockHttpSession implements HttpSession {
 	@Override
 	public Enumeration<String> getAttributeNames() {
 		assertIsValid();
-		return Collections.enumeration(new LinkedHashSet<>(this.attributes.keySet()));
+		return Collections.enumeration(new LinkedHashSet<String>(this.attributes.keySet()));
 	}
 
 	@Override
@@ -178,18 +175,13 @@ public class MockHttpSession implements HttpSession {
 	}
 
 	@Override
-	public void setAttribute(String name, @Nullable Object value) {
+	public void setAttribute(String name, Object value) {
 		assertIsValid();
 		Assert.notNull(name, "Attribute name must not be null");
 		if (value != null) {
-			Object oldValue = this.attributes.put(name, value);
-			if (value != oldValue) {
-				if (oldValue instanceof HttpSessionBindingListener) {
-					((HttpSessionBindingListener) oldValue).valueUnbound(new HttpSessionBindingEvent(this, name, oldValue));
-				}
-				if (value instanceof HttpSessionBindingListener) {
-					((HttpSessionBindingListener) value).valueBound(new HttpSessionBindingEvent(this, name, value));
-				}
+			this.attributes.put(name, value);
+			if (value instanceof HttpSessionBindingListener) {
+				((HttpSessionBindingListener) value).valueBound(new HttpSessionBindingEvent(this, name, value));
 			}
 		}
 		else {
@@ -272,7 +264,7 @@ public class MockHttpSession implements HttpSession {
 	 * @return a representation of this session's serialized state
 	 */
 	public Serializable serializeState() {
-		HashMap<String, Serializable> state = new HashMap<>();
+		HashMap<String, Serializable> state = new HashMap<String, Serializable>();
 		for (Iterator<Map.Entry<String, Object>> it = this.attributes.entrySet().iterator(); it.hasNext();) {
 			Map.Entry<String, Object> entry = it.next();
 			String name = entry.getKey();

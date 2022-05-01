@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,19 +21,19 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.Random;
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Arjen Poutsma
  */
-public class StreamingSimpleClientHttpRequestFactoryTests extends AbstractHttpRequestFactoryTests {
+public class StreamingSimpleClientHttpRequestFactoryTests extends AbstractHttpRequestFactoryTestCase {
 
 	@Override
 	protected ClientHttpRequestFactory createRequestFactory() {
@@ -57,9 +57,9 @@ public class StreamingSimpleClientHttpRequestFactoryTests extends AbstractHttpRe
 		try {
 			ClientHttpRequest request = factory.createRequest(new URI(baseUrl + "/echo"), HttpMethod.GET);
 			response = request.execute();
-			assertThat(response.getStatusCode()).as("Invalid response status").isEqualTo(HttpStatus.OK);
+			assertEquals("Invalid response status", HttpStatus.OK, response.getStatusCode());
 			HttpHeaders responseHeaders = response.getHeaders();
-			assertThat(responseHeaders.getFirst(headerName)).as("Custom header invalid").isEqualTo(headerValue);
+			assertEquals("Custom header invalid", headerValue, responseHeaders.getFirst(headerName));
 		}
 		finally {
 			if (response != null) {
@@ -69,7 +69,7 @@ public class StreamingSimpleClientHttpRequestFactoryTests extends AbstractHttpRe
 	}
 
 	@Test
-	@Disabled
+	@Ignore
 	public void largeFileUpload() throws Exception {
 		Random rnd = new Random();
 		ClientHttpResponse response = null;
@@ -86,7 +86,7 @@ public class StreamingSimpleClientHttpRequestFactoryTests extends AbstractHttpRe
 				body.write(buffer);
 			}
 			response = request.execute();
-			assertThat(response.getStatusCode()).as("Invalid response status").isEqualTo(HttpStatus.OK);
+			assertEquals("Invalid response status", HttpStatus.OK, response.getStatusCode());
 		}
 		finally {
 			if (response != null) {

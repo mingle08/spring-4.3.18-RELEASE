@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,12 +23,9 @@ import java.io.OutputStream;
 import java.io.StringReader;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLResolver;
 import javax.xml.stream.XMLStreamException;
@@ -48,14 +45,15 @@ import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.XMLReaderFactory;
 
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.AbstractHttpMessageConverter;
+import org.springframework.http.converter.HttpMessageConversionException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
-import org.springframework.lang.Nullable;
 import org.springframework.util.StreamUtils;
 
 /**
@@ -65,17 +63,10 @@ import org.springframework.util.StreamUtils;
  * @author Arjen Poutsma
  * @author Rossen Stoyanchev
  * @since 3.0
- * @param <T> the converted object type
  */
 public class SourceHttpMessageConverter<T extends Source> extends AbstractHttpMessageConverter<T> {
 
-	private static final EntityResolver NO_OP_ENTITY_RESOLVER =
-			(publicId, systemId) -> new InputSource(new StringReader(""));
-
-	private static final XMLResolver NO_OP_XML_RESOLVER =
-			(publicID, systemID, base, ns) -> StreamUtils.emptyInput();
-
-	private static final Set<Class<?>> SUPPORTED_CLASSES = new HashSet<>(8);
+	private static final Set<Class<?>> SUPPORTED_CLASSES = new HashSet<Class<?>>(5);
 
 	static {
 		SUPPORTED_CLASSES.add(DOMSource.class);
@@ -103,7 +94,7 @@ public class SourceHttpMessageConverter<T extends Source> extends AbstractHttpMe
 
 
 	/**
-	 * Indicate whether DTD parsing should be supported.
+	 * Indicates whether DTD parsing should be supported.
 	 * <p>Default is {@code false} meaning that DTD is disabled.
 	 */
 	public void setSupportDtd(boolean supportDtd) {
@@ -111,14 +102,14 @@ public class SourceHttpMessageConverter<T extends Source> extends AbstractHttpMe
 	}
 
 	/**
-	 * Return whether DTD parsing is supported.
+	 * Whether DTD parsing is supported.
 	 */
 	public boolean isSupportDtd() {
 		return this.supportDtd;
 	}
 
 	/**
-	 * Indicate whether external XML entities are processed when converting to a Source.
+	 * Indicates whether external XML entities are processed when converting to a Source.
 	 * <p>Default is {@code false}, meaning that external entities are not resolved.
 	 * <p><strong>Note:</strong> setting this option to {@code true} also
 	 * automatically sets {@link #setSupportDtd} to {@code true}.
@@ -126,12 +117,12 @@ public class SourceHttpMessageConverter<T extends Source> extends AbstractHttpMe
 	public void setProcessExternalEntities(boolean processExternalEntities) {
 		this.processExternalEntities = processExternalEntities;
 		if (processExternalEntities) {
-			this.supportDtd = true;
+			setSupportDtd(true);
 		}
 	}
 
 	/**
-	 * Return whether XML external entities are allowed.
+	 * Returns the configured value for whether XML external entities are allowed.
 	 */
 	public boolean isProcessExternalEntities() {
 		return this.processExternalEntities;
@@ -148,26 +139,26 @@ public class SourceHttpMessageConverter<T extends Source> extends AbstractHttpMe
 	protected T readInternal(Class<? extends T> clazz, HttpInputMessage inputMessage)
 			throws IOException, HttpMessageNotReadableException {
 
-		InputStream body = StreamUtils.nonClosing(inputMessage.getBody());
+		InputStream body = inputMessage.getBody();
 		if (DOMSource.class == clazz) {
-			return (T) readDOMSource(body, inputMessage);
+			return (T) readDOMSource(body);
 		}
 		else if (SAXSource.class == clazz) {
-			return (T) readSAXSource(body, inputMessage);
+			return (T) readSAXSource(body);
 		}
 		else if (StAXSource.class == clazz) {
-			return (T) readStAXSource(body, inputMessage);
+			return (T) readStAXSource(body);
 		}
 		else if (StreamSource.class == clazz || Source.class == clazz) {
 			return (T) readStreamSource(body);
 		}
 		else {
-			throw new HttpMessageNotReadableException("Could not read class [" + clazz +
-					"]. Only DOMSource, SAXSource, StAXSource, and StreamSource are supported.", inputMessage);
+			throw new HttpMessageConversionException("Could not read class [" + clazz +
+					"]. Only DOMSource, SAXSource, StAXSource, and StreamSource are supported.");
 		}
 	}
 
-	private DOMSource readDOMSource(InputStream body, HttpInputMessage inputMessage) throws IOException {
+	private DOMSource readDOMSource(InputStream body) throws IOException {
 		try {
 			DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 			documentBuilderFactory.setNamespaceAware(true);
@@ -184,42 +175,36 @@ public class SourceHttpMessageConverter<T extends Source> extends AbstractHttpMe
 		}
 		catch (NullPointerException ex) {
 			if (!isSupportDtd()) {
-				throw new HttpMessageNotReadableException("NPE while unmarshalling: This can happen " +
-						"due to the presence of DTD declarations which are disabled.", ex, inputMessage);
+				throw new HttpMessageNotReadableException("NPE while unmarshalling: " +
+						"This can happen due to the presence of DTD declarations which are disabled.", ex);
 			}
 			throw ex;
 		}
 		catch (ParserConfigurationException ex) {
-			throw new HttpMessageNotReadableException(
-					"Could not set feature: " + ex.getMessage(), ex, inputMessage);
+			throw new HttpMessageNotReadableException("Could not set feature: " + ex.getMessage(), ex);
 		}
 		catch (SAXException ex) {
-			throw new HttpMessageNotReadableException(
-					"Could not parse document: " + ex.getMessage(), ex, inputMessage);
+			throw new HttpMessageNotReadableException("Could not parse document: " + ex.getMessage(), ex);
 		}
 	}
 
-	private SAXSource readSAXSource(InputStream body, HttpInputMessage inputMessage) throws IOException {
+	private SAXSource readSAXSource(InputStream body) throws IOException {
 		try {
-			SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
-			saxParserFactory.setNamespaceAware(true);
-			saxParserFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", !isSupportDtd());
-			saxParserFactory.setFeature("http://xml.org/sax/features/external-general-entities", isProcessExternalEntities());
-			SAXParser saxParser = saxParserFactory.newSAXParser();
-			XMLReader xmlReader = saxParser.getXMLReader();
+			XMLReader xmlReader = XMLReaderFactory.createXMLReader();
+			xmlReader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", !isSupportDtd());
+			xmlReader.setFeature("http://xml.org/sax/features/external-general-entities", isProcessExternalEntities());
 			if (!isProcessExternalEntities()) {
 				xmlReader.setEntityResolver(NO_OP_ENTITY_RESOLVER);
 			}
 			byte[] bytes = StreamUtils.copyToByteArray(body);
 			return new SAXSource(xmlReader, new InputSource(new ByteArrayInputStream(bytes)));
 		}
-		catch (SAXException | ParserConfigurationException ex) {
-			throw new HttpMessageNotReadableException(
-					"Could not parse document: " + ex.getMessage(), ex, inputMessage);
+		catch (SAXException ex) {
+			throw new HttpMessageNotReadableException("Could not parse document: " + ex.getMessage(), ex);
 		}
 	}
 
-	private Source readStAXSource(InputStream body, HttpInputMessage inputMessage) {
+	private Source readStAXSource(InputStream body) {
 		try {
 			XMLInputFactory inputFactory = XMLInputFactory.newInstance();
 			inputFactory.setProperty(XMLInputFactory.SUPPORT_DTD, isSupportDtd());
@@ -231,8 +216,7 @@ public class SourceHttpMessageConverter<T extends Source> extends AbstractHttpMe
 			return new StAXSource(streamReader);
 		}
 		catch (XMLStreamException ex) {
-			throw new HttpMessageNotReadableException(
-					"Could not parse document: " + ex.getMessage(), ex, inputMessage);
+			throw new HttpMessageNotReadableException("Could not parse document: " + ex.getMessage(), ex);
 		}
 	}
 
@@ -242,8 +226,7 @@ public class SourceHttpMessageConverter<T extends Source> extends AbstractHttpMe
 	}
 
 	@Override
-	@Nullable
-	protected Long getContentLength(T t, @Nullable MediaType contentType) {
+	protected Long getContentLength(T t, MediaType contentType) {
 		if (t instanceof DOMSource) {
 			try {
 				CountingOutputStream os = new CountingOutputStream();
@@ -293,5 +276,20 @@ public class SourceHttpMessageConverter<T extends Source> extends AbstractHttpMe
 			this.count += len;
 		}
 	}
+
+
+	private static final EntityResolver NO_OP_ENTITY_RESOLVER = new EntityResolver() {
+		@Override
+		public InputSource resolveEntity(String publicId, String systemId) {
+			return new InputSource(new StringReader(""));
+		}
+	};
+
+	private static final XMLResolver NO_OP_XML_RESOLVER = new XMLResolver() {
+		@Override
+		public Object resolveEntity(String publicID, String systemID, String base, String ns) {
+			return StreamUtils.emptyInput();
+		}
+	};
 
 }

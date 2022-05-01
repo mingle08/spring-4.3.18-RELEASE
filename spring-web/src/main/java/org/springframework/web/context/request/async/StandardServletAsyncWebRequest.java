@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,23 +20,21 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.AsyncEvent;
-import jakarta.servlet.AsyncListener;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.util.Assert;
 import org.springframework.web.context.request.ServletWebRequest;
 
 /**
- * A Servlet implementation of {@link AsyncWebRequest}.
+ * A Servlet 3.0 implementation of {@link AsyncWebRequest}.
  *
  * <p>The servlet and all filters involved in an async request must have async
  * support enabled using the Servlet API or by adding an
- * <code>&lt;async-supported&gt;true&lt;/async-supported&gt;</code> element to servlet and filter
+ * {@code <async-supported>true</async-supported>} element to servlet and filter
  * declarations in {@code web.xml}.
  *
  * @author Rossen Stoyanchev
@@ -48,13 +46,13 @@ public class StandardServletAsyncWebRequest extends ServletWebRequest implements
 
 	private AsyncContext asyncContext;
 
-	private final AtomicBoolean asyncCompleted = new AtomicBoolean();
+	private AtomicBoolean asyncCompleted = new AtomicBoolean(false);
 
-	private final List<Runnable> timeoutHandlers = new ArrayList<>();
+	private final List<Runnable> timeoutHandlers = new ArrayList<Runnable>();
 
-	private final List<Consumer<Throwable>> exceptionHandlers = new ArrayList<>();
+	private ErrorHandler errorHandler;
 
-	private final List<Runnable> completionHandlers = new ArrayList<>();
+	private final List<Runnable> completionHandlers = new ArrayList<Runnable>();
 
 
 	/**
@@ -82,9 +80,8 @@ public class StandardServletAsyncWebRequest extends ServletWebRequest implements
 		this.timeoutHandlers.add(timeoutHandler);
 	}
 
-	@Override
-	public void addErrorHandler(Consumer<Throwable> exceptionHandler) {
-		this.exceptionHandlers.add(exceptionHandler);
+	void setErrorHandler(ErrorHandler errorHandler) {
+		this.errorHandler = errorHandler;
 	}
 
 	@Override
@@ -143,19 +140,32 @@ public class StandardServletAsyncWebRequest extends ServletWebRequest implements
 
 	@Override
 	public void onError(AsyncEvent event) throws IOException {
-		this.exceptionHandlers.forEach(consumer -> consumer.accept(event.getThrowable()));
+		if (this.errorHandler != null) {
+			this.errorHandler.handle(event.getThrowable());
+		}
 	}
 
 	@Override
 	public void onTimeout(AsyncEvent event) throws IOException {
-		this.timeoutHandlers.forEach(Runnable::run);
+		for (Runnable handler : this.timeoutHandlers) {
+			handler.run();
+		}
 	}
 
 	@Override
 	public void onComplete(AsyncEvent event) throws IOException {
-		this.completionHandlers.forEach(Runnable::run);
+		for (Runnable handler : this.completionHandlers) {
+			handler.run();
+		}
 		this.asyncContext = null;
 		this.asyncCompleted.set(true);
+	}
+
+
+	interface ErrorHandler {
+
+		void handle(Throwable ex);
+
 	}
 
 }

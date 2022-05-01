@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,11 @@
 
 package org.springframework.aop.scope;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.mockito.Mockito.mock;
+import static org.mockito.BDDMockito.*;
 
 /**
  * Unit tests for the {@link DefaultScopedObject} class.
@@ -29,33 +28,29 @@ import static org.mockito.Mockito.mock;
  * @author Rick Evans
  * @author Chris Beams
  */
-public class DefaultScopedObjectTests {
+public final class DefaultScopedObjectTests {
 
 	private static final String GOOD_BEAN_NAME = "foo";
 
 
-	@Test
+	@Test(expected=IllegalArgumentException.class)
 	public void testCtorWithNullBeanFactory() throws Exception {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-			new DefaultScopedObject(null, GOOD_BEAN_NAME));
+		new DefaultScopedObject(null, GOOD_BEAN_NAME);
 	}
 
-	@Test
+	@Test(expected=IllegalArgumentException.class)
 	public void testCtorWithNullTargetBeanName() throws Exception {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				testBadTargetBeanName(null));
+		testBadTargetBeanName(null);
 	}
 
-	@Test
+	@Test(expected=IllegalArgumentException.class)
 	public void testCtorWithEmptyTargetBeanName() throws Exception {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				testBadTargetBeanName(""));
+		testBadTargetBeanName("");
 	}
 
-	@Test
+	@Test(expected=IllegalArgumentException.class)
 	public void testCtorWithJustWhitespacedTargetBeanName() throws Exception {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				testBadTargetBeanName("   "));
+		testBadTargetBeanName("   ");
 	}
 
 	private static void testBadTargetBeanName(final String badTargetBeanName) {

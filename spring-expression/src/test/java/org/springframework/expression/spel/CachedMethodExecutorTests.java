@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,8 @@
 
 package org.springframework.expression.spel;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
@@ -24,7 +25,7 @@ import org.springframework.expression.spel.ast.MethodReference;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Test for caching in {@link MethodReference} (SPR-10657).
@@ -35,11 +36,17 @@ public class CachedMethodExecutorTests {
 
 	private final ExpressionParser parser = new SpelExpressionParser();
 
-	private final StandardEvaluationContext context = new StandardEvaluationContext(new RootObject());
+	private StandardEvaluationContext context;
+
+
+	@Before
+	public void setUp() throws Exception {
+		this.context = new StandardEvaluationContext(new RootObject());
+	}
 
 
 	@Test
-	public void testCachedExecutionForParameters() {
+	public void testCachedExecutionForParameters() throws Exception {
 		Expression expression = this.parser.parseExpression("echo(#var)");
 
 		assertMethodExecution(expression, 42, "int: 42");
@@ -49,7 +56,7 @@ public class CachedMethodExecutorTests {
 	}
 
 	@Test
-	public void testCachedExecutionForTarget() {
+	public void testCachedExecutionForTarget() throws Exception {
 		Expression expression = this.parser.parseExpression("#var.echo(42)");
 
 		assertMethodExecution(expression, new RootObject(), "int: 42");
@@ -60,7 +67,7 @@ public class CachedMethodExecutorTests {
 
 	private void assertMethodExecution(Expression expression, Object var, String expected) {
 		this.context.setVariable("var", var);
-		assertThat(expression.getValue(this.context)).isEqualTo(expected);
+		assertEquals(expected, expression.getValue(this.context));
 	}
 
 
@@ -69,6 +76,7 @@ public class CachedMethodExecutorTests {
 		public String echo(String value) {
 			return "String: " + value;
 		}
+
 	}
 
 	public static class RootObject extends BaseObject {
@@ -76,6 +84,7 @@ public class CachedMethodExecutorTests {
 		public String echo(int value) {
 			return "int: " + value;
 		}
+
 	}
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,16 +18,13 @@ package org.springframework.jdbc.datasource.lookup;
 
 import javax.sql.DataSource;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanNotOfRequiredTypeException;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Rick Evans
@@ -49,9 +46,9 @@ public class BeanFactoryDataSourceLookupTests {
 		BeanFactoryDataSourceLookup lookup = new BeanFactoryDataSourceLookup();
 		lookup.setBeanFactory(beanFactory);
 		DataSource dataSource = lookup.getDataSource(DATASOURCE_BEAN_NAME);
-		assertThat(dataSource).as("A DataSourceLookup implementation must *never* return null from " +
-				"getDataSource(): this one obviously (and incorrectly) is").isNotNull();
-		assertThat(dataSource).isSameAs(expectedDataSource);
+		assertNotNull("A DataSourceLookup implementation must *never* return null from " +
+				"getDataSource(): this one obviously (and incorrectly) is", dataSource);
+		assertSame(expectedDataSource, dataSource);
 	}
 
 	@Test
@@ -62,16 +59,18 @@ public class BeanFactoryDataSourceLookupTests {
 				new BeanNotOfRequiredTypeException(DATASOURCE_BEAN_NAME,
 						DataSource.class, String.class));
 
-		BeanFactoryDataSourceLookup lookup = new BeanFactoryDataSourceLookup(beanFactory);
-		assertThatExceptionOfType(DataSourceLookupFailureException.class).isThrownBy(() ->
-				lookup.getDataSource(DATASOURCE_BEAN_NAME));
+		try {
+				BeanFactoryDataSourceLookup lookup = new BeanFactoryDataSourceLookup(beanFactory);
+				lookup.getDataSource(DATASOURCE_BEAN_NAME);
+				fail("should have thrown DataSourceLookupFailureException");
+		}
+		catch (DataSourceLookupFailureException ex) { /* expected */ }
 	}
 
-	@Test
+	@Test(expected = IllegalStateException.class)
 	public void testLookupWhereBeanFactoryHasNotBeenSupplied() throws Exception {
 		BeanFactoryDataSourceLookup lookup = new BeanFactoryDataSourceLookup();
-		assertThatIllegalStateException().isThrownBy(() ->
-				lookup.getDataSource(DATASOURCE_BEAN_NAME));
+		lookup.getDataSource(DATASOURCE_BEAN_NAME);
 	}
 
 }

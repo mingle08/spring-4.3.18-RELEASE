@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,7 +27,6 @@ import org.springframework.expression.TypedValue;
 import org.springframework.expression.spel.ExpressionState;
 import org.springframework.expression.spel.SpelEvaluationException;
 import org.springframework.expression.spel.SpelMessage;
-import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
 
@@ -46,8 +45,8 @@ public class Projection extends SpelNodeImpl {
 	private final boolean nullSafe;
 
 
-	public Projection(boolean nullSafe, int startPos, int endPos, SpelNodeImpl expression) {
-		super(startPos, endPos, expression);
+	public Projection(boolean nullSafe, int pos, SpelNodeImpl expression) {
+		super(pos, expression);
 		this.nullSafe = nullSafe;
 	}
 
@@ -72,7 +71,7 @@ public class Projection extends SpelNodeImpl {
 		// eg. {'a':'y','b':'n'}.![value=='y'?key:null]" == ['a', null]
 		if (operand instanceof Map) {
 			Map<?, ?> mapData = (Map<?, ?>) operand;
-			List<Object> result = new ArrayList<>();
+			List<Object> result = new ArrayList<Object>();
 			for (Map.Entry<?, ?> entry : mapData.entrySet()) {
 				try {
 					state.pushActiveContextObject(new TypedValue(entry));
@@ -91,12 +90,13 @@ public class Projection extends SpelNodeImpl {
 			Iterable<?> data = (operand instanceof Iterable ?
 					(Iterable<?>) operand : Arrays.asList(ObjectUtils.toObjectArray(operand)));
 
-			List<Object> result = new ArrayList<>();
+			List<Object> result = new ArrayList<Object>();
+			int idx = 0;
 			Class<?> arrayElementType = null;
 			for (Object element : data) {
 				try {
 					state.pushActiveContextObject(new TypedValue(element));
-					state.enterScope("index", result.size());
+					state.enterScope("index", idx);
 					Object value = this.children[0].getValueInternal(state).getValue();
 					if (value != null && operandIsArray) {
 						arrayElementType = determineCommonType(arrayElementType, value.getClass());
@@ -107,6 +107,7 @@ public class Projection extends SpelNodeImpl {
 					state.exitScope();
 					state.popActiveContextObject();
 				}
+				idx++;
 			}
 
 			if (operandIsArray) {
@@ -137,7 +138,7 @@ public class Projection extends SpelNodeImpl {
 		return "![" + getChild(0).toStringAST() + "]";
 	}
 
-	private Class<?> determineCommonType(@Nullable Class<?> oldType, Class<?> newType) {
+	private Class<?> determineCommonType(Class<?> oldType, Class<?> newType) {
 		if (oldType == null) {
 			return newType;
 		}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,16 +21,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.beans.testfixture.beans.FactoryMethods;
-import org.springframework.beans.testfixture.beans.TestBean;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.tests.sample.beans.TestBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * @author Juergen Hoeller
@@ -45,31 +43,31 @@ public class FactoryMethodTests {
 		reader.loadBeanDefinitions(new ClassPathResource("factory-methods.xml", getClass()));
 
 		TestBean tb = (TestBean) xbf.getBean("defaultTestBean");
-		assertThat(tb.getName()).isEqualTo("defaultInstance");
-		assertThat(tb.getAge()).isEqualTo(1);
+		assertEquals("defaultInstance", tb.getName());
+		assertEquals(1, tb.getAge());
 
 		FactoryMethods fm = (FactoryMethods) xbf.getBean("default");
-		assertThat(fm.getNum()).isEqualTo(0);
-		assertThat(fm.getName()).isEqualTo("default");
-		assertThat(fm.getTestBean().getName()).isEqualTo("defaultInstance");
-		assertThat(fm.getStringValue()).isEqualTo("setterString");
+		assertEquals(0, fm.getNum());
+		assertEquals("default", fm.getName());
+		assertEquals("defaultInstance", fm.getTestBean().getName());
+		assertEquals("setterString", fm.getStringValue());
 
 		fm = (FactoryMethods) xbf.getBean("testBeanOnly");
-		assertThat(fm.getNum()).isEqualTo(0);
-		assertThat(fm.getName()).isEqualTo("default");
+		assertEquals(0, fm.getNum());
+		assertEquals("default", fm.getName());
 		// This comes from the test bean
-		assertThat(fm.getTestBean().getName()).isEqualTo("Juergen");
+		assertEquals("Juergen", fm.getTestBean().getName());
 
 		fm = (FactoryMethods) xbf.getBean("full");
-		assertThat(fm.getNum()).isEqualTo(27);
-		assertThat(fm.getName()).isEqualTo("gotcha");
-		assertThat(fm.getTestBean().getName()).isEqualTo("Juergen");
+		assertEquals(27, fm.getNum());
+		assertEquals("gotcha", fm.getName());
+		assertEquals("Juergen", fm.getTestBean().getName());
 
 		FactoryMethods fm2 = (FactoryMethods) xbf.getBean("full");
-		assertThat(fm2).isSameAs(fm);
+		assertSame(fm, fm2);
 
 		xbf.destroySingletons();
-		assertThat(tb.wasDestroyed()).isTrue();
+		assertTrue(tb.wasDestroyed());
 	}
 
 	@Test
@@ -77,8 +75,14 @@ public class FactoryMethodTests {
 		DefaultListableBeanFactory xbf = new DefaultListableBeanFactory();
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(xbf);
 		reader.loadBeanDefinitions(new ClassPathResource("factory-methods.xml", getClass()));
-		assertThatExceptionOfType(BeanCreationException.class).isThrownBy(() ->
-				xbf.getBean("defaultTestBeanWithInvalidDestroyMethod"));
+
+		try {
+			xbf.getBean("defaultTestBeanWithInvalidDestroyMethod");
+			fail("Should have thrown BeanCreationException");
+		}
+		catch (BeanCreationException ex) {
+			// expected
+		}
 	}
 
 	@Test
@@ -87,9 +91,16 @@ public class FactoryMethodTests {
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(xbf);
 		reader.loadBeanDefinitions(new ClassPathResource("factory-methods.xml", getClass()));
 
-		assertThat(xbf.getBean("null").toString()).isEqualTo("null");
-		assertThatExceptionOfType(BeanCreationException.class).isThrownBy(() ->
-				xbf.getBean("nullWithProperty"));
+		FactoryMethods fm = (FactoryMethods) xbf.getBean("null");
+		assertNull(fm);
+
+		try {
+			xbf.getBean("nullWithProperty");
+			fail("Should have thrown BeanCreationException");
+		}
+		catch (BeanCreationException ex) {
+			// expected
+		}
 	}
 
 	@Test
@@ -99,19 +110,19 @@ public class FactoryMethodTests {
 		reader.loadBeanDefinitions(new ClassPathResource("factory-methods.xml", getClass()));
 
 		FactoryMethods fm = (FactoryMethods) xbf.getBean("fullWithNull");
-		assertThat(fm.getNum()).isEqualTo(27);
-		assertThat(fm.getName()).isNull();
-		assertThat(fm.getTestBean().getName()).isEqualTo("Juergen");
+		assertEquals(27, fm.getNum());
+		assertEquals(null, fm.getName());
+		assertEquals("Juergen", fm.getTestBean().getName());
 
 		fm = (FactoryMethods) xbf.getBean("fullWithGenericNull");
-		assertThat(fm.getNum()).isEqualTo(27);
-		assertThat(fm.getName()).isNull();
-		assertThat(fm.getTestBean().getName()).isEqualTo("Juergen");
+		assertEquals(27, fm.getNum());
+		assertEquals(null, fm.getName());
+		assertEquals("Juergen", fm.getTestBean().getName());
 
 		fm = (FactoryMethods) xbf.getBean("fullWithNamedNull");
-		assertThat(fm.getNum()).isEqualTo(27);
-		assertThat(fm.getName()).isNull();
-		assertThat(fm.getTestBean().getName()).isEqualTo("Juergen");
+		assertEquals(27, fm.getNum());
+		assertEquals(null, fm.getName());
+		assertEquals("Juergen", fm.getTestBean().getName());
 	}
 
 	@Test
@@ -121,9 +132,9 @@ public class FactoryMethodTests {
 		reader.loadBeanDefinitions(new ClassPathResource("factory-methods.xml", getClass()));
 
 		FactoryMethods fm = (FactoryMethods) xbf.getBean("fullWithAutowire");
-		assertThat(fm.getNum()).isEqualTo(27);
-		assertThat(fm.getName()).isEqualTo("gotchaAutowired");
-		assertThat(fm.getTestBean().getName()).isEqualTo("Juergen");
+		assertEquals(27, fm.getNum());
+		assertEquals("gotchaAutowired", fm.getName());
+		assertEquals("Juergen", fm.getTestBean().getName());
 	}
 
 	@Test
@@ -133,7 +144,7 @@ public class FactoryMethodTests {
 		reader.loadBeanDefinitions(new ClassPathResource("factory-methods.xml", getClass()));
 
 		TestBean tb = (TestBean) xbf.getBean("defaultTestBean.protected");
-		assertThat(tb.getAge()).isEqualTo(1);
+		assertEquals(1, tb.getAge());
 	}
 
 	@Test
@@ -143,7 +154,7 @@ public class FactoryMethodTests {
 		reader.loadBeanDefinitions(new ClassPathResource("factory-methods.xml", getClass()));
 
 		TestBean tb = (TestBean) xbf.getBean("defaultTestBean.private");
-		assertThat(tb.getAge()).isEqualTo(1);
+		assertEquals(1, tb.getAge());
 	}
 
 	@Test
@@ -153,38 +164,38 @@ public class FactoryMethodTests {
 		reader.loadBeanDefinitions(new ClassPathResource("factory-methods.xml", getClass()));
 		FactoryMethods fm = (FactoryMethods) xbf.getBean("defaultPrototype");
 		FactoryMethods fm2 = (FactoryMethods) xbf.getBean("defaultPrototype");
-		assertThat(fm.getNum()).isEqualTo(0);
-		assertThat(fm.getName()).isEqualTo("default");
-		assertThat(fm.getTestBean().getName()).isEqualTo("defaultInstance");
-		assertThat(fm.getStringValue()).isEqualTo("setterString");
-		assertThat(fm2.getNum()).isEqualTo(fm.getNum());
-		assertThat(fm2.getStringValue()).isEqualTo(fm.getStringValue());
+		assertEquals(0, fm.getNum());
+		assertEquals("default", fm.getName());
+		assertEquals("defaultInstance", fm.getTestBean().getName());
+		assertEquals("setterString", fm.getStringValue());
+		assertEquals(fm.getNum(), fm2.getNum());
+		assertEquals(fm.getStringValue(), fm2.getStringValue());
 		// The TestBean is created separately for each bean
-		assertThat(fm2.getTestBean()).isNotSameAs(fm.getTestBean());
-		assertThat(fm2).isNotSameAs(fm);
+		assertNotSame(fm.getTestBean(), fm2.getTestBean());
+		assertNotSame(fm, fm2);
 
 		fm = (FactoryMethods) xbf.getBean("testBeanOnlyPrototype");
 		fm2 = (FactoryMethods) xbf.getBean("testBeanOnlyPrototype");
-		assertThat(fm.getNum()).isEqualTo(0);
-		assertThat(fm.getName()).isEqualTo("default");
+		assertEquals(0, fm.getNum());
+		assertEquals("default", fm.getName());
 		// This comes from the test bean
-		assertThat(fm.getTestBean().getName()).isEqualTo("Juergen");
-		assertThat(fm2.getNum()).isEqualTo(fm.getNum());
-		assertThat(fm2.getStringValue()).isEqualTo(fm.getStringValue());
+		assertEquals("Juergen", fm.getTestBean().getName());
+		assertEquals(fm.getNum(), fm2.getNum());
+		assertEquals(fm.getStringValue(), fm2.getStringValue());
 		// The TestBean reference is resolved to a prototype in the factory
-		assertThat(fm2.getTestBean()).isSameAs(fm.getTestBean());
-		assertThat(fm2).isNotSameAs(fm);
+		assertSame(fm.getTestBean(), fm2.getTestBean());
+		assertNotSame(fm, fm2);
 
 		fm = (FactoryMethods) xbf.getBean("fullPrototype");
 		fm2 = (FactoryMethods) xbf.getBean("fullPrototype");
-		assertThat(fm.getNum()).isEqualTo(27);
-		assertThat(fm.getName()).isEqualTo("gotcha");
-		assertThat(fm.getTestBean().getName()).isEqualTo("Juergen");
-		assertThat(fm2.getNum()).isEqualTo(fm.getNum());
-		assertThat(fm2.getStringValue()).isEqualTo(fm.getStringValue());
+		assertEquals(27, fm.getNum());
+		assertEquals("gotcha", fm.getName());
+		assertEquals("Juergen", fm.getTestBean().getName());
+		assertEquals(fm.getNum(), fm2.getNum());
+		assertEquals(fm.getStringValue(), fm2.getStringValue());
 		// The TestBean reference is resolved to a prototype in the factory
-		assertThat(fm2.getTestBean()).isSameAs(fm.getTestBean());
-		assertThat(fm2).isNotSameAs(fm);
+		assertSame(fm.getTestBean(), fm2.getTestBean());
+		assertNotSame(fm, fm2);
 	}
 
 	/**
@@ -196,24 +207,24 @@ public class FactoryMethodTests {
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(xbf);
 		reader.loadBeanDefinitions(new ClassPathResource("factory-methods.xml", getClass()));
 
-		assertThat(xbf.getType("externalFactoryMethodWithoutArgs")).isEqualTo(TestBean.class);
-		assertThat(xbf.getType("externalFactoryMethodWithArgs")).isEqualTo(TestBean.class);
+		assertEquals(TestBean.class, xbf.getType("externalFactoryMethodWithoutArgs"));
+		assertEquals(TestBean.class, xbf.getType("externalFactoryMethodWithArgs"));
 		String[] names = xbf.getBeanNamesForType(TestBean.class);
-		assertThat(Arrays.asList(names).contains("externalFactoryMethodWithoutArgs")).isTrue();
-		assertThat(Arrays.asList(names).contains("externalFactoryMethodWithArgs")).isTrue();
+		assertTrue(Arrays.asList(names).contains("externalFactoryMethodWithoutArgs"));
+		assertTrue(Arrays.asList(names).contains("externalFactoryMethodWithArgs"));
 
 		TestBean tb = (TestBean) xbf.getBean("externalFactoryMethodWithoutArgs");
-		assertThat(tb.getAge()).isEqualTo(2);
-		assertThat(tb.getName()).isEqualTo("Tristan");
+		assertEquals(2, tb.getAge());
+		assertEquals("Tristan", tb.getName());
 		tb = (TestBean) xbf.getBean("externalFactoryMethodWithArgs");
-		assertThat(tb.getAge()).isEqualTo(33);
-		assertThat(tb.getName()).isEqualTo("Rod");
+		assertEquals(33, tb.getAge());
+		assertEquals("Rod", tb.getName());
 
-		assertThat(xbf.getType("externalFactoryMethodWithoutArgs")).isEqualTo(TestBean.class);
-		assertThat(xbf.getType("externalFactoryMethodWithArgs")).isEqualTo(TestBean.class);
+		assertEquals(TestBean.class, xbf.getType("externalFactoryMethodWithoutArgs"));
+		assertEquals(TestBean.class, xbf.getType("externalFactoryMethodWithArgs"));
 		names = xbf.getBeanNamesForType(TestBean.class);
-		assertThat(Arrays.asList(names).contains("externalFactoryMethodWithoutArgs")).isTrue();
-		assertThat(Arrays.asList(names).contains("externalFactoryMethodWithArgs")).isTrue();
+		assertTrue(Arrays.asList(names).contains("externalFactoryMethodWithoutArgs"));
+		assertTrue(Arrays.asList(names).contains("externalFactoryMethodWithArgs"));
 	}
 
 	@Test
@@ -224,14 +235,14 @@ public class FactoryMethodTests {
 
 		InstanceFactory.count = 0;
 		xbf.preInstantiateSingletons();
-		assertThat(InstanceFactory.count).isEqualTo(1);
+		assertEquals(1, InstanceFactory.count);
 		FactoryMethods fm = (FactoryMethods) xbf.getBean("instanceFactoryMethodWithoutArgs");
-		assertThat(fm.getTestBean().getName()).isEqualTo("instanceFactory");
-		assertThat(InstanceFactory.count).isEqualTo(1);
+		assertEquals("instanceFactory", fm.getTestBean().getName());
+		assertEquals(1, InstanceFactory.count);
 		FactoryMethods fm2 = (FactoryMethods) xbf.getBean("instanceFactoryMethodWithoutArgs");
-		assertThat(fm2.getTestBean().getName()).isEqualTo("instanceFactory");
-		assertThat(fm).isSameAs(fm2);
-		assertThat(InstanceFactory.count).isEqualTo(1);
+		assertEquals("instanceFactory", fm2.getTestBean().getName());
+		assertSame(fm2, fm);
+		assertEquals(1, InstanceFactory.count);
 	}
 
 	@Test
@@ -239,8 +250,13 @@ public class FactoryMethodTests {
 		DefaultListableBeanFactory xbf = new DefaultListableBeanFactory();
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(xbf);
 		reader.loadBeanDefinitions(new ClassPathResource("factory-methods.xml", getClass()));
-		assertThatExceptionOfType(BeanCreationException.class).as("No static method matched").isThrownBy(() ->
-				xbf.getBean("noMatchPrototype"));
+		try {
+			xbf.getBean("noMatchPrototype");
+			fail("No static method matched");
+		}
+		catch (BeanCreationException ex) {
+			// Ok
+		}
 	}
 
 	@Test
@@ -248,9 +264,13 @@ public class FactoryMethodTests {
 		DefaultListableBeanFactory xbf = new DefaultListableBeanFactory();
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(xbf);
 		reader.loadBeanDefinitions(new ClassPathResource("factory-methods.xml", getClass()));
-		assertThatExceptionOfType(BeanCreationException.class).isThrownBy(() ->
-				xbf.getBean("invalidPrototype"))
-			.withMessageContaining("nonExisting(TestBean)");
+		try {
+			xbf.getBean("invalidPrototype");
+			fail("Should have thrown BeanCreationException");
+		}
+		catch (BeanCreationException ex) {
+			assertTrue(ex.getMessage().contains("nonExisting(TestBean)"));
+		}
 	}
 
 	@Test
@@ -258,9 +278,13 @@ public class FactoryMethodTests {
 		DefaultListableBeanFactory xbf = new DefaultListableBeanFactory();
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(xbf);
 		reader.loadBeanDefinitions(new ClassPathResource("factory-methods.xml", getClass()));
-		assertThatExceptionOfType(BeanCreationException.class).isThrownBy(() ->
-				xbf.getBean("invalidPrototype", new TestBean()))
-			.withMessageContaining("nonExisting(TestBean)");
+		try {
+			xbf.getBean("invalidPrototype", new TestBean());
+			fail("Should have thrown BeanCreationException");
+		}
+		catch (BeanCreationException ex) {
+			assertTrue(ex.getMessage().contains("nonExisting(TestBean)"));
+		}
 	}
 
 	@Test
@@ -274,29 +298,29 @@ public class FactoryMethodTests {
 		tbArg2.setName("arg2");
 
 		FactoryMethods fm1 = (FactoryMethods) xbf.getBean("testBeanOnlyPrototype", tbArg);
-		assertThat(fm1.getNum()).isEqualTo(0);
-		assertThat(fm1.getName()).isEqualTo("default");
+		assertEquals(0, fm1.getNum());
+		assertEquals("default", fm1.getName());
 		// This comes from the test bean
-		assertThat(fm1.getTestBean().getName()).isEqualTo("arg1");
+		assertEquals("arg1", fm1.getTestBean().getName());
 
 		FactoryMethods fm2 = (FactoryMethods) xbf.getBean("testBeanOnlyPrototype", tbArg2);
-		assertThat(fm2.getTestBean().getName()).isEqualTo("arg2");
-		assertThat(fm2.getNum()).isEqualTo(fm1.getNum());
-		assertThat("testBeanOnlyPrototypeDISetterString").isEqualTo(fm2.getStringValue());
-		assertThat(fm2.getStringValue()).isEqualTo(fm2.getStringValue());
+		assertEquals("arg2", fm2.getTestBean().getName());
+		assertEquals(fm1.getNum(), fm2.getNum());
+		assertEquals(fm2.getStringValue(), "testBeanOnlyPrototypeDISetterString");
+		assertEquals(fm2.getStringValue(), fm2.getStringValue());
 		// The TestBean reference is resolved to a prototype in the factory
-		assertThat(fm2.getTestBean()).isSameAs(fm2.getTestBean());
-		assertThat(fm2).isNotSameAs(fm1);
+		assertSame(fm2.getTestBean(), fm2.getTestBean());
+		assertNotSame(fm1, fm2);
 
-		FactoryMethods fm3 = (FactoryMethods) xbf.getBean("testBeanOnlyPrototype", tbArg2, 1, "myName");
-		assertThat(fm3.getNum()).isEqualTo(1);
-		assertThat(fm3.getName()).isEqualTo("myName");
-		assertThat(fm3.getTestBean().getName()).isEqualTo("arg2");
+		FactoryMethods fm3 = (FactoryMethods) xbf.getBean("testBeanOnlyPrototype", tbArg2, new Integer(1), "myName");
+		assertEquals(1, fm3.getNum());
+		assertEquals("myName", fm3.getName());
+		assertEquals("arg2", fm3.getTestBean().getName());
 
 		FactoryMethods fm4 = (FactoryMethods) xbf.getBean("testBeanOnlyPrototype", tbArg);
-		assertThat(fm4.getNum()).isEqualTo(0);
-		assertThat(fm4.getName()).isEqualTo("default");
-		assertThat(fm4.getTestBean().getName()).isEqualTo("arg1");
+		assertEquals(0, fm4.getNum());
+		assertEquals("default", fm4.getName());
+		assertEquals("arg1", fm4.getTestBean().getName());
 	}
 
 	@Test
@@ -308,10 +332,10 @@ public class FactoryMethodTests {
 		// First getBean call triggers actual creation of the singleton bean
 		TestBean tb = new TestBean();
 		FactoryMethods fm1 = (FactoryMethods) xbf.getBean("testBeanOnly", tb);
-		assertThat(fm1.getTestBean()).isSameAs(tb);
+		assertSame(tb, fm1.getTestBean());
 		FactoryMethods fm2 = (FactoryMethods) xbf.getBean("testBeanOnly", new TestBean());
-		assertThat(fm2).isSameAs(fm1);
-		assertThat(fm2.getTestBean()).isSameAs(tb);
+		assertSame(fm1, fm2);
+		assertSame(tb, fm2.getTestBean());
 	}
 
 	@Test
@@ -324,8 +348,8 @@ public class FactoryMethodTests {
 		FactoryMethods fm1 = (FactoryMethods) xbf.getBean("testBeanOnly");
 		TestBean tb = fm1.getTestBean();
 		FactoryMethods fm2 = (FactoryMethods) xbf.getBean("testBeanOnly", new TestBean());
-		assertThat(fm2).isSameAs(fm1);
-		assertThat(fm2.getTestBean()).isSameAs(tb);
+		assertSame(fm1, fm2);
+		assertSame(tb, fm2.getTestBean());
 	}
 
 	@Test
@@ -335,22 +359,20 @@ public class FactoryMethodTests {
 		reader.loadBeanDefinitions(new ClassPathResource("factory-methods.xml", getClass()));
 
 		// Check that listInstance is not considered a bean of type FactoryMethods.
-		assertThat(List.class.isAssignableFrom(xbf.getType("listInstance"))).isTrue();
+		assertTrue(List.class.isAssignableFrom(xbf.getType("listInstance")));
 		String[] names = xbf.getBeanNamesForType(FactoryMethods.class);
-		boolean condition1 = !Arrays.asList(names).contains("listInstance");
-		assertThat(condition1).isTrue();
+		assertTrue(!Arrays.asList(names).contains("listInstance"));
 		names = xbf.getBeanNamesForType(List.class);
-		assertThat(Arrays.asList(names).contains("listInstance")).isTrue();
+		assertTrue(Arrays.asList(names).contains("listInstance"));
 
 		xbf.preInstantiateSingletons();
-		assertThat(List.class.isAssignableFrom(xbf.getType("listInstance"))).isTrue();
+		assertTrue(List.class.isAssignableFrom(xbf.getType("listInstance")));
 		names = xbf.getBeanNamesForType(FactoryMethods.class);
-		boolean condition = !Arrays.asList(names).contains("listInstance");
-		assertThat(condition).isTrue();
+		assertTrue(!Arrays.asList(names).contains("listInstance"));
 		names = xbf.getBeanNamesForType(List.class);
-		assertThat(Arrays.asList(names).contains("listInstance")).isTrue();
+		assertTrue(Arrays.asList(names).contains("listInstance"));
 		List<?> list = (List<?>) xbf.getBean("listInstance");
-		assertThat(list).isEqualTo(Collections.EMPTY_LIST);
+		assertEquals(Collections.EMPTY_LIST, list);
 	}
 
 	@Test
@@ -360,8 +382,8 @@ public class FactoryMethodTests {
 		reader.loadBeanDefinitions(new ClassPathResource("factory-methods.xml", getClass()));
 
 		MailSession session = (MailSession) xbf.getBean("javaMailSession");
-		assertThat(session.getProperty("mail.smtp.user")).isEqualTo("someuser");
-		assertThat(session.getProperty("mail.smtp.password")).isEqualTo("somepw");
+		assertEquals("someuser", session.getProperty("mail.smtp.user"));
+		assertEquals("somepw", session.getProperty("mail.smtp.password"));
 	}
 }
 

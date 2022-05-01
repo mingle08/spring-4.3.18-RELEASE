@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +26,6 @@ import org.springframework.expression.Operation;
 import org.springframework.expression.TypedValue;
 import org.springframework.expression.spel.CodeFlow;
 import org.springframework.expression.spel.ExpressionState;
-import org.springframework.util.Assert;
 import org.springframework.util.NumberUtils;
 
 /**
@@ -35,13 +34,12 @@ import org.springframework.util.NumberUtils;
  * @author Andy Clement
  * @author Juergen Hoeller
  * @author Giovanni Dall'Oglio Risso
- * @author Sam Brannen
  * @since 3.0
  */
 public class OpDivide extends Operator {
 
-	public OpDivide(int startPos, int endPos, SpelNodeImpl... operands) {
-		super("/", startPos, endPos, operands);
+	public OpDivide(int pos, SpelNodeImpl... operands) {
+		super("/", pos, operands);
 	}
 
 
@@ -50,7 +48,10 @@ public class OpDivide extends Operator {
 		Object leftOperand = getLeftOperand().getValueInternal(state).getValue();
 		Object rightOperand = getRightOperand().getValueInternal(state).getValue();
 
-		if (leftOperand instanceof Number leftNumber && rightOperand instanceof Number rightNumber) {
+		if (leftOperand instanceof Number && rightOperand instanceof Number) {
+			Number leftNumber = (Number) leftOperand;
+			Number rightNumber = (Number) rightOperand;
+
 			if (leftNumber instanceof BigDecimal || rightNumber instanceof BigDecimal) {
 				BigDecimal leftBigDecimal = NumberUtils.convertNumberToTargetClass(leftNumber, BigDecimal.class);
 				BigDecimal rightBigDecimal = NumberUtils.convertNumberToTargetClass(rightNumber, BigDecimal.class);
@@ -93,34 +94,40 @@ public class OpDivide extends Operator {
 			return false;
 		}
 		if (this.children.length > 1) {
-			if (!getRightOperand().isCompilable()) {
-				return false;
-			}
+			 if (!getRightOperand().isCompilable()) {
+				 return false;
+			 }
 		}
 		return (this.exitTypeDescriptor != null);
 	}
-
+	
 	@Override
 	public void generateCode(MethodVisitor mv, CodeFlow cf) {
 		getLeftOperand().generateCode(mv, cf);
 		String leftDesc = getLeftOperand().exitTypeDescriptor;
-		String exitDesc = this.exitTypeDescriptor;
-		Assert.state(exitDesc != null, "No exit type descriptor");
-		char targetDesc = exitDesc.charAt(0);
-		CodeFlow.insertNumericUnboxOrPrimitiveTypeCoercion(mv, leftDesc, targetDesc);
+		CodeFlow.insertNumericUnboxOrPrimitiveTypeCoercion(mv, leftDesc, this.exitTypeDescriptor.charAt(0));
 		if (this.children.length > 1) {
 			cf.enterCompilationScope();
 			getRightOperand().generateCode(mv, cf);
 			String rightDesc = getRightOperand().exitTypeDescriptor;
 			cf.exitCompilationScope();
-			CodeFlow.insertNumericUnboxOrPrimitiveTypeCoercion(mv, rightDesc, targetDesc);
-			switch (targetDesc) {
-				case 'I' -> mv.visitInsn(IDIV);
-				case 'J' -> mv.visitInsn(LDIV);
-				case 'F' -> mv.visitInsn(FDIV);
-				case 'D' -> mv.visitInsn(DDIV);
-				default -> throw new IllegalStateException(
-						"Unrecognized exit type descriptor: '" + this.exitTypeDescriptor + "'");
+			CodeFlow.insertNumericUnboxOrPrimitiveTypeCoercion(mv, rightDesc, this.exitTypeDescriptor.charAt(0));
+			switch (this.exitTypeDescriptor.charAt(0)) {
+				case 'I':
+					mv.visitInsn(IDIV);
+					break;
+				case 'J':
+					mv.visitInsn(LDIV);
+					break;
+				case 'F': 
+					mv.visitInsn(FDIV);
+					break;
+				case 'D':
+					mv.visitInsn(DDIV);
+					break;				
+				default:
+					throw new IllegalStateException(
+							"Unrecognized exit type descriptor: '" + this.exitTypeDescriptor + "'");
 			}
 		}
 		cf.pushDescriptor(this.exitTypeDescriptor);

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.web.socket.messaging;
 
 import java.util.List;
 
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.web.socket.CloseStatus;
@@ -27,9 +26,8 @@ import org.springframework.web.socket.WebSocketSession;
 
 /**
  * A contract for handling WebSocket messages as part of a higher level protocol,
- * referred to as "sub-protocol" in the WebSocket RFC specification.
- * Handles both {@link WebSocketMessage WebSocketMessages} from a client
- * as well as {@link Message Messages} to a client.
+ * referred to as "sub-protocol" in the WebSocket RFC specification. Handles both
+ * {@link WebSocketMessage}s from a client as well as {@link Message}s to a client.
  *
  * <p>Implementations of this interface can be configured on a
  * {@link SubProtocolWebSocketHandler} which selects a sub-protocol handler to
@@ -67,7 +65,6 @@ public interface SubProtocolHandler {
 	 * Resolve the session id from the given message or return {@code null}.
 	 * @param message the message to resolve the session id from
 	 */
-	@Nullable
 	String resolveSessionId(Message<?> message);
 
 	/**

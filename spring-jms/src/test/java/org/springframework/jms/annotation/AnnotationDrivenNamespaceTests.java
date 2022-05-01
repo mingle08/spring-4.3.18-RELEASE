@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,9 +16,11 @@
 
 package org.springframework.jms.annotation;
 
-import jakarta.jms.JMSException;
-import jakarta.jms.MessageListener;
-import org.junit.jupiter.api.Test;
+import javax.jms.JMSException;
+import javax.jms.MessageListener;
+
+import org.hamcrest.core.Is;
+import org.junit.Test;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -27,17 +29,14 @@ import org.springframework.jms.config.SimpleJmsListenerEndpoint;
 import org.springframework.jms.listener.adapter.ListenerExecutionFailedException;
 import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
 
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-
 /**
  * @author Stephane Nicoll
- * @author Sam Brannen
  */
-class AnnotationDrivenNamespaceTests extends AbstractJmsAnnotationDrivenTests {
+public class AnnotationDrivenNamespaceTests extends AbstractJmsAnnotationDrivenTests {
 
 	@Override
 	@Test
-	void sampleConfiguration() {
+	public void sampleConfiguration() {
 		ApplicationContext context = new ClassPathXmlApplicationContext(
 				"annotation-driven-sample-config.xml", getClass());
 		testSampleConfiguration(context);
@@ -45,15 +44,14 @@ class AnnotationDrivenNamespaceTests extends AbstractJmsAnnotationDrivenTests {
 
 	@Override
 	@Test
-	void fullConfiguration() {
+	public void fullConfiguration() {
 		ApplicationContext context = new ClassPathXmlApplicationContext(
 				"annotation-driven-full-config.xml", getClass());
 		testFullConfiguration(context);
 	}
 
 	@Override
-	@Test
-	void fullConfigurableConfiguration() {
+	public void fullConfigurableConfiguration() {
 		ApplicationContext context = new ClassPathXmlApplicationContext(
 				"annotation-driven-full-configurable-config.xml", getClass());
 		testFullConfiguration(context);
@@ -61,7 +59,7 @@ class AnnotationDrivenNamespaceTests extends AbstractJmsAnnotationDrivenTests {
 
 	@Override
 	@Test
-	void customConfiguration() {
+	public void customConfiguration() {
 		ApplicationContext context = new ClassPathXmlApplicationContext(
 				"annotation-driven-custom-registry.xml", getClass());
 		testCustomConfiguration(context);
@@ -69,7 +67,7 @@ class AnnotationDrivenNamespaceTests extends AbstractJmsAnnotationDrivenTests {
 
 	@Override
 	@Test
-	void explicitContainerFactory() {
+	public void explicitContainerFactory() {
 		ApplicationContext context = new ClassPathXmlApplicationContext(
 				"annotation-driven-custom-container-factory.xml", getClass());
 		testExplicitContainerFactoryConfiguration(context);
@@ -77,7 +75,7 @@ class AnnotationDrivenNamespaceTests extends AbstractJmsAnnotationDrivenTests {
 
 	@Override
 	@Test
-	void defaultContainerFactory() {
+	public void defaultContainerFactory() {
 		ApplicationContext context = new ClassPathXmlApplicationContext(
 				"annotation-driven-default-container-factory.xml", getClass());
 		testDefaultContainerFactoryConfiguration(context);
@@ -85,18 +83,18 @@ class AnnotationDrivenNamespaceTests extends AbstractJmsAnnotationDrivenTests {
 
 	@Override
 	@Test
-	void jmsHandlerMethodFactoryConfiguration() throws JMSException {
+	public void jmsHandlerMethodFactoryConfiguration() throws JMSException {
 		ApplicationContext context = new ClassPathXmlApplicationContext(
 				"annotation-driven-custom-handler-method-factory.xml", getClass());
 
-		assertThatExceptionOfType(ListenerExecutionFailedException.class).isThrownBy(() ->
-				testJmsHandlerMethodFactoryConfiguration(context))
-			.withCauseInstanceOf(MethodArgumentNotValidException.class);
+		thrown.expect(ListenerExecutionFailedException.class);
+		thrown.expectCause(Is.<MethodArgumentNotValidException>isA(MethodArgumentNotValidException.class));
+		testJmsHandlerMethodFactoryConfiguration(context);
 	}
 
 	@Override
 	@Test
-	void jmsListenerIsRepeatable() {
+	public void jmsListenerIsRepeatable() {
 		ApplicationContext context = new ClassPathXmlApplicationContext(
 				"annotation-driven-jms-listener-repeatable.xml", getClass());
 		testJmsListenerRepeatable(context);
@@ -104,7 +102,7 @@ class AnnotationDrivenNamespaceTests extends AbstractJmsAnnotationDrivenTests {
 
 	@Override
 	@Test
-	void jmsListeners() {
+	public void jmsListeners() {
 		ApplicationContext context = new ClassPathXmlApplicationContext(
 				"annotation-driven-jms-listeners.xml", getClass());
 		testJmsListenerRepeatable(context);

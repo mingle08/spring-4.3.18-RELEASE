@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,11 +18,11 @@ package org.springframework.web.socket;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedCaseInsensitiveMap;
@@ -38,7 +38,7 @@ import org.springframework.util.StringUtils;
  * </ul>
  *
  * <p>WebSocket Extension HTTP headers may include parameters and follow
- * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">RFC 7230 section 3.2</a></p>
+ * <a href="http://tools.ietf.org/html/rfc7230#section-3.2">RFC 7230 section 3.2</a></p>
  *
  * <p>Note that the order of extensions in HTTP headers defines their order of execution,
  * e.g. extensions "foo, bar" will be executed as "bar(foo(message))".</p>
@@ -68,11 +68,11 @@ public class WebSocketExtension {
 	 * @param name the name of the extension
 	 * @param parameters the parameters
 	 */
-	public WebSocketExtension(String name, @Nullable Map<String, String> parameters) {
+	public WebSocketExtension(String name, Map<String, String> parameters) {
 		Assert.hasLength(name, "Extension name must not be empty");
 		this.name = name;
 		if (!CollectionUtils.isEmpty(parameters)) {
-			Map<String, String> map = new LinkedCaseInsensitiveMap<>(parameters.size(), Locale.ENGLISH);
+			Map<String, String> map = new LinkedCaseInsensitiveMap<String>(parameters.size(), Locale.ENGLISH);
 			map.putAll(parameters);
 			this.parameters = Collections.unmodifiableMap(map);
 		}
@@ -98,11 +98,11 @@ public class WebSocketExtension {
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}
-		if (other == null || !WebSocketExtension.class.isAssignableFrom(other.getClass())) {
+		if (other == null || getClass() != other.getClass()) {
 			return false;
 		}
 		WebSocketExtension otherExt = (WebSocketExtension) other;
@@ -118,7 +118,12 @@ public class WebSocketExtension {
 	public String toString() {
 		StringBuilder str = new StringBuilder();
 		str.append(this.name);
-		this.parameters.forEach((key, value) -> str.append(';').append(key).append('=').append(value));
+		for (Map.Entry<String, String> entry : this.parameters.entrySet()) {
+			str.append(';');
+			str.append(entry.getKey());
+			str.append('=');
+			str.append(entry.getValue());
+		}
 		return str.toString();
 	}
 
@@ -133,7 +138,7 @@ public class WebSocketExtension {
 	public static List<WebSocketExtension> parseExtensions(String extensions) {
 		if (StringUtils.hasText(extensions)) {
 			String[] tokens = StringUtils.tokenizeToStringArray(extensions, ",");
-			List<WebSocketExtension> result = new ArrayList<>(tokens.length);
+			List<WebSocketExtension> result = new ArrayList<WebSocketExtension>(tokens.length);
 			for (String token : tokens) {
 				result.add(parseExtension(token));
 			}
@@ -153,13 +158,13 @@ public class WebSocketExtension {
 
 		Map<String, String> parameters = null;
 		if (parts.length > 1) {
-			parameters = CollectionUtils.newLinkedHashMap(parts.length - 1);
+			parameters = new LinkedHashMap<String, String>(parts.length - 1);
 			for (int i = 1; i < parts.length; i++) {
 				String parameter = parts[i];
 				int eqIndex = parameter.indexOf('=');
 				if (eqIndex != -1) {
 					String attribute = parameter.substring(0, eqIndex);
-					String value = parameter.substring(eqIndex + 1);
+					String value = parameter.substring(eqIndex + 1, parameter.length());
 					parameters.put(attribute, value);
 				}
 			}

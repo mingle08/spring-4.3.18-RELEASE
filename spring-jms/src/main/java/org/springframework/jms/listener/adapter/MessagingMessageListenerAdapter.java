@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,29 +16,27 @@
 
 package org.springframework.jms.listener.adapter;
 
-import jakarta.jms.JMSException;
-import jakarta.jms.Session;
+import javax.jms.JMSException;
+import javax.jms.Session;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.jms.support.JmsHeaderMapper;
 import org.springframework.jms.support.converter.MessageConversionException;
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.core.AbstractMessageSendingTemplate;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 import org.springframework.messaging.support.MessageBuilder;
-import org.springframework.util.Assert;
 
 /**
- * A {@link jakarta.jms.MessageListener} adapter that invokes a configurable
+ * A {@link javax.jms.MessageListener} adapter that invokes a configurable
  * {@link InvocableHandlerMethod}.
  *
- * <p>Wraps the incoming {@link jakarta.jms.Message} to Spring's {@link Message}
+ * <p>Wraps the incoming {@link javax.jms.Message} to Spring's {@link Message}
  * abstraction, copying the JMS standard headers using a configurable
  * {@link JmsHeaderMapper}.
  *
- * <p>The original {@link jakarta.jms.Message} and the {@link jakarta.jms.Session}
+ * <p>The original {@link javax.jms.Message} and the {@link javax.jms.Session}
  * are provided as additional arguments so that these can be injected as
  * method arguments if necessary.
  *
@@ -50,26 +48,20 @@ import org.springframework.util.Assert;
  */
 public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageListener {
 
-	@Nullable
 	private InvocableHandlerMethod handlerMethod;
 
 
 	/**
 	 * Set the {@link InvocableHandlerMethod} to use to invoke the method
-	 * processing an incoming {@link jakarta.jms.Message}.
+	 * processing an incoming {@link javax.jms.Message}.
 	 */
 	public void setHandlerMethod(InvocableHandlerMethod handlerMethod) {
 		this.handlerMethod = handlerMethod;
 	}
 
-	private InvocableHandlerMethod getHandlerMethod() {
-		Assert.state(this.handlerMethod != null, "No HandlerMethod set");
-		return this.handlerMethod;
-	}
-
 
 	@Override
-	public void onMessage(jakarta.jms.Message jmsMessage, @Nullable Session session) throws JMSException {
+	public void onMessage(javax.jms.Message jmsMessage, Session session) throws JMSException {
 		Message<?> message = toMessagingMessage(jmsMessage);
 		if (logger.isDebugEnabled()) {
 			logger.debug("Processing [" + message + "]");
@@ -85,7 +77,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 	@Override
 	protected Object preProcessResponse(Object result) {
-		MethodParameter returnType = getHandlerMethod().getReturnType();
+		MethodParameter returnType = this.handlerMethod.getReturnType();
 		if (result instanceof Message) {
 			return MessageBuilder.fromMessage((Message<?>) result)
 					.setHeader(AbstractMessageSendingTemplate.CONVERSION_HINT_HEADER, returnType).build();
@@ -94,7 +86,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 				AbstractMessageSendingTemplate.CONVERSION_HINT_HEADER, returnType).build();
 	}
 
-	protected Message<?> toMessagingMessage(jakarta.jms.Message jmsMessage) {
+	protected Message<?> toMessagingMessage(javax.jms.Message jmsMessage) {
 		try {
 			return (Message<?>) getMessagingMessageConverter().fromMessage(jmsMessage);
 		}
@@ -107,11 +99,9 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	 * Invoke the handler, wrapping any exception to a {@link ListenerExecutionFailedException}
 	 * with a dedicated error message.
 	 */
-	@Nullable
-	private Object invokeHandler(jakarta.jms.Message jmsMessage, @Nullable Session session, Message<?> message) {
-		InvocableHandlerMethod handlerMethod = getHandlerMethod();
+	private Object invokeHandler(javax.jms.Message jmsMessage, Session session, Message<?> message) {
 		try {
-			return handlerMethod.invoke(message, jmsMessage, session);
+			return this.handlerMethod.invoke(message, jmsMessage, session);
 		}
 		catch (MessagingException ex) {
 			throw new ListenerExecutionFailedException(
@@ -119,16 +109,15 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		}
 		catch (Exception ex) {
 			throw new ListenerExecutionFailedException("Listener method '" +
-					handlerMethod.getMethod().toGenericString() + "' threw exception", ex);
+					this.handlerMethod.getMethod().toGenericString() + "' threw exception", ex);
 		}
 	}
 
 	private String createMessagingErrorMessage(String description) {
-		InvocableHandlerMethod handlerMethod = getHandlerMethod();
-		StringBuilder sb = new StringBuilder(description).append('\n')
+		StringBuilder sb = new StringBuilder(description).append("\n")
 				.append("Endpoint handler details:\n")
-				.append("Method [").append(handlerMethod.getMethod()).append("]\n")
-				.append("Bean [").append(handlerMethod.getBean()).append("]\n");
+				.append("Method [").append(this.handlerMethod.getMethod()).append("]\n")
+				.append("Bean [").append(this.handlerMethod.getBean()).append("]\n");
 		return sb.toString();
 	}
 

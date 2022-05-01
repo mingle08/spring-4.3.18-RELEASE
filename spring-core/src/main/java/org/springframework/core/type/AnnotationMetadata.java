@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +16,7 @@
 
 package org.springframework.core.type;
 
-import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.springframework.core.annotation.MergedAnnotation;
-import org.springframework.core.annotation.MergedAnnotations;
-import org.springframework.core.annotation.MergedAnnotations.SearchStrategy;
 
 /**
  * Interface that defines abstract access to the annotations of a specific
@@ -45,29 +38,16 @@ public interface AnnotationMetadata extends ClassMetadata, AnnotatedTypeMetadata
 	 * are <em>present</em> on the underlying class.
 	 * @return the annotation type names
 	 */
-	default Set<String> getAnnotationTypes() {
-		return getAnnotations().stream()
-				.filter(MergedAnnotation::isDirectlyPresent)
-				.map(annotation -> annotation.getType().getName())
-				.collect(Collectors.toCollection(LinkedHashSet::new));
-	}
+	Set<String> getAnnotationTypes();
 
 	/**
 	 * Get the fully qualified class names of all meta-annotation types that
 	 * are <em>present</em> on the given annotation type on the underlying class.
 	 * @param annotationName the fully qualified class name of the meta-annotation
 	 * type to look for
-	 * @return the meta-annotation type names, or an empty set if none found
+	 * @return the meta-annotation type names
 	 */
-	default Set<String> getMetaAnnotationTypes(String annotationName) {
-		MergedAnnotation<?> annotation = getAnnotations().get(annotationName, MergedAnnotation::isDirectlyPresent);
-		if (!annotation.isPresent()) {
-			return Collections.emptySet();
-		}
-		return MergedAnnotations.from(annotation.getType(), SearchStrategy.INHERITED_ANNOTATIONS).stream()
-				.map(mergedAnnotation -> mergedAnnotation.getType().getName())
-				.collect(Collectors.toCollection(LinkedHashSet::new));
-	}
+	Set<String> getMetaAnnotationTypes(String annotationName);
 
 	/**
 	 * Determine whether an annotation of the given type is <em>present</em> on
@@ -76,9 +56,7 @@ public interface AnnotationMetadata extends ClassMetadata, AnnotatedTypeMetadata
 	 * type to look for
 	 * @return {@code true} if a matching annotation is present
 	 */
-	default boolean hasAnnotation(String annotationName) {
-		return getAnnotations().isDirectlyPresent(annotationName);
-	}
+	boolean hasAnnotation(String annotationName);
 
 	/**
 	 * Determine whether the underlying class has an annotation that is itself
@@ -87,10 +65,7 @@ public interface AnnotationMetadata extends ClassMetadata, AnnotatedTypeMetadata
 	 * meta-annotation type to look for
 	 * @return {@code true} if a matching meta-annotation is present
 	 */
-	default boolean hasMetaAnnotation(String metaAnnotationName) {
-		return getAnnotations().get(metaAnnotationName,
-				MergedAnnotation::isMetaPresent).isPresent();
-	}
+	boolean hasMetaAnnotation(String metaAnnotationName);
 
 	/**
 	 * Determine whether the underlying class has any methods that are
@@ -98,9 +73,7 @@ public interface AnnotationMetadata extends ClassMetadata, AnnotatedTypeMetadata
 	 * @param annotationName the fully qualified class name of the annotation
 	 * type to look for
 	 */
-	default boolean hasAnnotatedMethods(String annotationName) {
-		return !getAnnotatedMethods(annotationName).isEmpty();
-	}
+	boolean hasAnnotatedMethods(String annotationName);
 
 	/**
 	 * Retrieve the method metadata for all methods that are annotated
@@ -114,25 +87,5 @@ public interface AnnotationMetadata extends ClassMetadata, AnnotatedTypeMetadata
 	 * the annotation type.
 	 */
 	Set<MethodMetadata> getAnnotatedMethods(String annotationName);
-
-	/**
-	 * Retrieve the method metadata for all user-declared methods on the
-	 * underlying class, preserving declaration order as far as possible.
-	 * @return a set of {@link MethodMetadata}
-	 * @since 6.0
-	 */
-	Set<MethodMetadata> getDeclaredMethods();
-
-
-	/**
-	 * Factory method to create a new {@link AnnotationMetadata} instance
-	 * for the given class using standard reflection.
-	 * @param type the class to introspect
-	 * @return a new {@link AnnotationMetadata} instance
-	 * @since 5.2
-	 */
-	static AnnotationMetadata introspect(Class<?> type) {
-		return StandardAnnotationMetadata.from(type);
-	}
 
 }

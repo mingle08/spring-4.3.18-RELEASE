@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,14 @@
 
 package org.springframework.beans.factory.support;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import org.springframework.beans.testfixture.beans.DerivedTestBean;
-import org.springframework.beans.testfixture.beans.TestBean;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.ObjectFactory;
+import org.springframework.tests.sample.beans.DerivedTestBean;
+import org.springframework.tests.sample.beans.TestBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Juergen Hoeller
@@ -36,22 +38,27 @@ public class DefaultSingletonBeanRegistryTests {
 
 		TestBean tb = new TestBean();
 		beanRegistry.registerSingleton("tb", tb);
-		assertThat(beanRegistry.getSingleton("tb")).isSameAs(tb);
+		assertSame(tb, beanRegistry.getSingleton("tb"));
 
-		TestBean tb2 = (TestBean) beanRegistry.getSingleton("tb2", () -> new TestBean());
-		assertThat(beanRegistry.getSingleton("tb2")).isSameAs(tb2);
+		TestBean tb2 = (TestBean) beanRegistry.getSingleton("tb2", new ObjectFactory<Object>() {
+			@Override
+			public Object getObject() throws BeansException {
+				return new TestBean();
+			}
+		});
+		assertSame(tb2, beanRegistry.getSingleton("tb2"));
 
-		assertThat(beanRegistry.getSingleton("tb")).isSameAs(tb);
-		assertThat(beanRegistry.getSingleton("tb2")).isSameAs(tb2);
-		assertThat(beanRegistry.getSingletonCount()).isEqualTo(2);
+		assertSame(tb, beanRegistry.getSingleton("tb"));
+		assertSame(tb2, beanRegistry.getSingleton("tb2"));
+		assertEquals(2, beanRegistry.getSingletonCount());
 		String[] names = beanRegistry.getSingletonNames();
-		assertThat(names.length).isEqualTo(2);
-		assertThat(names[0]).isEqualTo("tb");
-		assertThat(names[1]).isEqualTo("tb2");
+		assertEquals(2, names.length);
+		assertEquals("tb", names[0]);
+		assertEquals("tb2", names[1]);
 
 		beanRegistry.destroySingletons();
-		assertThat(beanRegistry.getSingletonCount()).isEqualTo(0);
-		assertThat(beanRegistry.getSingletonNames().length).isEqualTo(0);
+		assertEquals(0, beanRegistry.getSingletonCount());
+		assertEquals(0, beanRegistry.getSingletonNames().length);
 	}
 
 	@Test
@@ -61,19 +68,19 @@ public class DefaultSingletonBeanRegistryTests {
 		DerivedTestBean tb = new DerivedTestBean();
 		beanRegistry.registerSingleton("tb", tb);
 		beanRegistry.registerDisposableBean("tb", tb);
-		assertThat(beanRegistry.getSingleton("tb")).isSameAs(tb);
+		assertSame(tb, beanRegistry.getSingleton("tb"));
 
-		assertThat(beanRegistry.getSingleton("tb")).isSameAs(tb);
-		assertThat(beanRegistry.getSingletonCount()).isEqualTo(1);
+		assertSame(tb, beanRegistry.getSingleton("tb"));
+		assertEquals(1, beanRegistry.getSingletonCount());
 		String[] names = beanRegistry.getSingletonNames();
-		assertThat(names.length).isEqualTo(1);
-		assertThat(names[0]).isEqualTo("tb");
-		assertThat(tb.wasDestroyed()).isFalse();
+		assertEquals(1, names.length);
+		assertEquals("tb", names[0]);
+		assertFalse(tb.wasDestroyed());
 
 		beanRegistry.destroySingletons();
-		assertThat(beanRegistry.getSingletonCount()).isEqualTo(0);
-		assertThat(beanRegistry.getSingletonNames().length).isEqualTo(0);
-		assertThat(tb.wasDestroyed()).isTrue();
+		assertEquals(0, beanRegistry.getSingletonCount());
+		assertEquals(0, beanRegistry.getSingletonNames().length);
+		assertTrue(tb.wasDestroyed());
 	}
 
 	@Test
@@ -83,15 +90,15 @@ public class DefaultSingletonBeanRegistryTests {
 		beanRegistry.registerDependentBean("a", "b");
 		beanRegistry.registerDependentBean("b", "c");
 		beanRegistry.registerDependentBean("c", "b");
-		assertThat(beanRegistry.isDependent("a", "b")).isTrue();
-		assertThat(beanRegistry.isDependent("b", "c")).isTrue();
-		assertThat(beanRegistry.isDependent("c", "b")).isTrue();
-		assertThat(beanRegistry.isDependent("a", "c")).isTrue();
-		assertThat(beanRegistry.isDependent("c", "a")).isFalse();
-		assertThat(beanRegistry.isDependent("b", "a")).isFalse();
-		assertThat(beanRegistry.isDependent("a", "a")).isFalse();
-		assertThat(beanRegistry.isDependent("b", "b")).isTrue();
-		assertThat(beanRegistry.isDependent("c", "c")).isTrue();
+		assertTrue(beanRegistry.isDependent("a", "b"));
+		assertTrue(beanRegistry.isDependent("b", "c"));
+		assertTrue(beanRegistry.isDependent("c", "b"));
+		assertTrue(beanRegistry.isDependent("a", "c"));
+		assertFalse(beanRegistry.isDependent("c", "a"));
+		assertFalse(beanRegistry.isDependent("b", "a"));
+		assertFalse(beanRegistry.isDependent("a", "a"));
+		assertTrue(beanRegistry.isDependent("b", "b"));
+		assertTrue(beanRegistry.isDependent("c", "c"));
 	}
 
 }

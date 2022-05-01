@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,7 @@ package org.springframework.test.web.client;
 import java.io.IOException;
 
 import org.springframework.http.client.ClientHttpRequest;
+import org.springframework.http.client.ClientHttpResponse;
 
 /**
  * {@code RequestExpectationManager} that matches requests to expectations
@@ -34,17 +35,18 @@ public class UnorderedRequestExpectationManager extends AbstractRequestExpectati
 
 	@Override
 	protected void afterExpectationsDeclared() {
-		this.remainingExpectations.addAllExpectations(getExpectations());
+		this.remainingExpectations.updateAll(getExpectations());
 	}
 
 	@Override
-	public RequestExpectation matchRequest(ClientHttpRequest request) throws IOException {
+	public ClientHttpResponse validateRequestInternal(ClientHttpRequest request) throws IOException {
 		RequestExpectation expectation = this.remainingExpectations.findExpectation(request);
-		if (expectation == null) {
-			throw createUnexpectedRequestError(request);
+		if (expectation != null) {
+			ClientHttpResponse response = expectation.createResponse(request);
+			this.remainingExpectations.update(expectation);
+			return response;
 		}
-		this.remainingExpectations.update(expectation);
-		return expectation;
+		throw createUnexpectedRequestError(request);
 	}
 
 	@Override

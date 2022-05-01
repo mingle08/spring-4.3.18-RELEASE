@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,12 +25,13 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.env.PropertySource;
 import org.springframework.mock.env.MockPropertySource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Integration tests that verify that a {@link PropertySource} can be set via a
@@ -47,7 +48,8 @@ public class PropertySourcesInitializerTests {
 	static class Config {
 
 		@Value("${enigma}")
-		// The following can also be used to directly access the
+		// If the PropertySourcesPlaceholderConfigurer is not configured as a
+		// static @Bean, then the following can be used to directly access the
 		// environment instead of relying on placeholder replacement.
 		// @Value("#{ environment['enigma'] }")
 		private String enigma;
@@ -58,6 +60,10 @@ public class PropertySourcesInitializerTests {
 			return enigma;
 		}
 
+		@Bean
+		public static PropertySourcesPlaceholderConfigurer placeholderConfigurer() {
+			return new PropertySourcesPlaceholderConfigurer();
+		}
 	}
 
 
@@ -67,7 +73,7 @@ public class PropertySourcesInitializerTests {
 
 	@Test
 	public void customPropertySourceConfiguredViaContextInitializer() {
-		assertThat(enigma).isEqualTo("foo");
+		assertEquals("foo", enigma);
 	}
 
 

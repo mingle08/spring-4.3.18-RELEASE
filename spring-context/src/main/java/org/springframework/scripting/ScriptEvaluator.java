@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,8 +17,6 @@
 package org.springframework.scripting;
 
 import java.util.Map;
-
-import org.springframework.lang.Nullable;
 
 /**
  * Spring's strategy interface for evaluating a script.
@@ -40,7 +38,6 @@ public interface ScriptEvaluator {
 	 * @throws ScriptCompilationException if the evaluator failed to read,
 	 * compile or evaluate the script
 	 */
-	@Nullable
 	Object evaluate(ScriptSource script) throws ScriptCompilationException;
 
 	/**
@@ -52,7 +49,6 @@ public interface ScriptEvaluator {
 	 * @throws ScriptCompilationException if the evaluator failed to read,
 	 * compile or evaluate the script
 	 */
-	@Nullable
-	Object evaluate(ScriptSource script, @Nullable Map<String, Object> arguments) throws ScriptCompilationException;
+	Object evaluate(ScriptSource script, Map<String, Object> arguments) throws ScriptCompilationException;
 
 }

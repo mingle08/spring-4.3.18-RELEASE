@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.TypeMismatchException;
@@ -43,8 +43,7 @@ import org.springframework.tests.sample.beans.ResourceTestBean;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.util.ObjectUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * @author Juergen Hoeller
@@ -74,208 +73,206 @@ public class ClassPathXmlApplicationContextTests {
 
 
 	@Test
-	void singleConfigLocation() {
+	public void testSingleConfigLocation() {
 		ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(FQ_SIMPLE_CONTEXT);
-		assertThat(ctx.containsBean("someMessageSource")).isTrue();
+		assertTrue(ctx.containsBean("someMessageSource"));
 		ctx.close();
 	}
 
 	@Test
-	void multipleConfigLocations() {
+	public void testMultipleConfigLocations() {
 		ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(
 				FQ_CONTEXT_B, FQ_CONTEXT_C, FQ_CONTEXT_A);
-		assertThat(ctx.containsBean("service")).isTrue();
-		assertThat(ctx.containsBean("logicOne")).isTrue();
-		assertThat(ctx.containsBean("logicTwo")).isTrue();
+		assertTrue(ctx.containsBean("service"));
+		assertTrue(ctx.containsBean("logicOne"));
+		assertTrue(ctx.containsBean("logicTwo"));
 
 		// re-refresh (after construction refresh)
 		Service service = (Service) ctx.getBean("service");
 		ctx.refresh();
-		assertThat(service.isProperlyDestroyed()).isTrue();
+		assertTrue(service.isProperlyDestroyed());
 
 		// regular close call
 		service = (Service) ctx.getBean("service");
 		ctx.close();
-		assertThat(service.isProperlyDestroyed()).isTrue();
+		assertTrue(service.isProperlyDestroyed());
 
 		// re-activating and re-closing the context (SPR-13425)
 		ctx.refresh();
 		service = (Service) ctx.getBean("service");
 		ctx.close();
-		assertThat(service.isProperlyDestroyed()).isTrue();
+		assertTrue(service.isProperlyDestroyed());
 	}
 
 	@Test
-	void configLocationPattern() {
+	public void testConfigLocationPattern() {
 		ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(CONTEXT_WILDCARD);
-		assertThat(ctx.containsBean("service")).isTrue();
-		assertThat(ctx.containsBean("logicOne")).isTrue();
-		assertThat(ctx.containsBean("logicTwo")).isTrue();
+		assertTrue(ctx.containsBean("service"));
+		assertTrue(ctx.containsBean("logicOne"));
+		assertTrue(ctx.containsBean("logicTwo"));
 		Service service = (Service) ctx.getBean("service");
 		ctx.close();
-		assertThat(service.isProperlyDestroyed()).isTrue();
+		assertTrue(service.isProperlyDestroyed());
 	}
 
 	@Test
-	void singleConfigLocationWithClass() {
+	public void testSingleConfigLocationWithClass() {
 		ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(SIMPLE_CONTEXT, getClass());
-		assertThat(ctx.containsBean("someMessageSource")).isTrue();
+		assertTrue(ctx.containsBean("someMessageSource"));
 		ctx.close();
 	}
 
 	@Test
-	void aliasWithPlaceholder() {
+	public void testAliasWithPlaceholder() {
 		ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(
 				FQ_CONTEXT_B, FQ_ALIASED_CONTEXT_C, FQ_CONTEXT_A);
-		assertThat(ctx.containsBean("service")).isTrue();
-		assertThat(ctx.containsBean("logicOne")).isTrue();
-		assertThat(ctx.containsBean("logicTwo")).isTrue();
+		assertTrue(ctx.containsBean("service"));
+		assertTrue(ctx.containsBean("logicOne"));
+		assertTrue(ctx.containsBean("logicTwo"));
 		ctx.refresh();
-		ctx.close();
 	}
 
 	@Test
-	void contextWithInvalidValueType() throws IOException {
+	public void testContextWithInvalidValueType() throws IOException {
 		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(
 				new String[] {INVALID_VALUE_TYPE_CONTEXT}, false);
-		assertThatExceptionOfType(BeanCreationException.class)
-			.isThrownBy(context::refresh)
-			.satisfies(ex -> {
-				assertThat(ex.contains(TypeMismatchException.class)).isTrue();
-				assertThat(ex.toString()).contains("someMessageSource", "useCodeAsDefaultMessage");
-				checkExceptionFromInvalidValueType(ex);
-				checkExceptionFromInvalidValueType(new ExceptionInInitializerError(ex));
-				assertThat(context.isActive()).isFalse();
-			});
-		context.close();
-	}
-
-	private void checkExceptionFromInvalidValueType(Throwable ex) {
 		try {
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			ex.printStackTrace(new PrintStream(baos));
-			String dump = FileCopyUtils.copyToString(new InputStreamReader(new ByteArrayInputStream(baos.toByteArray())));
-			assertThat(dump.contains("someMessageSource")).isTrue();
-			assertThat(dump.contains("useCodeAsDefaultMessage")).isTrue();
+			context.refresh();
+			fail("Should have thrown BeanCreationException");
 		}
-		catch (IOException ioex) {
-			throw new IllegalStateException(ioex);
+		catch (BeanCreationException ex) {
+			assertTrue(ex.contains(TypeMismatchException.class));
+			assertTrue(ex.toString().contains("someMessageSource"));
+			assertTrue(ex.toString().contains("useCodeAsDefaultMessage"));
+			checkExceptionFromInvalidValueType(ex);
+			checkExceptionFromInvalidValueType(new ExceptionInInitializerError(ex));
+			assertFalse(context.isActive());
 		}
 	}
 
+	private void checkExceptionFromInvalidValueType(Throwable ex) throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ex.printStackTrace(new PrintStream(baos));
+		String dump = FileCopyUtils.copyToString(new InputStreamReader(new ByteArrayInputStream(baos.toByteArray())));
+		assertTrue(dump.contains("someMessageSource"));
+		assertTrue(dump.contains("useCodeAsDefaultMessage"));
+	}
+
 	@Test
-	void contextWithInvalidLazyClass() {
+	public void testContextWithInvalidLazyClass() {
 		ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(INVALID_CLASS_CONTEXT, getClass());
-		assertThat(ctx.containsBean("someMessageSource")).isTrue();
-		assertThatExceptionOfType(CannotLoadBeanClassException.class).isThrownBy(() ->
-				ctx.getBean("someMessageSource"))
-			.satisfies(ex -> assertThat(ex.contains(ClassNotFoundException.class)).isTrue());
+		assertTrue(ctx.containsBean("someMessageSource"));
+		try {
+			ctx.getBean("someMessageSource");
+			fail("Should have thrown CannotLoadBeanClassException");
+		}
+		catch (CannotLoadBeanClassException ex) {
+			assertTrue(ex.contains(ClassNotFoundException.class));
+		}
 		ctx.close();
 	}
 
 	@Test
-	void contextWithClassNameThatContainsPlaceholder() {
+	public void testContextWithClassNameThatContainsPlaceholder() {
 		ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(CLASS_WITH_PLACEHOLDER_CONTEXT, getClass());
-		assertThat(ctx.containsBean("someMessageSource")).isTrue();
-		boolean condition = ctx.getBean("someMessageSource") instanceof StaticMessageSource;
-		assertThat(condition).isTrue();
+		assertTrue(ctx.containsBean("someMessageSource"));
+		assertTrue(ctx.getBean("someMessageSource") instanceof StaticMessageSource);
 		ctx.close();
 	}
 
 	@Test
-	void multipleConfigLocationsWithClass() {
+	public void testMultipleConfigLocationsWithClass() {
 		ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(
 				new String[] {CONTEXT_B, CONTEXT_C, CONTEXT_A}, getClass());
-		assertThat(ctx.containsBean("service")).isTrue();
-		assertThat(ctx.containsBean("logicOne")).isTrue();
-		assertThat(ctx.containsBean("logicTwo")).isTrue();
+		assertTrue(ctx.containsBean("service"));
+		assertTrue(ctx.containsBean("logicOne"));
+		assertTrue(ctx.containsBean("logicTwo"));
 		ctx.close();
 	}
 
 	@Test
-	void factoryBeanAndApplicationListener() {
+	public void testFactoryBeanAndApplicationListener() {
 		ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(CONTEXT_WILDCARD);
 		ctx.getBeanFactory().registerSingleton("manualFBAAL", new FactoryBeanAndApplicationListener());
-		assertThat(ctx.getBeansOfType(ApplicationListener.class).size()).isEqualTo(2);
+		assertEquals(2, ctx.getBeansOfType(ApplicationListener.class).size());
 		ctx.close();
 	}
 
 	@Test
-	void messageSourceAware() {
+	public void testMessageSourceAware() {
 		ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(CONTEXT_WILDCARD);
 		MessageSource messageSource = (MessageSource) ctx.getBean("messageSource");
 		Service service1 = (Service) ctx.getBean("service");
-		assertThat(service1.getMessageSource()).isEqualTo(ctx);
+		assertEquals(ctx, service1.getMessageSource());
 		Service service2 = (Service) ctx.getBean("service2");
-		assertThat(service2.getMessageSource()).isEqualTo(ctx);
+		assertEquals(ctx, service2.getMessageSource());
 		AutowiredService autowiredService1 = (AutowiredService) ctx.getBean("autowiredService");
-		assertThat(autowiredService1.getMessageSource()).isEqualTo(messageSource);
+		assertEquals(messageSource, autowiredService1.getMessageSource());
 		AutowiredService autowiredService2 = (AutowiredService) ctx.getBean("autowiredService2");
-		assertThat(autowiredService2.getMessageSource()).isEqualTo(messageSource);
+		assertEquals(messageSource, autowiredService2.getMessageSource());
 		ctx.close();
 	}
 
 	@Test
-	void resourceArrayPropertyEditor() throws IOException {
+	public void testResourceArrayPropertyEditor() throws IOException {
 		ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(CONTEXT_WILDCARD);
 		Service service = (Service) ctx.getBean("service");
-		assertThat(service.getResources().length).isEqualTo(3);
+		assertEquals(3, service.getResources().length);
 		List<Resource> resources = Arrays.asList(service.getResources());
-		assertThat(resources.contains(new FileSystemResource(new ClassPathResource(FQ_CONTEXT_A).getFile()))).isTrue();
-		assertThat(resources.contains(new FileSystemResource(new ClassPathResource(FQ_CONTEXT_B).getFile()))).isTrue();
-		assertThat(resources.contains(new FileSystemResource(new ClassPathResource(FQ_CONTEXT_C).getFile()))).isTrue();
+		assertTrue(resources.contains(new FileSystemResource(new ClassPathResource(FQ_CONTEXT_A).getFile())));
+		assertTrue(resources.contains(new FileSystemResource(new ClassPathResource(FQ_CONTEXT_B).getFile())));
+		assertTrue(resources.contains(new FileSystemResource(new ClassPathResource(FQ_CONTEXT_C).getFile())));
 		ctx.close();
 	}
 
 	@Test
-	void childWithProxy() throws Exception {
+	public void testChildWithProxy() throws Exception {
 		ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(CONTEXT_WILDCARD);
 		ClassPathXmlApplicationContext child = new ClassPathXmlApplicationContext(
 				new String[] {CHILD_WITH_PROXY_CONTEXT}, ctx);
-		assertThat(AopUtils.isAopProxy(child.getBean("assemblerOne"))).isTrue();
-		assertThat(AopUtils.isAopProxy(child.getBean("assemblerTwo"))).isTrue();
-		child.close();
+		assertTrue(AopUtils.isAopProxy(child.getBean("assemblerOne")));
+		assertTrue(AopUtils.isAopProxy(child.getBean("assemblerTwo")));
 		ctx.close();
 	}
 
 	@Test
-	void aliasForParentContext() {
+	public void testAliasForParentContext() {
 		ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(FQ_SIMPLE_CONTEXT);
-		assertThat(ctx.containsBean("someMessageSource")).isTrue();
+		assertTrue(ctx.containsBean("someMessageSource"));
 
 		ClassPathXmlApplicationContext child = new ClassPathXmlApplicationContext(
 				new String[] {ALIAS_FOR_PARENT_CONTEXT}, ctx);
-		assertThat(child.containsBean("someMessageSource")).isTrue();
-		assertThat(child.containsBean("yourMessageSource")).isTrue();
-		assertThat(child.containsBean("myMessageSource")).isTrue();
-		assertThat(child.isSingleton("someMessageSource")).isTrue();
-		assertThat(child.isSingleton("yourMessageSource")).isTrue();
-		assertThat(child.isSingleton("myMessageSource")).isTrue();
-		assertThat(child.getType("someMessageSource")).isEqualTo(StaticMessageSource.class);
-		assertThat(child.getType("yourMessageSource")).isEqualTo(StaticMessageSource.class);
-		assertThat(child.getType("myMessageSource")).isEqualTo(StaticMessageSource.class);
+		assertTrue(child.containsBean("someMessageSource"));
+		assertTrue(child.containsBean("yourMessageSource"));
+		assertTrue(child.containsBean("myMessageSource"));
+		assertTrue(child.isSingleton("someMessageSource"));
+		assertTrue(child.isSingleton("yourMessageSource"));
+		assertTrue(child.isSingleton("myMessageSource"));
+		assertEquals(StaticMessageSource.class, child.getType("someMessageSource"));
+		assertEquals(StaticMessageSource.class, child.getType("yourMessageSource"));
+		assertEquals(StaticMessageSource.class, child.getType("myMessageSource"));
 
 		Object someMs = child.getBean("someMessageSource");
 		Object yourMs = child.getBean("yourMessageSource");
 		Object myMs = child.getBean("myMessageSource");
-		assertThat(yourMs).isSameAs(someMs);
-		assertThat(myMs).isSameAs(someMs);
+		assertSame(someMs, yourMs);
+		assertSame(someMs, myMs);
 
 		String[] aliases = child.getAliases("someMessageSource");
-		assertThat(aliases.length).isEqualTo(2);
-		assertThat(aliases[0]).isEqualTo("myMessageSource");
-		assertThat(aliases[1]).isEqualTo("yourMessageSource");
+		assertEquals(2, aliases.length);
+		assertEquals("myMessageSource", aliases[0]);
+		assertEquals("yourMessageSource", aliases[1]);
 		aliases = child.getAliases("myMessageSource");
-		assertThat(aliases.length).isEqualTo(2);
-		assertThat(aliases[0]).isEqualTo("someMessageSource");
-		assertThat(aliases[1]).isEqualTo("yourMessageSource");
+		assertEquals(2, aliases.length);
+		assertEquals("someMessageSource", aliases[0]);
+		assertEquals("yourMessageSource", aliases[1]);
 
 		child.close();
 		ctx.close();
 	}
 
 	@Test
-	void aliasThatOverridesParent() {
+	public void testAliasThatOverridesParent() {
 		ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(FQ_SIMPLE_CONTEXT);
 		Object someMs = ctx.getBean("someMessageSource");
 
@@ -283,51 +280,51 @@ public class ClassPathXmlApplicationContextTests {
 				new String[] {ALIAS_THAT_OVERRIDES_PARENT_CONTEXT}, ctx);
 		Object myMs = child.getBean("myMessageSource");
 		Object someMs2 = child.getBean("someMessageSource");
-		assertThat(someMs2).isSameAs(myMs);
-		assertThat(someMs2).isNotSameAs(someMs);
+		assertSame(myMs, someMs2);
+		assertNotSame(someMs, someMs2);
 		assertOneMessageSourceOnly(child, myMs);
 	}
 
 	@Test
-	void aliasThatOverridesEarlierBean() {
+	public void testAliasThatOverridesEarlierBean() {
 		ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(
 				FQ_SIMPLE_CONTEXT, ALIAS_THAT_OVERRIDES_PARENT_CONTEXT);
 		Object myMs = ctx.getBean("myMessageSource");
 		Object someMs2 = ctx.getBean("someMessageSource");
-		assertThat(someMs2).isSameAs(myMs);
+		assertSame(myMs, someMs2);
 		assertOneMessageSourceOnly(ctx, myMs);
 	}
 
 	private void assertOneMessageSourceOnly(ClassPathXmlApplicationContext ctx, Object myMessageSource) {
 		String[] beanNamesForType = ctx.getBeanNamesForType(StaticMessageSource.class);
-		assertThat(beanNamesForType.length).isEqualTo(1);
-		assertThat(beanNamesForType[0]).isEqualTo("myMessageSource");
+		assertEquals(1, beanNamesForType.length);
+		assertEquals("myMessageSource", beanNamesForType[0]);
 		beanNamesForType = ctx.getBeanNamesForType(StaticMessageSource.class, true, true);
-		assertThat(beanNamesForType.length).isEqualTo(1);
-		assertThat(beanNamesForType[0]).isEqualTo("myMessageSource");
+		assertEquals(1, beanNamesForType.length);
+		assertEquals("myMessageSource", beanNamesForType[0]);
 		beanNamesForType = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(ctx, StaticMessageSource.class);
-		assertThat(beanNamesForType.length).isEqualTo(1);
-		assertThat(beanNamesForType[0]).isEqualTo("myMessageSource");
+		assertEquals(1, beanNamesForType.length);
+		assertEquals("myMessageSource", beanNamesForType[0]);
 		beanNamesForType = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(ctx, StaticMessageSource.class, true, true);
-		assertThat(beanNamesForType.length).isEqualTo(1);
-		assertThat(beanNamesForType[0]).isEqualTo("myMessageSource");
+		assertEquals(1, beanNamesForType.length);
+		assertEquals("myMessageSource", beanNamesForType[0]);
 
 		Map<?, StaticMessageSource> beansOfType = ctx.getBeansOfType(StaticMessageSource.class);
-		assertThat(beansOfType.size()).isEqualTo(1);
-		assertThat(beansOfType.values().iterator().next()).isSameAs(myMessageSource);
+		assertEquals(1, beansOfType.size());
+		assertSame(myMessageSource, beansOfType.values().iterator().next());
 		beansOfType = ctx.getBeansOfType(StaticMessageSource.class, true, true);
-		assertThat(beansOfType.size()).isEqualTo(1);
-		assertThat(beansOfType.values().iterator().next()).isSameAs(myMessageSource);
+		assertEquals(1, beansOfType.size());
+		assertSame(myMessageSource, beansOfType.values().iterator().next());
 		beansOfType = BeanFactoryUtils.beansOfTypeIncludingAncestors(ctx, StaticMessageSource.class);
-		assertThat(beansOfType.size()).isEqualTo(1);
-		assertThat(beansOfType.values().iterator().next()).isSameAs(myMessageSource);
+		assertEquals(1, beansOfType.size());
+		assertSame(myMessageSource, beansOfType.values().iterator().next());
 		beansOfType = BeanFactoryUtils.beansOfTypeIncludingAncestors(ctx, StaticMessageSource.class, true, true);
-		assertThat(beansOfType.size()).isEqualTo(1);
-		assertThat(beansOfType.values().iterator().next()).isSameAs(myMessageSource);
+		assertEquals(1, beansOfType.size());
+		assertSame(myMessageSource, beansOfType.values().iterator().next());
 	}
 
 	@Test
-	void resourceAndInputStream() throws IOException {
+	public void testResourceAndInputStream() throws IOException {
 		ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(RESOURCE_CONTEXT) {
 			@Override
 			public Resource getResource(String location) {
@@ -339,39 +336,38 @@ public class ClassPathXmlApplicationContextTests {
 		};
 		ResourceTestBean resource1 = (ResourceTestBean) ctx.getBean("resource1");
 		ResourceTestBean resource2 = (ResourceTestBean) ctx.getBean("resource2");
-		boolean condition = resource1.getResource() instanceof ClassPathResource;
-		assertThat(condition).isTrue();
+		assertTrue(resource1.getResource() instanceof ClassPathResource);
 		StringWriter writer = new StringWriter();
 		FileCopyUtils.copy(new InputStreamReader(resource1.getResource().getInputStream()), writer);
-		assertThat(writer.toString()).isEqualTo("contexttest");
+		assertEquals("contexttest", writer.toString());
 		writer = new StringWriter();
 		FileCopyUtils.copy(new InputStreamReader(resource1.getInputStream()), writer);
-		assertThat(writer.toString()).isEqualTo("test");
+		assertEquals("test", writer.toString());
 		writer = new StringWriter();
 		FileCopyUtils.copy(new InputStreamReader(resource2.getResource().getInputStream()), writer);
-		assertThat(writer.toString()).isEqualTo("contexttest");
+		assertEquals("contexttest", writer.toString());
 		writer = new StringWriter();
 		FileCopyUtils.copy(new InputStreamReader(resource2.getInputStream()), writer);
-		assertThat(writer.toString()).isEqualTo("test");
+		assertEquals("test", writer.toString());
 		ctx.close();
 	}
 
 	@Test
-	void genericApplicationContextWithXmlBeanDefinitions() {
+	public void testGenericApplicationContextWithXmlBeanDefinitions() {
 		GenericApplicationContext ctx = new GenericApplicationContext();
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(ctx);
 		reader.loadBeanDefinitions(new ClassPathResource(CONTEXT_B, getClass()));
 		reader.loadBeanDefinitions(new ClassPathResource(CONTEXT_C, getClass()));
 		reader.loadBeanDefinitions(new ClassPathResource(CONTEXT_A, getClass()));
 		ctx.refresh();
-		assertThat(ctx.containsBean("service")).isTrue();
-		assertThat(ctx.containsBean("logicOne")).isTrue();
-		assertThat(ctx.containsBean("logicTwo")).isTrue();
+		assertTrue(ctx.containsBean("service"));
+		assertTrue(ctx.containsBean("logicOne"));
+		assertTrue(ctx.containsBean("logicTwo"));
 		ctx.close();
 	}
 
 	@Test
-	void genericApplicationContextWithXmlBeanDefinitionsAndClassLoaderNull() {
+	public void testGenericApplicationContextWithXmlBeanDefinitionsAndClassLoaderNull() {
 		GenericApplicationContext ctx = new GenericApplicationContext();
 		ctx.setClassLoader(null);
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(ctx);
@@ -379,16 +375,16 @@ public class ClassPathXmlApplicationContextTests {
 		reader.loadBeanDefinitions(new ClassPathResource(CONTEXT_C, getClass()));
 		reader.loadBeanDefinitions(new ClassPathResource(CONTEXT_A, getClass()));
 		ctx.refresh();
-		assertThat(ctx.getId()).isEqualTo(ObjectUtils.identityToString(ctx));
-		assertThat(ctx.getDisplayName()).isEqualTo(ObjectUtils.identityToString(ctx));
-		assertThat(ctx.containsBean("service")).isTrue();
-		assertThat(ctx.containsBean("logicOne")).isTrue();
-		assertThat(ctx.containsBean("logicTwo")).isTrue();
+		assertEquals(ObjectUtils.identityToString(ctx), ctx.getId());
+		assertEquals(ObjectUtils.identityToString(ctx), ctx.getDisplayName());
+		assertTrue(ctx.containsBean("service"));
+		assertTrue(ctx.containsBean("logicOne"));
+		assertTrue(ctx.containsBean("logicTwo"));
 		ctx.close();
 	}
 
 	@Test
-	void genericApplicationContextWithXmlBeanDefinitionsAndSpecifiedId() {
+	public void testGenericApplicationContextWithXmlBeanDefinitionsAndSpecifiedId() {
 		GenericApplicationContext ctx = new GenericApplicationContext();
 		ctx.setId("testContext");
 		ctx.setDisplayName("Test Context");
@@ -397,11 +393,11 @@ public class ClassPathXmlApplicationContextTests {
 		reader.loadBeanDefinitions(new ClassPathResource(CONTEXT_C, getClass()));
 		reader.loadBeanDefinitions(new ClassPathResource(CONTEXT_A, getClass()));
 		ctx.refresh();
-		assertThat(ctx.getId()).isEqualTo("testContext");
-		assertThat(ctx.getDisplayName()).isEqualTo("Test Context");
-		assertThat(ctx.containsBean("service")).isTrue();
-		assertThat(ctx.containsBean("logicOne")).isTrue();
-		assertThat(ctx.containsBean("logicTwo")).isTrue();
+		assertEquals("testContext", ctx.getId());
+		assertEquals("Test Context", ctx.getDisplayName());
+		assertTrue(ctx.containsBean("service"));
+		assertTrue(ctx.containsBean("logicOne"));
+		assertTrue(ctx.containsBean("logicTwo"));
 		ctx.close();
 	}
 

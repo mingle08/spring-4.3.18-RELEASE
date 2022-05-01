@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,10 @@
 
 package org.springframework.expression;
 
-import org.springframework.lang.Nullable;
 
 /**
  * A property accessor is able to read from (and possibly write to) an object's properties.
- *
- * <p>This interface places no restrictions, and so implementors are free to access properties
+ * This interface places no restrictions, and so implementors are free to access properties
  * directly as fields or through getters or in any other way they see as appropriate.
  *
  * <p>A resolver can optionally specify an array of target classes for which it should be
@@ -29,10 +27,9 @@ import org.springframework.lang.Nullable;
  * it will be called for all property references and given a chance to determine if it
  * can read or write them.
  *
- * <p>Property resolvers are considered to be ordered, and each will be called in turn.
- * The only rule that affects the call order is that any resolver naming the target
- * class directly in {@link #getSpecificTargetClasses()} will be called first, before
- * the general resolvers.
+ * <p>Property resolvers are considered to be ordered and each will be called in turn.
+ * The only rule that affects the call order is that any naming the target class directly
+ * in {@link #getSpecificTargetClasses()} will be called first, before the general resolvers.
  *
  * @author Andy Clement
  * @since 3.0
@@ -41,12 +38,11 @@ public interface PropertyAccessor {
 
 	/**
 	 * Return an array of classes for which this resolver should be called.
-	 * <p>Returning {@code null} indicates this is a general resolver that
+	 * <p>>Returning {@code null} indicates this is a general resolver that
 	 * can be called in an attempt to resolve a property on any type.
 	 * @return an array of classes that this resolver is suitable for
 	 * (or {@code null} if a general resolver)
 	 */
-	@Nullable
 	Class<?>[] getSpecificTargetClasses();
 
 	/**
@@ -58,7 +54,7 @@ public interface PropertyAccessor {
 	 * @return true if this resolver is able to read the property
 	 * @throws AccessException if there is any problem determining whether the property can be read
 	 */
-	boolean canRead(EvaluationContext context, @Nullable Object target, String name) throws AccessException;
+	boolean canRead(EvaluationContext context, Object target, String name) throws AccessException;
 
 	/**
 	 * Called to read a property from a specified target object.
@@ -69,7 +65,7 @@ public interface PropertyAccessor {
 	 * @return a TypedValue object wrapping the property value read and a type descriptor for it
 	 * @throws AccessException if there is any problem accessing the property value
 	 */
-	TypedValue read(EvaluationContext context, @Nullable Object target, String name) throws AccessException;
+	TypedValue read(EvaluationContext context, Object target, String name) throws AccessException;
 
 	/**
 	 * Called to determine if a resolver instance is able to write to a specified
@@ -81,7 +77,7 @@ public interface PropertyAccessor {
 	 * @throws AccessException if there is any problem determining whether the
 	 * property can be written to
 	 */
-	boolean canWrite(EvaluationContext context, @Nullable Object target, String name) throws AccessException;
+	boolean canWrite(EvaluationContext context, Object target, String name) throws AccessException;
 
 	/**
 	 * Called to write to a property on a specified target object.
@@ -92,7 +88,6 @@ public interface PropertyAccessor {
 	 * @param newValue the new value for the property
 	 * @throws AccessException if there is any problem writing to the property value
 	 */
-	void write(EvaluationContext context, @Nullable Object target, String name, @Nullable Object newValue)
-			throws AccessException;
+	void write(EvaluationContext context, Object target, String name, Object newValue) throws AccessException;
 
 }

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,10 +18,12 @@ package org.springframework.web.socket;
 
 import java.io.File;
 import java.io.IOException;
+import javax.servlet.Filter;
+import javax.servlet.ServletContext;
 
-import jakarta.servlet.Filter;
-import jakarta.servlet.ServletContext;
 import org.apache.catalina.Context;
+import org.apache.catalina.LifecycleEvent;
+import org.apache.catalina.LifecycleListener;
 import org.apache.catalina.connector.Connector;
 import org.apache.catalina.startup.Tomcat;
 import org.apache.commons.logging.Log;
@@ -32,6 +34,7 @@ import org.apache.tomcat.util.descriptor.web.FilterMap;
 import org.apache.tomcat.websocket.server.WsContextListener;
 
 import org.springframework.util.Assert;
+import org.springframework.util.SocketUtils;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.DispatcherServlet;
 
@@ -47,22 +50,24 @@ public class TomcatWebSocketTestServer implements WebSocketTestServer {
 
 	private Tomcat tomcatServer;
 
-	private int port;
+	private int port = -1;
 
 	private Context context;
 
 
 	@Override
 	public void setup() {
+		this.port = SocketUtils.findAvailableTcpPort();
+
 		Connector connector = new Connector(Http11NioProtocol.class.getName());
-		connector.setPort(0);
+		connector.setPort(this.port);
 
 		File baseDir = createTempDir("tomcat");
 		String baseDirPath = baseDir.getAbsolutePath();
 
 		this.tomcatServer = new Tomcat();
 		this.tomcatServer.setBaseDir(baseDirPath);
-		this.tomcatServer.setPort(0);
+		this.tomcatServer.setPort(this.port);
 		this.tomcatServer.getService().addConnector(connector);
 		this.tomcatServer.setConnector(connector);
 	}
@@ -112,10 +117,12 @@ public class TomcatWebSocketTestServer implements WebSocketTestServer {
 	@Override
 	public void start() throws Exception {
 		this.tomcatServer.start();
-		this.port = this.tomcatServer.getConnector().getLocalPort();
-		this.context.addLifecycleListener(event -> {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Event: " + event.getType());
+		this.context.addLifecycleListener(new LifecycleListener() {
+			@Override
+			public void lifecycleEvent(LifecycleEvent event) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Event: " + event.getType());
+				}
 			}
 		});
 	}
@@ -123,7 +130,6 @@ public class TomcatWebSocketTestServer implements WebSocketTestServer {
 	@Override
 	public void stop() throws Exception {
 		this.tomcatServer.stop();
-		this.port = 0;
 	}
 
 	@Override

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,13 +20,12 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
-import org.junit.jupiter.api.Test;
-
+import org.junit.Test;
 import org.springframework.aop.framework.Advised;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Check that an aspect that depends on another bean, where the referenced bean
@@ -37,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Chris Beams
  */
 @SuppressWarnings("resource")
-public class PropertyDependentAspectTests {
+public final class PropertyDependentAspectTests {
 
 	@Test
 	public void propertyDependentAspectWithPropertyDeclaredBeforeAdvice()
@@ -65,25 +64,23 @@ public class PropertyDependentAspectTests {
 	private void checkXmlAspect(String appContextFile) {
 		ApplicationContext context = new ClassPathXmlApplicationContext(appContextFile, getClass());
 		ICounter counter = (ICounter) context.getBean("counter");
-		boolean condition = counter instanceof Advised;
-		assertThat(condition).as("Proxy didn't get created").isTrue();
+		assertTrue("Proxy didn't get created", counter instanceof Advised);
 
 		counter.increment();
 		JoinPointMonitorAspect callCountingAspect = (JoinPointMonitorAspect)context.getBean("monitoringAspect");
-		assertThat(callCountingAspect.beforeExecutions).as("Advise didn't get executed").isEqualTo(1);
-		assertThat(callCountingAspect.aroundExecutions).as("Advise didn't get executed").isEqualTo(1);
+		assertEquals("Advise didn't get executed", 1, callCountingAspect.beforeExecutions);
+		assertEquals("Advise didn't get executed", 1, callCountingAspect.aroundExecutions);
 	}
 
 	private void checkAtAspectJAspect(String appContextFile) {
 		ApplicationContext context = new ClassPathXmlApplicationContext(appContextFile, getClass());
 		ICounter counter = (ICounter) context.getBean("counter");
-		boolean condition = counter instanceof Advised;
-		assertThat(condition).as("Proxy didn't get created").isTrue();
+		assertTrue("Proxy didn't get created", counter instanceof Advised);
 
 		counter.increment();
 		JoinPointMonitorAtAspectJAspect callCountingAspect = (JoinPointMonitorAtAspectJAspect)context.getBean("monitoringAspect");
-		assertThat(callCountingAspect.beforeExecutions).as("Advise didn't get executed").isEqualTo(1);
-		assertThat(callCountingAspect.aroundExecutions).as("Advise didn't get executed").isEqualTo(1);
+		assertEquals("Advise didn't get executed", 1, callCountingAspect.beforeExecutions);
+		assertEquals("Advise didn't get executed", 1, callCountingAspect.aroundExecutions);
 	}
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,6 @@ import java.lang.reflect.Type;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.core.ResolvableType;
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.converter.MessageConversionException;
 import org.springframework.messaging.converter.MessageConverter;
@@ -43,7 +42,6 @@ import org.springframework.util.StringUtils;
  */
 public class MessageMethodArgumentResolver implements HandlerMethodArgumentResolver {
 
-	@Nullable
 	private final MessageConverter converter;
 
 
@@ -59,7 +57,7 @@ public class MessageMethodArgumentResolver implements HandlerMethodArgumentResol
 	 * @param converter the MessageConverter to use (may be {@code null})
 	 * @since 4.3
 	 */
-	public MessageMethodArgumentResolver(@Nullable MessageConverter converter) {
+	public MessageMethodArgumentResolver(MessageConverter converter) {
 		this.converter = converter;
 	}
 
@@ -72,7 +70,7 @@ public class MessageMethodArgumentResolver implements HandlerMethodArgumentResol
 	@Override
 	public Object resolveArgument(MethodParameter parameter, Message<?> message) throws Exception {
 		Class<?> targetMessageType = parameter.getParameterType();
-		Class<?> targetPayloadType = getPayloadType(parameter, message);
+		Class<?> targetPayloadType = getPayloadType(parameter);
 
 		if (!targetMessageType.isAssignableFrom(message.getClass())) {
 			throw new MethodArgumentTypeMismatchException(message, parameter, "Actual message type '" +
@@ -81,7 +79,7 @@ public class MessageMethodArgumentResolver implements HandlerMethodArgumentResol
 		}
 
 		Object payload = message.getPayload();
-		if (targetPayloadType.isInstance(payload)) {
+		if (payload == null || targetPayloadType.isInstance(payload)) {
 			return message;
 		}
 
@@ -95,29 +93,17 @@ public class MessageMethodArgumentResolver implements HandlerMethodArgumentResol
 		return MessageBuilder.createMessage(payload, message.getHeaders());
 	}
 
-	/**
-	 * Resolve the target class to convert the payload to.
-	 * <p>By default this is the generic type declared in the {@code Message}
-	 * method parameter but that can be overridden to select a more specific
-	 * target type after also taking into account the "Content-Type", e.g.
-	 * return {@code String} if target type is {@code Object} and
-	 * {@code "Content-Type:text/**"}.
-	 * @param parameter the target method parameter
-	 * @param message the message being processed
-	 * @return the target type to use
-	 * @since 5.2
-	 */
-	protected Class<?> getPayloadType(MethodParameter parameter, Message<?> message) {
+	private Class<?> getPayloadType(MethodParameter parameter) {
 		Type genericParamType = parameter.getGenericParameterType();
 		ResolvableType resolvableType = ResolvableType.forType(genericParamType).as(Message.class);
-		return resolvableType.getGeneric().toClass();
+		return resolvableType.getGeneric(0).resolve(Object.class);
 	}
 
 	/**
 	 * Check if the given {@code payload} is empty.
 	 * @param payload the payload to check (can be {@code null})
 	 */
-	protected boolean isEmptyPayload(@Nullable Object payload) {
+	protected boolean isEmptyPayload(Object payload) {
 		if (payload == null) {
 			return true;
 		}
@@ -134,7 +120,8 @@ public class MessageMethodArgumentResolver implements HandlerMethodArgumentResol
 
 	private Object convertPayload(Message<?> message, MethodParameter parameter, Class<?> targetPayloadType) {
 		Object result = null;
-		if (this.converter instanceof SmartMessageConverter smartConverter) {
+		if (this.converter instanceof SmartMessageConverter) {
+			SmartMessageConverter smartConverter = (SmartMessageConverter) this.converter;
 			result = smartConverter.fromMessage(message, targetPayloadType, parameter);
 		}
 		else if (this.converter != null) {

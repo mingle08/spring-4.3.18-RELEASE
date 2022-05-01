@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,32 +20,24 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-
 import javax.sql.DataSource;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import org.springframework.jdbc.support.incrementer.DataFieldMaxValueIncrementer;
 import org.springframework.jdbc.support.incrementer.HanaSequenceMaxValueIncrementer;
 import org.springframework.jdbc.support.incrementer.HsqlMaxValueIncrementer;
 import org.springframework.jdbc.support.incrementer.MySQLMaxValueIncrementer;
 import org.springframework.jdbc.support.incrementer.OracleSequenceMaxValueIncrementer;
 import org.springframework.jdbc.support.incrementer.PostgresSequenceMaxValueIncrementer;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
- * Unit tests for {@link DataFieldMaxValueIncrementer} implementations.
- *
  * @author Juergen Hoeller
- * @author Sam Brannen
  * @since 27.02.2004
  */
-class DataFieldMaxValueIncrementerTests {
+public class DataFieldMaxValueIncrementerTests {
 
 	private final DataSource dataSource = mock(DataSource.class);
 
@@ -57,7 +49,7 @@ class DataFieldMaxValueIncrementerTests {
 
 
 	@Test
-	void hanaSequenceMaxValueIncrementer() throws SQLException {
+	public void testHanaSequenceMaxValueIncrementer() throws SQLException {
 		given(dataSource.getConnection()).willReturn(connection);
 		given(connection.createStatement()).willReturn(statement);
 		given(statement.executeQuery("select myseq.nextval from dummy")).willReturn(resultSet);
@@ -70,8 +62,8 @@ class DataFieldMaxValueIncrementerTests {
 		incrementer.setPaddingLength(2);
 		incrementer.afterPropertiesSet();
 
-		assertThat(incrementer.nextLongValue()).isEqualTo(10);
-		assertThat(incrementer.nextStringValue()).isEqualTo("12");
+		assertEquals(10, incrementer.nextLongValue());
+		assertEquals("12", incrementer.nextStringValue());
 
 		verify(resultSet, times(2)).close();
 		verify(statement, times(2)).close();
@@ -79,7 +71,7 @@ class DataFieldMaxValueIncrementerTests {
 	}
 
 	@Test
-	void hsqlMaxValueIncrementer() throws SQLException {
+	public void testHsqlMaxValueIncrementer() throws SQLException {
 		given(dataSource.getConnection()).willReturn(connection);
 		given(connection.createStatement()).willReturn(statement);
 		given(statement.executeQuery("select max(identity()) from myseq")).willReturn(resultSet);
@@ -94,11 +86,11 @@ class DataFieldMaxValueIncrementerTests {
 		incrementer.setPaddingLength(3);
 		incrementer.afterPropertiesSet();
 
-		assertThat(incrementer.nextIntValue()).isEqualTo(0);
-		assertThat(incrementer.nextLongValue()).isEqualTo(1);
-		assertThat(incrementer.nextStringValue()).isEqualTo("002");
-		assertThat(incrementer.nextIntValue()).isEqualTo(3);
-		assertThat(incrementer.nextLongValue()).isEqualTo(4);
+		assertEquals(0, incrementer.nextIntValue());
+		assertEquals(1, incrementer.nextLongValue());
+		assertEquals("002", incrementer.nextStringValue());
+		assertEquals(3, incrementer.nextIntValue());
+		assertEquals(4, incrementer.nextLongValue());
 
 		verify(statement, times(6)).executeUpdate("insert into myseq values(null)");
 		verify(statement).executeUpdate("delete from myseq where seq < 2");
@@ -109,7 +101,7 @@ class DataFieldMaxValueIncrementerTests {
 	}
 
 	@Test
-	void hsqlMaxValueIncrementerWithDeleteSpecificValues() throws SQLException {
+	public void testHsqlMaxValueIncrementerWithDeleteSpecificValues() throws SQLException {
 		given(dataSource.getConnection()).willReturn(connection);
 		given(connection.createStatement()).willReturn(statement);
 		given(statement.executeQuery("select max(identity()) from myseq")).willReturn(resultSet);
@@ -125,11 +117,11 @@ class DataFieldMaxValueIncrementerTests {
 		incrementer.setDeleteSpecificValues(true);
 		incrementer.afterPropertiesSet();
 
-		assertThat(incrementer.nextIntValue()).isEqualTo(0);
-		assertThat(incrementer.nextLongValue()).isEqualTo(1);
-		assertThat(incrementer.nextStringValue()).isEqualTo("002");
-		assertThat(incrementer.nextIntValue()).isEqualTo(3);
-		assertThat(incrementer.nextLongValue()).isEqualTo(4);
+		assertEquals(0, incrementer.nextIntValue());
+		assertEquals(1, incrementer.nextLongValue());
+		assertEquals("002", incrementer.nextStringValue());
+		assertEquals(3, incrementer.nextIntValue());
+		assertEquals(4, incrementer.nextLongValue());
 
 		verify(statement, times(6)).executeUpdate("insert into myseq values(null)");
 		verify(statement).executeUpdate("delete from myseq where seq in (-1, 0, 1)");
@@ -140,7 +132,7 @@ class DataFieldMaxValueIncrementerTests {
 	}
 
 	@Test
-	void mySQLMaxValueIncrementer() throws SQLException {
+	public void testMySQLMaxValueIncrementer() throws SQLException {
 		given(dataSource.getConnection()).willReturn(connection);
 		given(connection.createStatement()).willReturn(statement);
 		given(statement.executeQuery("select last_insert_id()")).willReturn(resultSet);
@@ -155,19 +147,19 @@ class DataFieldMaxValueIncrementerTests {
 		incrementer.setPaddingLength(1);
 		incrementer.afterPropertiesSet();
 
-		assertThat(incrementer.nextIntValue()).isEqualTo(1);
-		assertThat(incrementer.nextLongValue()).isEqualTo(2);
-		assertThat(incrementer.nextStringValue()).isEqualTo("3");
-		assertThat(incrementer.nextLongValue()).isEqualTo(4);
+		assertEquals(1, incrementer.nextIntValue());
+		assertEquals(2, incrementer.nextLongValue());
+		assertEquals("3", incrementer.nextStringValue());
+		assertEquals(4, incrementer.nextLongValue());
 
-		verify(statement, times(2)).executeUpdate("update myseq set seq = last_insert_id(seq + 2) limit 1");
+		verify(statement, times(2)).executeUpdate("update myseq set seq = last_insert_id(seq + 2)");
 		verify(resultSet, times(2)).close();
 		verify(statement, times(2)).close();
 		verify(connection, times(2)).close();
 	}
 
 	@Test
-	void oracleSequenceMaxValueIncrementer() throws SQLException {
+	public void testOracleSequenceMaxValueIncrementer() throws SQLException {
 		given(dataSource.getConnection()).willReturn(connection);
 		given(connection.createStatement()).willReturn(statement);
 		given(statement.executeQuery("select myseq.nextval from dual")).willReturn(resultSet);
@@ -180,8 +172,8 @@ class DataFieldMaxValueIncrementerTests {
 		incrementer.setPaddingLength(2);
 		incrementer.afterPropertiesSet();
 
-		assertThat(incrementer.nextLongValue()).isEqualTo(10);
-		assertThat(incrementer.nextStringValue()).isEqualTo("12");
+		assertEquals(10, incrementer.nextLongValue());
+		assertEquals("12", incrementer.nextStringValue());
 
 		verify(resultSet, times(2)).close();
 		verify(statement, times(2)).close();
@@ -189,7 +181,7 @@ class DataFieldMaxValueIncrementerTests {
 	}
 
 	@Test
-	void postgresSequenceMaxValueIncrementer() throws SQLException {
+	public void testPostgresSequenceMaxValueIncrementer() throws SQLException {
 		given(dataSource.getConnection()).willReturn(connection);
 		given(connection.createStatement()).willReturn(statement);
 		given(statement.executeQuery("select nextval('myseq')")).willReturn(resultSet);
@@ -202,8 +194,8 @@ class DataFieldMaxValueIncrementerTests {
 		incrementer.setPaddingLength(5);
 		incrementer.afterPropertiesSet();
 
-		assertThat(incrementer.nextStringValue()).isEqualTo("00010");
-		assertThat(incrementer.nextIntValue()).isEqualTo(12);
+		assertEquals("00010", incrementer.nextStringValue());
+		assertEquals(12, incrementer.nextIntValue());
 
 		verify(resultSet, times(2)).close();
 		verify(statement, times(2)).close();

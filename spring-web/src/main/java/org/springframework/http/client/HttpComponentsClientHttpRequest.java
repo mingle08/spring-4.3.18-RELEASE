@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,8 @@ package org.springframework.http.client;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
@@ -62,13 +64,7 @@ final class HttpComponentsClientHttpRequest extends AbstractBufferingClientHttpR
 
 	@Override
 	public HttpMethod getMethod() {
-		return HttpMethod.valueOf(this.httpRequest.getMethod());
-	}
-
-	@Override
-	@Deprecated
-	public String getMethodValue() {
-		return this.httpRequest.getMethod();
+		return HttpMethod.resolve(this.httpRequest.getMethod());
 	}
 
 	@Override
@@ -85,7 +81,8 @@ final class HttpComponentsClientHttpRequest extends AbstractBufferingClientHttpR
 	protected ClientHttpResponse executeInternal(HttpHeaders headers, byte[] bufferedOutput) throws IOException {
 		addHeaders(this.httpRequest, headers);
 
-		if (this.httpRequest instanceof HttpEntityEnclosingRequest entityEnclosingRequest) {
+		if (this.httpRequest instanceof HttpEntityEnclosingRequest) {
+			HttpEntityEnclosingRequest entityEnclosingRequest = (HttpEntityEnclosingRequest) this.httpRequest;
 			HttpEntity requestEntity = new ByteArrayEntity(bufferedOutput);
 			entityEnclosingRequest.setEntity(requestEntity);
 		}
@@ -100,18 +97,19 @@ final class HttpComponentsClientHttpRequest extends AbstractBufferingClientHttpR
 	 * @param headers the headers to add
 	 */
 	static void addHeaders(HttpUriRequest httpRequest, HttpHeaders headers) {
-		headers.forEach((headerName, headerValues) -> {
+		for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+			String headerName = entry.getKey();
 			if (HttpHeaders.COOKIE.equalsIgnoreCase(headerName)) {  // RFC 6265
-				String headerValue = StringUtils.collectionToDelimitedString(headerValues, "; ");
+				String headerValue = StringUtils.collectionToDelimitedString(entry.getValue(), "; ");
 				httpRequest.addHeader(headerName, headerValue);
 			}
 			else if (!HTTP.CONTENT_LEN.equalsIgnoreCase(headerName) &&
 					!HTTP.TRANSFER_ENCODING.equalsIgnoreCase(headerName)) {
-				for (String headerValue : headerValues) {
+				for (String headerValue : entry.getValue()) {
 					httpRequest.addHeader(headerName, headerValue);
 				}
 			}
-		});
+		}
 	}
 
 }

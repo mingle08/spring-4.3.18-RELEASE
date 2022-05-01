@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,12 +18,12 @@ package org.springframework.transaction.interceptor;
 
 import java.lang.reflect.Method;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
-import org.springframework.beans.testfixture.beans.ITestBean;
-import org.springframework.beans.testfixture.beans.TestBean;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.tests.sample.beans.ITestBean;
+import org.springframework.tests.sample.beans.TestBean;
 import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.transaction.MockCallbackPreferringTransactionManager;
 import org.springframework.transaction.NoTransactionException;
@@ -34,42 +34,35 @@ import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.UnexpectedRollbackException;
 import org.springframework.transaction.interceptor.TransactionAspectSupport.TransactionInfo;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
- * Mock object based tests for transaction aspects. A true unit test in that it
- * tests how the transaction aspect uses the PlatformTransactionManager helper,
- * rather than indirectly testing the helper implementation.
+ * Mock object based tests for transaction aspects.
+ * True unit test in that it tests how the transaction aspect uses
+ * the PlatformTransactionManager helper, rather than indirectly
+ * testing the helper implementation.
  *
- * <p>This is a superclass to allow testing both the AOP Alliance MethodInterceptor
+ * This is a superclass to allow testing both the AOP Alliance MethodInterceptor
  * and the AspectJ aspect.
  *
  * @author Rod Johnson
- * @author Juergen Hoeller
  * @since 16.03.2003
  */
 public abstract class AbstractTransactionAspectTests {
+
+	protected Method exceptionalMethod;
 
 	protected Method getNameMethod;
 
 	protected Method setNameMethod;
 
-	protected Method exceptionalMethod;
 
-
-	@BeforeEach
+	@Before
 	public void setup() throws Exception {
+		exceptionalMethod = ITestBean.class.getMethod("exceptional", Throwable.class);
 		getNameMethod = ITestBean.class.getMethod("getName");
 		setNameMethod = ITestBean.class.getMethod("setName", String.class);
-		exceptionalMethod = ITestBean.class.getMethod("exceptional", Throwable.class);
 	}
 
 
@@ -90,7 +83,7 @@ public abstract class AbstractTransactionAspectTests {
 		checkTransactionStatus(false);
 
 		// expect no calls
-		verifyNoInteractions(ptm);
+		verifyZeroInteractions(ptm);
 	}
 
 	/**
@@ -138,8 +131,8 @@ public abstract class AbstractTransactionAspectTests {
 		itb.getName();
 		checkTransactionStatus(false);
 
-		assertThat(ptm.getDefinition()).isSameAs(txatt);
-		assertThat(ptm.getStatus().isRollbackOnly()).isFalse();
+		assertSame(txatt, ptm.getDefinition());
+		assertFalse(ptm.getStatus().isRollbackOnly());
 	}
 
 	@Test
@@ -155,12 +148,17 @@ public abstract class AbstractTransactionAspectTests {
 		ITestBean itb = (ITestBean) advised(tb, ptm, tas);
 
 		checkTransactionStatus(false);
-		assertThatExceptionOfType(OptimisticLockingFailureException.class).isThrownBy(() ->
-				itb.exceptional(new OptimisticLockingFailureException("")));
+		try {
+			itb.exceptional(new OptimisticLockingFailureException(""));
+			fail("Should have thrown OptimisticLockingFailureException");
+		}
+		catch (OptimisticLockingFailureException ex) {
+			// expected
+		}
 		checkTransactionStatus(false);
 
-		assertThat(ptm.getDefinition()).isSameAs(txatt);
-		assertThat(ptm.getStatus().isRollbackOnly()).isFalse();
+		assertSame(txatt, ptm.getDefinition());
+		assertFalse(ptm.getStatus().isRollbackOnly());
 	}
 
 	/**
@@ -236,8 +234,8 @@ public abstract class AbstractTransactionAspectTests {
 			@Override
 			public void exceptional(Throwable t) throws Throwable {
 				TransactionInfo ti = TransactionAspectSupport.currentTransactionInfo();
-				assertThat(ti.hasTransaction()).isTrue();
-				assertThat(getSpouse().getName()).isEqualTo(spouseName);
+				assertTrue(ti.hasTransaction());
+				assertEquals(spouseName, getSpouse().getName());
 			}
 		};
 		TestBean inner = new TestBean() {
@@ -245,7 +243,7 @@ public abstract class AbstractTransactionAspectTests {
 			public String getName() {
 				// Assert that we're in the inner proxy
 				TransactionInfo ti = TransactionAspectSupport.currentTransactionInfo();
-				assertThat(ti.hasTransaction()).isFalse();
+				assertFalse(ti.hasTransaction());
 				return spouseName;
 			}
 		};
@@ -289,9 +287,9 @@ public abstract class AbstractTransactionAspectTests {
 			@Override
 			public void exceptional(Throwable t) throws Throwable {
 				TransactionInfo ti = TransactionAspectSupport.currentTransactionInfo();
-				assertThat(ti.hasTransaction()).isTrue();
-				assertThat(ti.getTransactionAttribute()).isEqualTo(outerTxatt);
-				assertThat(getSpouse().getName()).isEqualTo(spouseName);
+				assertTrue(ti.hasTransaction());
+				assertEquals(outerTxatt, ti.getTransactionAttribute());
+				assertEquals(spouseName, getSpouse().getName());
 			}
 		};
 		TestBean inner = new TestBean() {
@@ -300,8 +298,8 @@ public abstract class AbstractTransactionAspectTests {
 				// Assert that we're in the inner proxy
 				TransactionInfo ti = TransactionAspectSupport.currentTransactionInfo();
 				// Has nested transaction
-				assertThat(ti.hasTransaction()).isTrue();
-				assertThat(ti.getTransactionAttribute()).isEqualTo(innerTxatt);
+				assertTrue(ti.hasTransaction());
+				assertEquals(innerTxatt, ti.getTransactionAttribute());
 				return spouseName;
 			}
 		};
@@ -374,7 +372,7 @@ public abstract class AbstractTransactionAspectTests {
 		TransactionAttribute txatt = new DefaultTransactionAttribute() {
 			@Override
 			public boolean rollbackOn(Throwable t) {
-				assertThat(t == ex).isTrue();
+				assertTrue(t == ex);
 				return shouldRollback;
 			}
 		};
@@ -408,10 +406,10 @@ public abstract class AbstractTransactionAspectTests {
 		}
 		catch (Throwable t) {
 			if (rollbackException) {
-				assertThat(t).as("Caught wrong exception").isEqualTo(tex);
+				assertEquals("Caught wrong exception", tex, t );
 			}
 			else {
-				assertThat(t).as("Caught wrong exception").isEqualTo(ex);
+				assertEquals("Caught wrong exception", ex, t);
 			}
 		}
 
@@ -454,7 +452,7 @@ public abstract class AbstractTransactionAspectTests {
 		ITestBean itb = (ITestBean) advised(tb, ptm, tas);
 
 		// verification!?
-		assertThat(name.equals(itb.getName())).isTrue();
+		assertTrue(name.equals(itb.getName()));
 
 		verify(ptm).commit(status);
 	}
@@ -490,7 +488,7 @@ public abstract class AbstractTransactionAspectTests {
 			fail("Shouldn't have invoked method");
 		}
 		catch (CannotCreateTransactionException thrown) {
-			assertThat(thrown == ex).isTrue();
+			assertTrue(thrown == ex);
 		}
 	}
 
@@ -525,11 +523,11 @@ public abstract class AbstractTransactionAspectTests {
 			fail("Shouldn't have succeeded");
 		}
 		catch (UnexpectedRollbackException thrown) {
-			assertThat(thrown == ex).isTrue();
+			assertTrue(thrown == ex);
 		}
 
 		// Should have invoked target and changed name
-		assertThat(itb.getName() == name).isTrue();
+		assertTrue(itb.getName() == name);
 	}
 
 	protected void checkTransactionStatus(boolean expected) {
@@ -559,7 +557,7 @@ public abstract class AbstractTransactionAspectTests {
 	 * have been created, as there's no distinction between target and proxy.
 	 * In the case of Spring's own AOP framework, a proxy must be created
 	 * using a suitably configured transaction interceptor
-	 * @param target the target if there's a distinct target. If not (AspectJ),
+	 * @param target target if there's a distinct target. If not (AspectJ),
 	 * return target.
 	 * @return transactional advised object
 	 */

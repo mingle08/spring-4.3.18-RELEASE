@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 import org.springframework.core.Constants;
-import org.springframework.lang.Nullable;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -55,10 +54,9 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  */
 public class IsolationLevelDataSourceAdapter extends UserCredentialsDataSourceAdapter {
 
-	/** Constants instance for TransactionDefinition. */
+	/** Constants instance for TransactionDefinition */
 	private static final Constants constants = new Constants(TransactionDefinition.class);
 
-	@Nullable
 	private Integer isolationLevel;
 
 
@@ -77,7 +75,7 @@ public class IsolationLevelDataSourceAdapter extends UserCredentialsDataSourceAd
 	 * @see #setIsolationLevel
 	 */
 	public final void setIsolationLevelName(String constantName) throws IllegalArgumentException {
-		if (!constantName.startsWith(DefaultTransactionDefinition.PREFIX_ISOLATION)) {
+		if (constantName == null || !constantName.startsWith(DefaultTransactionDefinition.PREFIX_ISOLATION)) {
 			throw new IllegalArgumentException("Only isolation constants allowed");
 		}
 		setIsolationLevel(constants.asNumber(constantName).intValue());
@@ -113,7 +111,6 @@ public class IsolationLevelDataSourceAdapter extends UserCredentialsDataSourceAd
 	 * Return the statically specified isolation level,
 	 * or {@code null} if none.
 	 */
-	@Nullable
 	protected Integer getIsolationLevel() {
 		return this.isolationLevel;
 	}
@@ -126,7 +123,7 @@ public class IsolationLevelDataSourceAdapter extends UserCredentialsDataSourceAd
 	 * @see #getCurrentReadOnlyFlag()
 	 */
 	@Override
-	protected Connection doGetConnection(@Nullable String username, @Nullable String password) throws SQLException {
+	protected Connection doGetConnection(String username, String password) throws SQLException {
 		Connection con = super.doGetConnection(username, password);
 		Boolean readOnlyToUse = getCurrentReadOnlyFlag();
 		if (readOnlyToUse != null) {
@@ -146,7 +143,6 @@ public class IsolationLevelDataSourceAdapter extends UserCredentialsDataSourceAd
 	 * @see org.springframework.transaction.support.TransactionSynchronizationManager#getCurrentTransactionIsolationLevel()
 	 * @see #setIsolationLevel
 	 */
-	@Nullable
 	protected Integer getCurrentIsolationLevel() {
 		Integer isolationLevelToUse = TransactionSynchronizationManager.getCurrentTransactionIsolationLevel();
 		if (isolationLevelToUse == null) {
@@ -161,7 +157,6 @@ public class IsolationLevelDataSourceAdapter extends UserCredentialsDataSourceAd
 	 * @return whether there is a read-only hint for the current scope
 	 * @see org.springframework.transaction.support.TransactionSynchronizationManager#isCurrentTransactionReadOnly()
 	 */
-	@Nullable
 	protected Boolean getCurrentReadOnlyFlag() {
 		boolean txReadOnly = TransactionSynchronizationManager.isCurrentTransactionReadOnly();
 		return (txReadOnly ? Boolean.TRUE : null);

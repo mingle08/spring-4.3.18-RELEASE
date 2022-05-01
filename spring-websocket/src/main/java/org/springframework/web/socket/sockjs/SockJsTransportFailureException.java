@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,8 +15,6 @@
  */
 
 package org.springframework.web.socket.sockjs;
-
-import org.springframework.lang.Nullable;
 
 /**
  * Indicates a serious failure that occurred in the SockJS implementation as opposed to
@@ -35,7 +33,7 @@ public class SockJsTransportFailureException extends SockJsException {
 	 * @param cause the root cause
 	 * @since 4.1.7
 	 */
-	public SockJsTransportFailureException(String message, @Nullable Throwable cause) {
+	public SockJsTransportFailureException(String message, Throwable cause) {
 		super(message, cause);
 	}
 
@@ -45,7 +43,7 @@ public class SockJsTransportFailureException extends SockJsException {
 	 * @param sessionId the SockJS session id
 	 * @param cause the root cause
 	 */
-	public SockJsTransportFailureException(String message, String sessionId, @Nullable Throwable cause) {
+	public SockJsTransportFailureException(String message, String sessionId, Throwable cause) {
 		super(message, sessionId, cause);
 	}
 

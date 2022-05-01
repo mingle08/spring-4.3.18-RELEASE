@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,8 +24,6 @@ import java.text.ParseException;
 import java.util.Currency;
 import java.util.Locale;
 
-import org.springframework.lang.Nullable;
-
 /**
  * A BigDecimal formatter for number values in currency style.
  *
@@ -43,13 +41,10 @@ public class CurrencyStyleFormatter extends AbstractNumberFormatter {
 
 	private int fractionDigits = 2;
 
-	@Nullable
 	private RoundingMode roundingMode;
 
-	@Nullable
 	private Currency currency;
 
-	@Nullable
 	private String pattern;
 
 
@@ -89,11 +84,13 @@ public class CurrencyStyleFormatter extends AbstractNumberFormatter {
 	@Override
 	public BigDecimal parse(String text, Locale locale) throws ParseException {
 		BigDecimal decimal = (BigDecimal) super.parse(text, locale);
-		if (this.roundingMode != null) {
-			decimal = decimal.setScale(this.fractionDigits, this.roundingMode);
-		}
-		else {
-			decimal = decimal.setScale(this.fractionDigits);
+		if (decimal != null) {
+			if (this.roundingMode != null) {
+				decimal = decimal.setScale(this.fractionDigits, this.roundingMode);
+			}
+			else {
+				decimal = decimal.setScale(this.fractionDigits);
+			}
 		}
 		return decimal;
 	}

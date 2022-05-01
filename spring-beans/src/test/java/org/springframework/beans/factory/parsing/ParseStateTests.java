@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2006 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,9 +16,9 @@
 
 package org.springframework.beans.factory.parsing;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Rob Harrop
@@ -33,9 +33,9 @@ public class ParseStateTests {
 
 		ParseState parseState = new ParseState();
 		parseState.push(entry);
-		assertThat(parseState.peek()).as("Incorrect peek value.").isEqualTo(entry);
+		assertEquals("Incorrect peek value.", entry, parseState.peek());
 		parseState.pop();
-		assertThat(parseState.peek()).as("Should get null on peek()").isNull();
+		assertNull("Should get null on peek()", parseState.peek());
 	}
 
 	@Test
@@ -46,16 +46,16 @@ public class ParseStateTests {
 
 		ParseState parseState = new ParseState();
 		parseState.push(one);
-		assertThat(parseState.peek()).isEqualTo(one);
+		assertEquals(one, parseState.peek());
 		parseState.push(two);
-		assertThat(parseState.peek()).isEqualTo(two);
+		assertEquals(two, parseState.peek());
 		parseState.push(three);
-		assertThat(parseState.peek()).isEqualTo(three);
+		assertEquals(three, parseState.peek());
 
 		parseState.pop();
-		assertThat(parseState.peek()).isEqualTo(two);
+		assertEquals(two, parseState.peek());
 		parseState.pop();
-		assertThat(parseState.peek()).isEqualTo(one);
+		assertEquals(one, parseState.peek());
 	}
 
 	@Test
@@ -67,7 +67,7 @@ public class ParseStateTests {
 
 		ParseState snapshot = original.snapshot();
 		original.push(new MockEntry());
-		assertThat(snapshot.peek()).as("Snapshot should not have been modified.").isEqualTo(entry);
+		assertEquals("Snapshot should not have been modified.", entry, snapshot.peek());
 	}
 
 

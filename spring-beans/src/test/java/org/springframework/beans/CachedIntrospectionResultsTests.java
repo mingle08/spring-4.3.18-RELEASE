@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,12 +20,13 @@ import java.beans.BeanInfo;
 import java.beans.PropertyDescriptor;
 import java.util.ArrayList;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import org.springframework.beans.testfixture.beans.TestBean;
 import org.springframework.core.OverridingClassLoader;
+import org.springframework.tests.sample.beans.TestBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
 
 /**
  * @author Juergen Hoeller
@@ -37,30 +38,30 @@ public class CachedIntrospectionResultsTests {
 	@Test
 	public void acceptAndClearClassLoader() throws Exception {
 		BeanWrapper bw = new BeanWrapperImpl(TestBean.class);
-		assertThat(bw.isWritableProperty("name")).isTrue();
-		assertThat(bw.isWritableProperty("age")).isTrue();
-		assertThat(CachedIntrospectionResults.strongClassCache.containsKey(TestBean.class)).isTrue();
+		assertTrue(bw.isWritableProperty("name"));
+		assertTrue(bw.isWritableProperty("age"));
+		assertTrue(CachedIntrospectionResults.strongClassCache.containsKey(TestBean.class));
 
 		ClassLoader child = new OverridingClassLoader(getClass().getClassLoader());
-		Class<?> tbClass = child.loadClass("org.springframework.beans.testfixture.beans.TestBean");
-		assertThat(CachedIntrospectionResults.strongClassCache.containsKey(tbClass)).isFalse();
+		Class<?> tbClass = child.loadClass("org.springframework.tests.sample.beans.TestBean");
+		assertFalse(CachedIntrospectionResults.strongClassCache.containsKey(tbClass));
 		CachedIntrospectionResults.acceptClassLoader(child);
 		bw = new BeanWrapperImpl(tbClass);
-		assertThat(bw.isWritableProperty("name")).isTrue();
-		assertThat(bw.isWritableProperty("age")).isTrue();
-		assertThat(CachedIntrospectionResults.strongClassCache.containsKey(tbClass)).isTrue();
+		assertTrue(bw.isWritableProperty("name"));
+		assertTrue(bw.isWritableProperty("age"));
+		assertTrue(CachedIntrospectionResults.strongClassCache.containsKey(tbClass));
 		CachedIntrospectionResults.clearClassLoader(child);
-		assertThat(CachedIntrospectionResults.strongClassCache.containsKey(tbClass)).isFalse();
+		assertFalse(CachedIntrospectionResults.strongClassCache.containsKey(tbClass));
 
-		assertThat(CachedIntrospectionResults.strongClassCache.containsKey(TestBean.class)).isTrue();
+		assertTrue(CachedIntrospectionResults.strongClassCache.containsKey(TestBean.class));
 	}
 
 	@Test
 	public void clearClassLoaderForSystemClassLoader() throws Exception {
 		BeanUtils.getPropertyDescriptors(ArrayList.class);
-		assertThat(CachedIntrospectionResults.strongClassCache.containsKey(ArrayList.class)).isTrue();
+		assertTrue(CachedIntrospectionResults.strongClassCache.containsKey(ArrayList.class));
 		CachedIntrospectionResults.clearClassLoader(ArrayList.class.getClassLoader());
-		assertThat(CachedIntrospectionResults.strongClassCache.containsKey(ArrayList.class)).isFalse();
+		assertFalse(CachedIntrospectionResults.strongClassCache.containsKey(ArrayList.class));
 	}
 
 	@Test
@@ -83,11 +84,13 @@ public class CachedIntrospectionResultsTests {
 		}
 
 		// resulting in a property descriptor including the non-standard setFoo method
-		assertThat(pd).isNotNull();
-		assertThat(pd.getReadMethod()).isEqualTo(C.class.getMethod("getFoo"));
-		// No write method found for non-void returning 'setFoo' method.
-		// Check to see if CachedIntrospectionResults is delegating to ExtendedBeanInfo as expected
-		assertThat(pd.getWriteMethod()).isEqualTo(C.class.getMethod("setFoo", String.class));
+		assertThat(pd, notNullValue());
+		assertThat(pd.getReadMethod(), equalTo(C.class.getMethod("getFoo")));
+		assertThat(
+				"No write method found for non-void returning 'setFoo' method. " +
+				"Check to see if CachedIntrospectionResults is delegating to " +
+				"ExtendedBeanInfo as expected",
+				pd.getWriteMethod(), equalTo(C.class.getMethod("setFoo", String.class)));
 	}
 
 }

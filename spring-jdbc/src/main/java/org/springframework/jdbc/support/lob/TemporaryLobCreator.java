@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,7 +30,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.dao.DataAccessResourceFailureException;
-import org.springframework.lang.Nullable;
 import org.springframework.util.FileCopyUtils;
 
 /**
@@ -51,13 +50,13 @@ public class TemporaryLobCreator implements LobCreator {
 
 	protected static final Log logger = LogFactory.getLog(TemporaryLobCreator.class);
 
-	private final Set<Blob> temporaryBlobs = new LinkedHashSet<>(1);
+	private final Set<Blob> temporaryBlobs = new LinkedHashSet<Blob>(1);
 
-	private final Set<Clob> temporaryClobs = new LinkedHashSet<>(1);
+	private final Set<Clob> temporaryClobs = new LinkedHashSet<Clob>(1);
 
 
 	@Override
-	public void setBlobAsBytes(PreparedStatement ps, int paramIndex, @Nullable byte[] content)
+	public void setBlobAsBytes(PreparedStatement ps, int paramIndex, byte[] content)
 			throws SQLException {
 
 		if (content != null) {
@@ -78,7 +77,7 @@ public class TemporaryLobCreator implements LobCreator {
 
 	@Override
 	public void setBlobAsBinaryStream(
-			PreparedStatement ps, int paramIndex, @Nullable InputStream binaryStream, int contentLength)
+			PreparedStatement ps, int paramIndex, InputStream binaryStream, int contentLength)
 			throws SQLException {
 
 		if (binaryStream != null) {
@@ -104,7 +103,7 @@ public class TemporaryLobCreator implements LobCreator {
 	}
 
 	@Override
-	public void setClobAsString(PreparedStatement ps, int paramIndex, @Nullable String content)
+	public void setClobAsString(PreparedStatement ps, int paramIndex, String content)
 			throws SQLException {
 
 		if (content != null) {
@@ -125,7 +124,7 @@ public class TemporaryLobCreator implements LobCreator {
 
 	@Override
 	public void setClobAsAsciiStream(
-			PreparedStatement ps, int paramIndex, @Nullable InputStream asciiStream, int contentLength)
+			PreparedStatement ps, int paramIndex, InputStream asciiStream, int contentLength)
 			throws SQLException {
 
 		if (asciiStream != null) {
@@ -152,7 +151,7 @@ public class TemporaryLobCreator implements LobCreator {
 
 	@Override
 	public void setClobAsCharacterStream(
-			PreparedStatement ps, int paramIndex, @Nullable Reader characterStream, int contentLength)
+			PreparedStatement ps, int paramIndex, Reader characterStream, int contentLength)
 			throws SQLException {
 
 		if (characterStream != null) {
@@ -179,21 +178,16 @@ public class TemporaryLobCreator implements LobCreator {
 
 	@Override
 	public void close() {
-		for (Blob blob : this.temporaryBlobs) {
-			try {
+		try {
+			for (Blob blob : this.temporaryBlobs) {
 				blob.free();
 			}
-			catch (SQLException ex) {
-				logger.warn("Could not free BLOB", ex);
-			}
-		}
-		for (Clob clob : this.temporaryClobs) {
-			try {
+			for (Clob clob : this.temporaryClobs) {
 				clob.free();
 			}
-			catch (SQLException ex) {
-				logger.warn("Could not free CLOB", ex);
-			}
+		}
+		catch (SQLException ex) {
+			logger.error("Could not free LOB", ex);
 		}
 	}
 

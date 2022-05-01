@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,16 +16,14 @@
 
 package org.springframework.expression.common;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Stack;
 
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.ParseException;
 import org.springframework.expression.ParserContext;
-import org.springframework.lang.Nullable;
 
 /**
  * An expression parser that understands templates. It can be subclassed by expression
@@ -38,14 +36,37 @@ import org.springframework.lang.Nullable;
  */
 public abstract class TemplateAwareExpressionParser implements ExpressionParser {
 
+	/**
+	 * Default ParserContext instance for non-template expressions.
+	 */
+	private static final ParserContext NON_TEMPLATE_PARSER_CONTEXT = new ParserContext() {
+		@Override
+		public String getExpressionPrefix() {
+			return null;
+		}
+		@Override
+		public String getExpressionSuffix() {
+			return null;
+		}
+		@Override
+		public boolean isTemplate() {
+			return false;
+		}
+	};
+
+
 	@Override
 	public Expression parseExpression(String expressionString) throws ParseException {
-		return parseExpression(expressionString, null);
+		return parseExpression(expressionString, NON_TEMPLATE_PARSER_CONTEXT);
 	}
 
 	@Override
-	public Expression parseExpression(String expressionString, @Nullable ParserContext context) throws ParseException {
-		if (context != null && context.isTemplate()) {
+	public Expression parseExpression(String expressionString, ParserContext context) throws ParseException {
+		if (context == null) {
+			context = NON_TEMPLATE_PARSER_CONTEXT;
+		}
+
+		if (context.isTemplate()) {
 			return parseTemplate(expressionString, context);
 		}
 		else {
@@ -87,7 +108,7 @@ public abstract class TemplateAwareExpressionParser implements ExpressionParser 
 	 * @throws ParseException when the expressions cannot be parsed
 	 */
 	private Expression[] parseExpressions(String expressionString, ParserContext context) throws ParseException {
-		List<Expression> expressions = new ArrayList<>();
+		List<Expression> expressions = new LinkedList<Expression>();
 		String prefix = context.getExpressionPrefix();
 		String suffix = context.getExpressionSuffix();
 		int startIdx = 0;
@@ -128,7 +149,7 @@ public abstract class TemplateAwareExpressionParser implements ExpressionParser 
 			}
 		}
 
-		return expressions.toArray(new Expression[0]);
+		return expressions.toArray(new Expression[expressions.size()]);
 	}
 
 	/**
@@ -173,7 +194,7 @@ public abstract class TemplateAwareExpressionParser implements ExpressionParser 
 		if (nextSuffix == -1) {
 			return -1; // the suffix is missing
 		}
-		Deque<Bracket> stack = new ArrayDeque<>();
+		Stack<Bracket> stack = new Stack<Bracket>();
 		while (pos < maxlen) {
 			if (isSuffixHere(expressionString, pos, suffix) && stack.isEmpty()) {
 				break;
@@ -232,7 +253,7 @@ public abstract class TemplateAwareExpressionParser implements ExpressionParser 
 	 * @return an evaluator for the parsed expression
 	 * @throws ParseException an exception occurred during parsing
 	 */
-	protected abstract Expression doParseExpression(String expressionString, @Nullable ParserContext context)
+	protected abstract Expression doParseExpression(String expressionString, ParserContext context)
 			throws ParseException;
 
 

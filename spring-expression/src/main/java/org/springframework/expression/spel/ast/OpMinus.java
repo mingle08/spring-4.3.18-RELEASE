@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,7 +25,6 @@ import org.springframework.expression.Operation;
 import org.springframework.expression.TypedValue;
 import org.springframework.expression.spel.CodeFlow;
 import org.springframework.expression.spel.ExpressionState;
-import org.springframework.util.Assert;
 import org.springframework.util.NumberUtils;
 
 /**
@@ -43,63 +42,66 @@ import org.springframework.util.NumberUtils;
  * @author Andy Clement
  * @author Juergen Hoeller
  * @author Giovanni Dall'Oglio Risso
- * @author Sam Brannen
  * @since 3.0
  */
 public class OpMinus extends Operator {
 
-	public OpMinus(int startPos, int endPos, SpelNodeImpl... operands) {
-		super("-", startPos, endPos, operands);
+	public OpMinus(int pos, SpelNodeImpl... operands) {
+		super("-", pos, operands);
 	}
 
 
 	@Override
 	public TypedValue getValueInternal(ExpressionState state) throws EvaluationException {
 		SpelNodeImpl leftOp = getLeftOperand();
+		SpelNodeImpl rightOp = getRightOperand();
 
-		if (this.children.length < 2) {  // if only one operand, then this is unary minus
+		if (rightOp == null) {  // if only one operand, then this is unary minus
 			Object operand = leftOp.getValueInternal(state).getValue();
-			if (operand instanceof Number number) {
-				if (number instanceof BigDecimal bigDecimal) {
-					return new TypedValue(bigDecimal.negate());
+			if (operand instanceof Number) {
+				if (operand instanceof BigDecimal) {
+					return new TypedValue(((BigDecimal) operand).negate());
 				}
-				else if (number instanceof BigInteger bigInteger) {
-					return new TypedValue(bigInteger.negate());
-				}
-				else if (number instanceof Double) {
+				else if (operand instanceof Double) {
 					this.exitTypeDescriptor = "D";
-					return new TypedValue(0 - number.doubleValue());
+					return new TypedValue(0 - ((Number) operand).doubleValue());
 				}
-				else if (number instanceof Float) {
+				else if (operand instanceof Float) {
 					this.exitTypeDescriptor = "F";
-					return new TypedValue(0 - number.floatValue());
+					return new TypedValue(0 - ((Number) operand).floatValue());
 				}
-				else if (number instanceof Long) {
+				else if (operand instanceof BigInteger) {
+					return new TypedValue(((BigInteger) operand).negate());
+				}
+				else if (operand instanceof Long) {
 					this.exitTypeDescriptor = "J";
-					return new TypedValue(0 - number.longValue());
+					return new TypedValue(0 - ((Number) operand).longValue());
 				}
-				else if (number instanceof Integer) {
+				else if (operand instanceof Integer) {
 					this.exitTypeDescriptor = "I";
-					return new TypedValue(0 - number.intValue());
+					return new TypedValue(0 - ((Number) operand).intValue());
 				}
-				else if (number instanceof Short) {
-					return new TypedValue(0 - number.shortValue());
+				else if (operand instanceof Short) {
+					return new TypedValue(0 - ((Number) operand).shortValue());
 				}
-				else if (number instanceof Byte) {
-					return new TypedValue(0 - number.byteValue());
+				else if (operand instanceof Byte) {
+					return new TypedValue(0 - ((Number) operand).byteValue());
 				}
 				else {
-					// Unknown Number subtype -> best guess is double subtraction
-					return new TypedValue(0 - number.doubleValue());
+					// Unknown Number subtypes -> best guess is double subtraction
+					return new TypedValue(0 - ((Number) operand).doubleValue());
 				}
 			}
 			return state.operate(Operation.SUBTRACT, operand, null);
 		}
 
 		Object left = leftOp.getValueInternal(state).getValue();
-		Object right = getRightOperand().getValueInternal(state).getValue();
+		Object right = rightOp.getValueInternal(state).getValue();
 
-		if (left instanceof Number leftNumber && right instanceof Number rightNumber) {
+		if (left instanceof Number && right instanceof Number) {
+			Number leftNumber = (Number) left;
+			Number rightNumber = (Number) right;
+
 			if (leftNumber instanceof BigDecimal || rightNumber instanceof BigDecimal) {
 				BigDecimal leftBigDecimal = NumberUtils.convertNumberToTargetClass(leftNumber, BigDecimal.class);
 				BigDecimal rightBigDecimal = NumberUtils.convertNumberToTargetClass(rightNumber, BigDecimal.class);
@@ -132,7 +134,9 @@ public class OpMinus extends Operator {
 			}
 		}
 
-		if (left instanceof String theString && right instanceof Integer theInteger && theString.length() == 1) {
+		if (left instanceof String && right instanceof Integer && ((String) left).length() == 1) {
+			String theString = (String) left;
+			Integer theInteger = (Integer) right;
 			// Implements character - int (ie. b - 1 = a)
 			return new TypedValue(Character.toString((char) (theString.charAt(0) - theInteger)));
 		}
@@ -142,7 +146,7 @@ public class OpMinus extends Operator {
 
 	@Override
 	public String toStringAST() {
-		if (this.children.length < 2) {  // unary minus
+		if (getRightOperand() == null) {  // unary minus
 			return "-" + getLeftOperand().toStringAST();
 		}
 		return super.toStringAST();
@@ -151,7 +155,7 @@ public class OpMinus extends Operator {
 	@Override
 	public SpelNodeImpl getRightOperand() {
 		if (this.children.length < 2) {
-			throw new IllegalStateException("No right operand");
+			return null;
 		}
 		return this.children[1];
 	}
@@ -173,33 +177,48 @@ public class OpMinus extends Operator {
 	public void generateCode(MethodVisitor mv, CodeFlow cf) {
 		getLeftOperand().generateCode(mv, cf);
 		String leftDesc = getLeftOperand().exitTypeDescriptor;
-		String exitDesc = this.exitTypeDescriptor;
-		Assert.state(exitDesc != null, "No exit type descriptor");
-		char targetDesc = exitDesc.charAt(0);
-		CodeFlow.insertNumericUnboxOrPrimitiveTypeCoercion(mv, leftDesc, targetDesc);
+		CodeFlow.insertNumericUnboxOrPrimitiveTypeCoercion(mv, leftDesc, this.exitTypeDescriptor.charAt(0));
 		if (this.children.length > 1) {
 			cf.enterCompilationScope();
 			getRightOperand().generateCode(mv, cf);
 			String rightDesc = getRightOperand().exitTypeDescriptor;
 			cf.exitCompilationScope();
-			CodeFlow.insertNumericUnboxOrPrimitiveTypeCoercion(mv, rightDesc, targetDesc);
-			switch (targetDesc) {
-				case 'I' -> mv.visitInsn(ISUB);
-				case 'J' -> mv.visitInsn(LSUB);
-				case 'F' -> mv.visitInsn(FSUB);
-				case 'D' -> mv.visitInsn(DSUB);
-				default -> throw new IllegalStateException(
-						"Unrecognized exit type descriptor: '" + this.exitTypeDescriptor + "'");
+			CodeFlow.insertNumericUnboxOrPrimitiveTypeCoercion(mv, rightDesc, this.exitTypeDescriptor.charAt(0));
+			switch (this.exitTypeDescriptor.charAt(0)) {
+				case 'I':
+					mv.visitInsn(ISUB);
+					break;
+				case 'J':
+					mv.visitInsn(LSUB);
+					break;
+				case 'F':
+					mv.visitInsn(FSUB);
+					break;
+				case 'D':
+					mv.visitInsn(DSUB);
+					break;
+				default:
+					throw new IllegalStateException(
+							"Unrecognized exit type descriptor: '" + this.exitTypeDescriptor + "'");
 			}
 		}
 		else {
-			switch (targetDesc) {
-				case 'I' -> mv.visitInsn(INEG);
-				case 'J' -> mv.visitInsn(LNEG);
-				case 'F' -> mv.visitInsn(FNEG);
-				case 'D' -> mv.visitInsn(DNEG);
-				default -> throw new IllegalStateException(
-						"Unrecognized exit type descriptor: '" + this.exitTypeDescriptor + "'");
+			switch (this.exitTypeDescriptor.charAt(0)) {
+				case 'I':
+					mv.visitInsn(INEG);
+					break;
+				case 'J':
+					mv.visitInsn(LNEG);
+					break;
+				case 'F':
+					mv.visitInsn(FNEG);
+					break;
+				case 'D':
+					mv.visitInsn(DNEG);
+					break;
+				default:
+					throw new IllegalStateException(
+							"Unrecognized exit type descriptor: '" + this.exitTypeDescriptor + "'");
 			}
 		}
 		cf.pushDescriptor(this.exitTypeDescriptor);

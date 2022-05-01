@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,6 @@
 
 package org.springframework.beans.factory.xml;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.apache.commons.logging.Log;
@@ -26,16 +25,15 @@ import org.xml.sax.InputSource;
 
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.Nullable;
 
 /**
- * {@link EntityResolver} implementation for the Spring beans DTD,
+ * EntityResolver implementation for the Spring beans DTD,
  * to load the DTD from the Spring class path (or JAR file).
  *
- * <p>Fetches "spring-beans.dtd" from the class path resource
- * "/org/springframework/beans/factory/xml/spring-beans.dtd",
+ * <p>Fetches "spring-beans-2.0.dtd" from the class path resource
+ * "/org/springframework/beans/factory/xml/spring-beans-2.0.dtd",
  * no matter whether specified as some local URL that includes "spring-beans"
- * in the DTD name or as "https://www.springframework.org/dtd/spring-beans-2.0.dtd".
+ * in the DTD name or as "http://www.springframework.org/dtd/spring-beans-2.0.dtd".
  *
  * @author Juergen Hoeller
  * @author Colin Sampaleanu
@@ -46,24 +44,24 @@ public class BeansDtdResolver implements EntityResolver {
 
 	private static final String DTD_EXTENSION = ".dtd";
 
+	private static final String DTD_FILENAME = "spring-beans-2.0";
+
 	private static final String DTD_NAME = "spring-beans";
 
 	private static final Log logger = LogFactory.getLog(BeansDtdResolver.class);
 
 
 	@Override
-	@Nullable
-	public InputSource resolveEntity(@Nullable String publicId, @Nullable String systemId) throws IOException {
+	public InputSource resolveEntity(String publicId, String systemId) throws IOException {
 		if (logger.isTraceEnabled()) {
 			logger.trace("Trying to resolve XML entity with public ID [" + publicId +
 					"] and system ID [" + systemId + "]");
 		}
-
 		if (systemId != null && systemId.endsWith(DTD_EXTENSION)) {
 			int lastPathSeparator = systemId.lastIndexOf('/');
 			int dtdNameStart = systemId.indexOf(DTD_NAME, lastPathSeparator);
 			if (dtdNameStart != -1) {
-				String dtdFile = DTD_NAME + DTD_EXTENSION;
+				String dtdFile = DTD_FILENAME + DTD_EXTENSION;
 				if (logger.isTraceEnabled()) {
 					logger.trace("Trying to locate [" + dtdFile + "] in Spring jar on classpath");
 				}
@@ -72,20 +70,21 @@ public class BeansDtdResolver implements EntityResolver {
 					InputSource source = new InputSource(resource.getInputStream());
 					source.setPublicId(publicId);
 					source.setSystemId(systemId);
-					if (logger.isTraceEnabled()) {
-						logger.trace("Found beans DTD [" + systemId + "] in classpath: " + dtdFile);
+					if (logger.isDebugEnabled()) {
+						logger.debug("Found beans DTD [" + systemId + "] in classpath: " + dtdFile);
 					}
 					return source;
 				}
-				catch (FileNotFoundException ex) {
+				catch (IOException ex) {
 					if (logger.isDebugEnabled()) {
 						logger.debug("Could not resolve beans DTD [" + systemId + "]: not found in classpath", ex);
 					}
 				}
+
 			}
 		}
 
-		// Fall back to the parser's default behavior.
+		// Use the default behavior -> download from website or wherever.
 		return null;
 	}
 

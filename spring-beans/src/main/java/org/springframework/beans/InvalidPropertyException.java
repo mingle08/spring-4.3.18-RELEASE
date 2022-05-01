@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,8 +15,6 @@
  */
 
 package org.springframework.beans;
-
-import org.springframework.lang.Nullable;
 
 /**
  * Exception thrown when referring to an invalid bean property.
@@ -28,9 +26,9 @@ import org.springframework.lang.Nullable;
 @SuppressWarnings("serial")
 public class InvalidPropertyException extends FatalBeanException {
 
-	private final Class<?> beanClass;
+	private Class<?> beanClass;
 
-	private final String propertyName;
+	private String propertyName;
 
 
 	/**
@@ -50,7 +48,7 @@ public class InvalidPropertyException extends FatalBeanException {
 	 * @param msg the detail message
 	 * @param cause the root cause
 	 */
-	public InvalidPropertyException(Class<?> beanClass, String propertyName, String msg, @Nullable Throwable cause) {
+	public InvalidPropertyException(Class<?> beanClass, String propertyName, String msg, Throwable cause) {
 		super("Invalid property '" + propertyName + "' of bean class [" + beanClass.getName() + "]: " + msg, cause);
 		this.beanClass = beanClass;
 		this.propertyName = propertyName;
@@ -60,14 +58,14 @@ public class InvalidPropertyException extends FatalBeanException {
 	 * Return the offending bean class.
 	 */
 	public Class<?> getBeanClass() {
-		return this.beanClass;
+		return beanClass;
 	}
 
 	/**
 	 * Return the name of the offending property.
 	 */
 	public String getPropertyName() {
-		return this.propertyName;
+		return propertyName;
 	}
 
 }

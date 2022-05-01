@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,9 +23,9 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Arrays;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for the FileCopyUtils class.
@@ -33,58 +33,58 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Juergen Hoeller
  * @since 12.03.2005
  */
-class FileCopyUtilsTests {
+public class FileCopyUtilsTests {
 
 	@Test
-	void copyFromInputStream() throws IOException {
+	public void copyFromInputStream() throws IOException {
 		byte[] content = "content".getBytes();
 		ByteArrayInputStream in = new ByteArrayInputStream(content);
 		ByteArrayOutputStream out = new ByteArrayOutputStream(content.length);
 		int count = FileCopyUtils.copy(in, out);
-		assertThat(count).isEqualTo(content.length);
-		assertThat(Arrays.equals(content, out.toByteArray())).isTrue();
+		assertEquals(content.length, count);
+		assertTrue(Arrays.equals(content, out.toByteArray()));
 	}
 
 	@Test
-	void copyFromByteArray() throws IOException {
+	public void copyFromByteArray() throws IOException {
 		byte[] content = "content".getBytes();
 		ByteArrayOutputStream out = new ByteArrayOutputStream(content.length);
 		FileCopyUtils.copy(content, out);
-		assertThat(Arrays.equals(content, out.toByteArray())).isTrue();
+		assertTrue(Arrays.equals(content, out.toByteArray()));
 	}
 
 	@Test
-	void copyToByteArray() throws IOException {
+	public void copyToByteArray() throws IOException {
 		byte[] content = "content".getBytes();
 		ByteArrayInputStream in = new ByteArrayInputStream(content);
 		byte[] result = FileCopyUtils.copyToByteArray(in);
-		assertThat(Arrays.equals(content, result)).isTrue();
+		assertTrue(Arrays.equals(content, result));
 	}
 
 	@Test
-	void copyFromReader() throws IOException {
+	public void copyFromReader() throws IOException {
 		String content = "content";
 		StringReader in = new StringReader(content);
 		StringWriter out = new StringWriter();
 		int count = FileCopyUtils.copy(in, out);
-		assertThat(count).isEqualTo(content.length());
-		assertThat(out.toString()).isEqualTo(content);
+		assertEquals(content.length(), count);
+		assertEquals(content, out.toString());
 	}
 
 	@Test
-	void copyFromString() throws IOException {
+	public void copyFromString() throws IOException {
 		String content = "content";
 		StringWriter out = new StringWriter();
 		FileCopyUtils.copy(content, out);
-		assertThat(out.toString()).isEqualTo(content);
+		assertEquals(content, out.toString());
 	}
 
 	@Test
-	void copyToString() throws IOException {
+	public void copyToString() throws IOException {
 		String content = "content";
 		StringReader in = new StringReader(content);
 		String result = FileCopyUtils.copyToString(in);
-		assertThat(result).isEqualTo(content);
+		assertEquals(content, result);
 	}
 
 }

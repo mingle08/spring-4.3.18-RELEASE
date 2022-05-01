@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,17 +16,19 @@
 
 package org.springframework.jms.listener.endpoint;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
-import org.springframework.jms.support.QosSettings;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.junit.Assert.*;
 
 /**
  * @author Stephane Nicoll
  */
 public class JmsMessageEndpointManagerTests {
+
+	@Rule
+	public final ExpectedException thrown = ExpectedException.none();
 
 	@Test
 	public void isPubSubDomainWithQueue() {
@@ -34,8 +36,8 @@ public class JmsMessageEndpointManagerTests {
 		JmsActivationSpecConfig config = new JmsActivationSpecConfig();
 		config.setPubSubDomain(false);
 		endpoint.setActivationSpecConfig(config);
-		assertThat(endpoint.isPubSubDomain()).isFalse();
-		assertThat(endpoint.isReplyPubSubDomain()).isFalse();
+		assertEquals(false, endpoint.isPubSubDomain());
+		assertEquals(false, endpoint.isReplyPubSubDomain());
 	}
 
 	@Test
@@ -44,8 +46,8 @@ public class JmsMessageEndpointManagerTests {
 		JmsActivationSpecConfig config = new JmsActivationSpecConfig();
 		config.setPubSubDomain(true);
 		endpoint.setActivationSpecConfig(config);
-		assertThat(endpoint.isPubSubDomain()).isTrue();
-		assertThat(endpoint.isReplyPubSubDomain()).isTrue();
+		assertEquals(true, endpoint.isPubSubDomain());
+		assertEquals(true, endpoint.isReplyPubSubDomain());
 	}
 
 	@Test
@@ -55,56 +57,35 @@ public class JmsMessageEndpointManagerTests {
 		config.setPubSubDomain(true);
 		config.setReplyPubSubDomain(false);
 		endpoint.setActivationSpecConfig(config);
-		assertThat(endpoint.isPubSubDomain()).isTrue();
-		assertThat(endpoint.isReplyPubSubDomain()).isFalse();
-	}
-
-	@Test
-	public void customReplyQosSettings() {
-		JmsMessageEndpointManager endpoint = new JmsMessageEndpointManager();
-		JmsActivationSpecConfig config = new JmsActivationSpecConfig();
-		QosSettings settings = new QosSettings(1, 3, 5);
-		config.setReplyQosSettings(settings);
-		endpoint.setActivationSpecConfig(config);
-		assertThat(endpoint.getReplyQosSettings()).isNotNull();
-		assertThat(endpoint.getReplyQosSettings().getDeliveryMode()).isEqualTo(1);
-		assertThat(endpoint.getReplyQosSettings().getPriority()).isEqualTo(3);
-		assertThat(endpoint.getReplyQosSettings().getTimeToLive()).isEqualTo(5);
+		assertEquals(true, endpoint.isPubSubDomain());
+		assertEquals(false, endpoint.isReplyPubSubDomain());
 	}
 
 	@Test
 	public void isPubSubDomainWithNoConfig() {
 		JmsMessageEndpointManager endpoint = new JmsMessageEndpointManager();
-		// far from ideal
-		assertThatIllegalStateException().isThrownBy(
-				endpoint::isPubSubDomain);
+
+		thrown.expect(IllegalStateException.class); // far from ideal
+		endpoint.isPubSubDomain();
 	}
 
 	@Test
 	public void isReplyPubSubDomainWithNoConfig() {
 		JmsMessageEndpointManager endpoint = new JmsMessageEndpointManager();
-		// far from ideal
-		assertThatIllegalStateException().isThrownBy(
-				endpoint::isReplyPubSubDomain);
-	}
 
-	@Test
-	public void getReplyQosSettingsWithNoConfig() {
-		JmsMessageEndpointManager endpoint = new JmsMessageEndpointManager();
-		// far from ideal
-		assertThatIllegalStateException().isThrownBy(
-				endpoint::getReplyQosSettings);
+		thrown.expect(IllegalStateException.class); // far from ideal
+		endpoint.isReplyPubSubDomain();
 	}
 
 	@Test
 	public void getMessageConverterNoConfig() {
 		JmsMessageEndpointManager endpoint = new JmsMessageEndpointManager();
-		assertThat(endpoint.getMessageConverter()).isNull();
+		assertNull(endpoint.getMessageConverter());
 	}
 
 	@Test
 	public void getDestinationResolverNoConfig() {
 		JmsMessageEndpointManager endpoint = new JmsMessageEndpointManager();
-		assertThat(endpoint.getDestinationResolver()).isNull();
+		assertNull(endpoint.getDestinationResolver());
 	}
 }

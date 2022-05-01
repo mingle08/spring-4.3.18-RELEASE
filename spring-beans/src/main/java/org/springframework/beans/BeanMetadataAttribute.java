@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,6 @@
 
 package org.springframework.beans;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
@@ -31,10 +30,8 @@ public class BeanMetadataAttribute implements BeanMetadataElement {
 
 	private final String name;
 
-	@Nullable
 	private final Object value;
 
-	@Nullable
 	private Object source;
 
 
@@ -43,7 +40,7 @@ public class BeanMetadataAttribute implements BeanMetadataElement {
 	 * @param name the name of the attribute (never {@code null})
 	 * @param value the value of the attribute (possibly before type conversion)
 	 */
-	public BeanMetadataAttribute(String name, @Nullable Object value) {
+	public BeanMetadataAttribute(String name, Object value) {
 		Assert.notNull(name, "Name must not be null");
 		this.name = name;
 		this.value = value;
@@ -60,7 +57,6 @@ public class BeanMetadataAttribute implements BeanMetadataElement {
 	/**
 	 * Return the value of the attribute.
 	 */
-	@Nullable
 	public Object getValue() {
 		return this.value;
 	}
@@ -69,25 +65,25 @@ public class BeanMetadataAttribute implements BeanMetadataElement {
 	 * Set the configuration source {@code Object} for this metadata element.
 	 * <p>The exact type of the object will depend on the configuration mechanism used.
 	 */
-	public void setSource(@Nullable Object source) {
+	public void setSource(Object source) {
 		this.source = source;
 	}
 
 	@Override
-	@Nullable
 	public Object getSource() {
 		return this.source;
 	}
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}
-		if (!(other instanceof BeanMetadataAttribute otherMa)) {
+		if (!(other instanceof BeanMetadataAttribute)) {
 			return false;
 		}
+		BeanMetadataAttribute otherMa = (BeanMetadataAttribute) other;
 		return (this.name.equals(otherMa.name) &&
 				ObjectUtils.nullSafeEquals(this.value, otherMa.value) &&
 				ObjectUtils.nullSafeEquals(this.source, otherMa.source));

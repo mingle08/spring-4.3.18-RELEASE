@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,7 @@
 
 package org.springframework.mail.javamail;
 
-import jakarta.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMessage;
 
 /**
  * Callback interface for the preparation of JavaMail MIME messages.
@@ -36,18 +36,17 @@ import jakarta.mail.internet.MimeMessage;
  * @see JavaMailSender#send(MimeMessagePreparator[])
  * @see MimeMessageHelper
  */
-@FunctionalInterface
 public interface MimeMessagePreparator {
 
 	/**
 	 * Prepare the given new MimeMessage instance.
 	 * @param mimeMessage the message to prepare
-	 * @throws jakarta.mail.MessagingException passing any exceptions thrown by MimeMessage
+	 * @throws javax.mail.MessagingException passing any exceptions thrown by MimeMessage
 	 * methods through for automatic conversion to the MailException hierarchy
 	 * @throws java.io.IOException passing any exceptions thrown by MimeMessage methods
 	 * through for automatic conversion to the MailException hierarchy
 	 * @throws Exception if mail preparation failed, for example when a
-	 * FreeMarker template cannot be rendered for the mail text
+	 * Velocity template cannot be rendered for the mail text
 	 */
 	void prepare(MimeMessage mimeMessage) throws Exception;
 

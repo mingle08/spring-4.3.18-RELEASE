@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,11 +29,8 @@ import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBui
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.springframework.test.util.AssertionErrors.assertEquals;
-import static org.springframework.test.util.AssertionErrors.assertNotNull;
-import static org.springframework.test.util.AssertionErrors.assertTrue;
-import static org.springframework.test.util.AssertionErrors.fail;
+import static org.hamcrest.MatcherAssert.*;
+import static org.springframework.test.util.AssertionErrors.*;
 
 /**
  * Factory for assertions on the selected handler or handler method.
@@ -63,15 +60,18 @@ public class HandlerResultMatchers {
 	/**
 	 * Assert the type of the handler that processed the request.
 	 */
-	public ResultMatcher handlerType(Class<?> type) {
-		return result -> {
-			Object handler = result.getHandler();
-			assertNotNull("No handler", handler);
-			Class<?> actual = handler.getClass();
-			if (handler instanceof HandlerMethod) {
-				actual = ((HandlerMethod) handler).getBeanType();
+	public ResultMatcher handlerType(final Class<?> type) {
+		return new ResultMatcher() {
+			@Override
+			public void match(MvcResult result) throws Exception {
+				Object handler = result.getHandler();
+				assertTrue("No handler", handler != null);
+				Class<?> actual = handler.getClass();
+				if (HandlerMethod.class.isInstance(handler)) {
+					actual = ((HandlerMethod) handler).getBeanType();
+				}
+				assertEquals("Handler type", type, ClassUtils.getUserClass(actual));
 			}
-			assertEquals("Handler type", type, ClassUtils.getUserClass(actual));
 		};
 	}
 
@@ -85,7 +85,7 @@ public class HandlerResultMatchers {
 	 * public class SimpleController {
 	 *
 	 *     &#064;RequestMapping("/")
-	 *     public ResponseEntity&lt;Void&gt; handle() {
+	 *     public ResponseEntity<Void> handle() {
 	 *         return ResponseEntity.ok().build();
 	 *     }
 	 * }
@@ -99,17 +99,20 @@ public class HandlerResultMatchers {
 	 * @param obj either the value returned from a "mock" controller invocation
 	 * or the "mock" controller itself after an invocation
 	 */
-	public ResultMatcher methodCall(Object obj) {
-		return result -> {
-			if (!(obj instanceof MethodInvocationInfo)) {
-				fail(String.format("The supplied object [%s] is not an instance of %s. " +
-						"Ensure that you invoke the handler method via MvcUriComponentsBuilder.on().",
-						obj, MethodInvocationInfo.class.getName()));
+	public ResultMatcher methodCall(final Object obj) {
+		return new ResultMatcher() {
+			@Override
+			public void match(MvcResult result) throws Exception {
+				if (!(obj instanceof MethodInvocationInfo)) {
+					fail(String.format("The supplied object [%s] is not an instance of %s. " +
+							"Ensure that you invoke the handler method via MvcUriComponentsBuilder.on().",
+							obj, MethodInvocationInfo.class.getName()));
+				}
+				MethodInvocationInfo invocationInfo = (MethodInvocationInfo) obj;
+				Method expected = invocationInfo.getControllerMethod();
+				Method actual = getHandlerMethod(result).getMethod();
+				assertEquals("Handler method", expected, actual);
 			}
-			MethodInvocationInfo invocationInfo = (MethodInvocationInfo) obj;
-			Method expected = invocationInfo.getControllerMethod();
-			Method actual = getHandlerMethod(result).getMethod();
-			assertEquals("Handler method", expected, actual);
 		};
 	}
 
@@ -117,37 +120,47 @@ public class HandlerResultMatchers {
 	 * Assert the name of the controller method used to process the request
 	 * using the given Hamcrest {@link Matcher}.
 	 */
-	public ResultMatcher methodName(Matcher<? super String> matcher) {
-		return result -> {
-			HandlerMethod handlerMethod = getHandlerMethod(result);
-			assertThat("Handler method", handlerMethod.getMethod().getName(), matcher);
+	public ResultMatcher methodName(final Matcher<? super String> matcher) {
+		return new ResultMatcher() {
+			@Override
+			public void match(MvcResult result) throws Exception {
+				HandlerMethod handlerMethod = getHandlerMethod(result);
+				assertThat("Handler method", handlerMethod.getMethod().getName(), matcher);
+			}
 		};
 	}
 
 	/**
 	 * Assert the name of the controller method used to process the request.
 	 */
-	public ResultMatcher methodName(String name) {
-		return result -> {
-			HandlerMethod handlerMethod = getHandlerMethod(result);
-			assertEquals("Handler method", name, handlerMethod.getMethod().getName());
+	public ResultMatcher methodName(final String name) {
+		return new ResultMatcher() {
+			@Override
+			public void match(MvcResult result) throws Exception {
+				HandlerMethod handlerMethod = getHandlerMethod(result);
+				assertEquals("Handler method", name, handlerMethod.getMethod().getName());
+			}
 		};
 	}
 
 	/**
 	 * Assert the controller method used to process the request.
 	 */
-	public ResultMatcher method(Method method) {
-		return result -> {
-			HandlerMethod handlerMethod = getHandlerMethod(result);
-			assertEquals("Handler method", method, handlerMethod.getMethod());
+	public ResultMatcher method(final Method method) {
+		return new ResultMatcher() {
+			@Override
+			public void match(MvcResult result) throws Exception {
+				HandlerMethod handlerMethod = getHandlerMethod(result);
+				assertEquals("Handler method", method, handlerMethod.getMethod());
+			}
 		};
 	}
 
 
 	private static HandlerMethod getHandlerMethod(MvcResult result) {
 		Object handler = result.getHandler();
-		assertTrue("Not a HandlerMethod: " + handler, handler instanceof HandlerMethod);
+		assertTrue("No handler: ", handler != null);
+		assertTrue("Not a HandlerMethod: " + handler, HandlerMethod.class.isInstance(handler));
 		return (HandlerMethod) handler;
 	}
 

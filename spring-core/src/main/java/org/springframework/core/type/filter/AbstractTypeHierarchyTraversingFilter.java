@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,7 +24,6 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.core.type.ClassMetadata;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
-import org.springframework.lang.Nullable;
 
 /**
  * Type filter that is aware of traversing over hierarchy.
@@ -68,10 +67,9 @@ public abstract class AbstractTypeHierarchyTraversingFilter implements TypeFilte
 		}
 
 		if (this.considerInherited) {
-			String superClassName = metadata.getSuperClassName();
-			if (superClassName != null) {
+			if (metadata.hasSuperClass()) {
 				// Optimization to avoid creating ClassReader for super class.
-				Boolean superClassMatch = matchSuperClass(superClassName);
+				Boolean superClassMatch = matchSuperClass(metadata.getSuperClassName());
 				if (superClassMatch != null) {
 					if (superClassMatch.booleanValue()) {
 						return true;
@@ -85,12 +83,10 @@ public abstract class AbstractTypeHierarchyTraversingFilter implements TypeFilte
 						}
 					}
 					catch (IOException ex) {
-						if (logger.isDebugEnabled()) {
-							logger.debug("Could not read super class [" + metadata.getSuperClassName() +
-									"] of type-filtered class [" + metadata.getClassName() + "]");
-						}
+						logger.debug("Could not read super class [" + metadata.getSuperClassName() +
+								"] of type-filtered class [" + metadata.getClassName() + "]");
 					}
-				}
+ 				}
 			}
 		}
 
@@ -111,10 +107,8 @@ public abstract class AbstractTypeHierarchyTraversingFilter implements TypeFilte
 						}
 					}
 					catch (IOException ex) {
-						if (logger.isDebugEnabled()) {
-							logger.debug("Could not read interface [" + ifc + "] for type-filtered class [" +
-									metadata.getClassName() + "]");
-						}
+						logger.debug("Could not read interface [" + ifc + "] for type-filtered class [" +
+								metadata.getClassName() + "]");
 					}
 				}
 			}
@@ -146,7 +140,6 @@ public abstract class AbstractTypeHierarchyTraversingFilter implements TypeFilte
 	/**
 	 * Override this to match on super type name.
 	 */
-	@Nullable
 	protected Boolean matchSuperClass(String superClassName) {
 		return null;
 	}
@@ -154,7 +147,6 @@ public abstract class AbstractTypeHierarchyTraversingFilter implements TypeFilte
 	/**
 	 * Override this to match on interface type name.
 	 */
-	@Nullable
 	protected Boolean matchInterface(String interfaceName) {
 		return null;
 	}

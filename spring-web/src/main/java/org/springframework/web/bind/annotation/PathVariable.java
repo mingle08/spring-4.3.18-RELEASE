@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +26,8 @@ import org.springframework.core.annotation.AliasFor;
 
 /**
  * Annotation which indicates that a method parameter should be bound to a URI template
- * variable. Supported for {@link RequestMapping} annotated handler methods.
+ * variable. Supported for {@link RequestMapping} annotated handler methods in Servlet
+ * environments.
  *
  * <p>If the method parameter is {@link java.util.Map Map&lt;String, String&gt;}
  * then the map is populated with all path variable names and values.

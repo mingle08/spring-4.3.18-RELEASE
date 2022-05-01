@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +16,10 @@
 
 package org.springframework.beans;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-
-
-
-
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link PropertyMatches}.
@@ -35,97 +31,96 @@ public class PropertyMatchesTests {
 	@Test
 	public void simpleBeanPropertyTypo() {
 		PropertyMatches matches = PropertyMatches.forProperty("naem", SampleBeanProperties.class);
-		assertThat(matches.getPossibleMatches()).contains("name");
+		assertThat(matches.getPossibleMatches(), hasItemInArray("name"));
 	}
 
 	@Test
 	public void complexBeanPropertyTypo() {
 		PropertyMatches matches = PropertyMatches.forProperty("desriptn", SampleBeanProperties.class);
-		assertThat(matches.getPossibleMatches()).isEmpty();
+		assertThat(matches.getPossibleMatches(), emptyArray());
 	}
 
 	@Test
 	public void unknownBeanProperty() {
 		PropertyMatches matches = PropertyMatches.forProperty("unknown", SampleBeanProperties.class);
-		assertThat(matches.getPossibleMatches()).isEmpty();
+		assertThat(matches.getPossibleMatches(), emptyArray());
 	}
 
 	@Test
 	public void severalMatchesBeanProperty() {
 		PropertyMatches matches = PropertyMatches.forProperty("counter", SampleBeanProperties.class);
-		assertThat(matches.getPossibleMatches()).contains("counter1");
-		assertThat(matches.getPossibleMatches()).contains("counter2");
-		assertThat(matches.getPossibleMatches()).contains("counter3");
+		assertThat(matches.getPossibleMatches(), hasItemInArray("counter1"));
+		assertThat(matches.getPossibleMatches(), hasItemInArray("counter2"));
+		assertThat(matches.getPossibleMatches(), hasItemInArray("counter3"));
 	}
 
 	@Test
 	public void simpleBeanPropertyErrorMessage() {
 		PropertyMatches matches = PropertyMatches.forProperty("naem", SampleBeanProperties.class);
 		String msg = matches.buildErrorMessage();
-		assertThat(msg).contains("naem");
-		assertThat(msg).contains("name");
-		assertThat(msg).contains("setter");
-		assertThat(msg).doesNotContain("field");
+		assertThat(msg, containsString("naem"));
+		assertThat(msg, containsString("name"));
+		assertThat(msg, containsString("setter"));
+		assertThat(msg, not(containsString("field")));
 	}
 
 	@Test
 	public void complexBeanPropertyErrorMessage() {
 		PropertyMatches matches = PropertyMatches.forProperty("counter", SampleBeanProperties.class);
 		String msg = matches.buildErrorMessage();
-		assertThat(msg).contains("counter");
-		assertThat(msg).contains("counter1");
-		assertThat(msg).contains("counter2");
-		assertThat(msg).contains("counter3");
+		assertThat(msg, containsString("counter"));
+		assertThat(msg, containsString("counter1"));
+		assertThat(msg, containsString("counter2"));
+		assertThat(msg, containsString("counter3"));
 	}
 
 	@Test
 	public void simpleFieldPropertyTypo() {
 		PropertyMatches matches = PropertyMatches.forField("naem", SampleFieldProperties.class);
-		assertThat(matches.getPossibleMatches()).contains("name");
+		assertThat(matches.getPossibleMatches(), hasItemInArray("name"));
 	}
 
 	@Test
 	public void complexFieldPropertyTypo() {
 		PropertyMatches matches = PropertyMatches.forField("desriptn", SampleFieldProperties.class);
-		assertThat(matches.getPossibleMatches()).isEmpty();
+		assertThat(matches.getPossibleMatches(), emptyArray());
 	}
 
 	@Test
 	public void unknownFieldProperty() {
 		PropertyMatches matches = PropertyMatches.forField("unknown", SampleFieldProperties.class);
-		assertThat(matches.getPossibleMatches()).isEmpty();
+		assertThat(matches.getPossibleMatches(), emptyArray());
 	}
 
 	@Test
 	public void severalMatchesFieldProperty() {
 		PropertyMatches matches = PropertyMatches.forField("counter", SampleFieldProperties.class);
-		assertThat(matches.getPossibleMatches()).contains("counter1");
-		assertThat(matches.getPossibleMatches()).contains("counter2");
-		assertThat(matches.getPossibleMatches()).contains("counter3");
+		assertThat(matches.getPossibleMatches(), hasItemInArray("counter1"));
+		assertThat(matches.getPossibleMatches(), hasItemInArray("counter2"));
+		assertThat(matches.getPossibleMatches(), hasItemInArray("counter3"));
 	}
 
 	@Test
 	public void simpleFieldPropertyErrorMessage() {
 		PropertyMatches matches = PropertyMatches.forField("naem", SampleFieldProperties.class);
 		String msg = matches.buildErrorMessage();
-		assertThat(msg).contains("naem");
-		assertThat(msg).contains("name");
-		assertThat(msg).contains("field");
-		assertThat(msg).doesNotContain("setter");
+		assertThat(msg, containsString("naem"));
+		assertThat(msg, containsString("name"));
+		assertThat(msg, containsString("field"));
+		assertThat(msg, not(containsString("setter")));
 	}
 
 	@Test
 	public void complexFieldPropertyErrorMessage() {
 		PropertyMatches matches = PropertyMatches.forField("counter", SampleFieldProperties.class);
 		String msg = matches.buildErrorMessage();
-		assertThat(msg).contains("counter");
-		assertThat(msg).contains("counter1");
-		assertThat(msg).contains("counter2");
-		assertThat(msg).contains("counter3");
+		assertThat(msg, containsString("counter"));
+		assertThat(msg, containsString("counter1"));
+		assertThat(msg, containsString("counter2"));
+		assertThat(msg, containsString("counter3"));
 	}
 
 
-	@SuppressWarnings("unused")
 	private static class SampleBeanProperties {
 
 		private String name;
@@ -180,7 +175,6 @@ public class PropertyMatchesTests {
 	}
 
 
-	@SuppressWarnings("unused")
 	private static class SampleFieldProperties {
 
 		private String name;

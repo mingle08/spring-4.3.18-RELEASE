@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -45,7 +45,6 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.factory.xml.BeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
-import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
 
@@ -93,11 +92,10 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 	private static final int POINTCUT_INDEX = 1;
 	private static final int ASPECT_INSTANCE_FACTORY_INDEX = 2;
 
-	private final ParseState parseState = new ParseState();
+	private ParseState parseState = new ParseState();
 
 
 	@Override
-	@Nullable
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
 		CompositeComponentDefinition compositeDef =
 				new CompositeComponentDefinition(element.getTagName(), parserContext.extractSource(element));
@@ -201,8 +199,8 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 
 		try {
 			this.parseState.push(new AspectEntry(aspectId, aspectName));
-			List<BeanDefinition> beanDefinitions = new ArrayList<>();
-			List<BeanReference> beanReferences = new ArrayList<>();
+			List<BeanDefinition> beanDefinitions = new ArrayList<BeanDefinition>();
+			List<BeanReference> beanReferences = new ArrayList<BeanReference>();
 
 			List<Element> declareParents = DomUtils.getChildElementsByTagName(aspectElement, DECLARE_PARENTS);
 			for (int i = METHOD_INDEX; i < declareParents.size(); i++) {
@@ -253,8 +251,8 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 			Element aspectElement, String aspectId, List<BeanDefinition> beanDefs,
 			List<BeanReference> beanRefs, ParserContext parserContext) {
 
-		BeanDefinition[] beanDefArray = beanDefs.toArray(new BeanDefinition[0]);
-		BeanReference[] beanRefArray = beanRefs.toArray(new BeanReference[0]);
+		BeanDefinition[] beanDefArray = beanDefs.toArray(new BeanDefinition[beanDefs.size()]);
+		BeanReference[] beanRefArray = beanRefs.toArray(new BeanReference[beanRefs.size()]);
 		Object source = parserContext.extractSource(aspectElement);
 		return new AspectComponentDefinition(aspectId, beanDefArray, beanRefArray, source);
 	}
@@ -468,7 +466,6 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 	 * {@link org.springframework.beans.factory.config.BeanDefinition} for the pointcut if  necessary
 	 * and returns its bean name, otherwise returns the bean name of the referred pointcut.
 	 */
-	@Nullable
 	private Object parsePointcutProperty(Element element, ParserContext parserContext) {
 		if (element.hasAttribute(POINTCUT) && element.hasAttribute(POINTCUT_REF)) {
 			parserContext.getReaderContext().error(

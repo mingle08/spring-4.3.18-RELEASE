@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,9 +18,9 @@ package org.springframework.web.servlet.tags.form;
 
 import java.io.StringWriter;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Rob Harrop
@@ -38,7 +38,7 @@ public class TagWriterTests {
 		this.writer.startTag("br");
 		this.writer.endTag();
 
-		assertThat(this.data.toString()).isEqualTo("<br/>");
+		assertEquals("<br/>", this.data.toString());
 	}
 
 	@Test
@@ -47,7 +47,7 @@ public class TagWriterTests {
 		this.writer.writeAttribute("type", "text");
 		this.writer.endTag();
 
-		assertThat(this.data.toString()).isEqualTo("<input type=\"text\"/>");
+		assertEquals("<input type=\"text\"/>", this.data.toString());
 	}
 
 	@Test
@@ -56,7 +56,7 @@ public class TagWriterTests {
 		this.writer.appendValue("foobar");
 		this.writer.endTag();
 
-		assertThat(this.data.toString()).isEqualTo("<textarea>foobar</textarea>");
+		assertEquals("<textarea>foobar</textarea>", this.data.toString());
 	}
 
 	@Test
@@ -67,7 +67,7 @@ public class TagWriterTests {
 		this.writer.appendValue("foobar");
 		this.writer.endTag();
 
-		assertThat(this.data.toString()).isEqualTo("<textarea width=\"10\" height=\"20\">foobar</textarea>");
+		assertEquals("<textarea width=\"10\" height=\"20\">foobar</textarea>", this.data.toString());
 	}
 
 	@Test
@@ -79,7 +79,7 @@ public class TagWriterTests {
 		this.writer.endTag();
 		this.writer.endTag();
 
-		assertThat(this.data.toString()).isEqualTo("<span style=\"foo\"><strong>Rob Harrop</strong></span>");
+		assertEquals("<span style=\"foo\"><strong>Rob Harrop</strong></span>", this.data.toString());
 	}
 
 	@Test
@@ -99,7 +99,7 @@ public class TagWriterTests {
 		}
 		this.writer.endTag();
 
-		assertThat(this.data.toString()).isEqualTo("<span class=\"highlight\"><strong>Rob</strong> <emphasis>Harrop</emphasis></span>");
+		assertEquals("<span class=\"highlight\"><strong>Rob</strong> <emphasis>Harrop</emphasis></span>", this.data.toString());
 	}
 
 	@Test
@@ -109,7 +109,7 @@ public class TagWriterTests {
 		this.data.write("Rob Harrop"); // interleaved writing
 		this.writer.endTag();
 
-		assertThat(this.data.toString()).isEqualTo("<span>Rob Harrop</span>");
+		assertEquals("<span>Rob Harrop</span>", this.data.toString());
 	}
 
 	@Test
@@ -119,7 +119,7 @@ public class TagWriterTests {
 		this.writer.appendValue("Harrop");
 		this.writer.endTag();
 
-		assertThat(this.data.toString()).isEqualTo("<span>Rob Harrop</span>");
+		assertEquals("<span>Rob Harrop</span>", this.data.toString());
 	}
 
 }

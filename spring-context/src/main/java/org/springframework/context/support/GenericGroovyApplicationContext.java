@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,7 +28,6 @@ import org.springframework.beans.factory.groovy.GroovyBeanDefinitionReader;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.Nullable;
 
 /**
  * An {@link org.springframework.context.ApplicationContext} implementation that extends
@@ -46,18 +45,18 @@ import org.springframework.lang.Nullable;
  *
  * def context = new GenericGroovyApplicationContext()
  * context.reader.beans {
- *     dataSource(BasicDataSource) {                  // &lt;--- invokeMethod
+ *     dataSource(BasicDataSource) {                  // <--- invokeMethod
  *         driverClassName = "org.hsqldb.jdbcDriver"
  *         url = "jdbc:hsqldb:mem:grailsDB"
- *         username = "sa"                            // &lt;-- setProperty
+ *         username = "sa"                            // <-- setProperty
  *         password = ""
  *         settings = [mynew:"setting"]
  *     }
  *     sessionFactory(SessionFactory) {
- *         dataSource = dataSource                    // &lt;-- getProperty for retrieving references
+ *         dataSource = dataSource                    // <-- getProperty for retrieving references
  *     }
  *     myService(MyService) {
- *         nestedBean = { AnotherBean bean -&gt;         // &lt;-- setProperty with closure for nested bean
+ *         nestedBean = { AnotherBean bean ->         // <-- setProperty with closure for nested bean
  *             dataSource = dataSource
  *         }
  *     }
@@ -84,7 +83,7 @@ import org.springframework.lang.Nullable;
  *         dataSource = dataSource
  *     }
  *     myService(MyService) {
- *         nestedBean = { AnotherBean bean -&gt;
+ *         nestedBean = { AnotherBean bean ->
  *             dataSource = dataSource
  *         }
  *     }
@@ -122,7 +121,7 @@ public class GenericGroovyApplicationContext extends GenericApplicationContext i
 
 	private final BeanWrapper contextWrapper = new BeanWrapperImpl(this);
 
-	private MetaClass metaClass = GroovySystem.getMetaClassRegistry().getMetaClass(getClass());
+    private MetaClass metaClass = GroovySystem.getMetaClassRegistry().getMetaClass(getClass());
 
 
 	/**
@@ -225,22 +224,18 @@ public class GenericGroovyApplicationContext extends GenericApplicationContext i
 
 	// Implementation of the GroovyObject interface
 
-	@Override
 	public void setMetaClass(MetaClass metaClass) {
 		this.metaClass = metaClass;
 	}
 
-	@Override
-	public MetaClass getMetaClass() {
+    public MetaClass getMetaClass() {
 		return this.metaClass;
 	}
 
-	@Override
 	public Object invokeMethod(String name, Object args) {
 		return this.metaClass.invokeMethod(this, name, args);
 	}
 
-	@Override
 	public void setProperty(String property, Object newValue) {
 		if (newValue instanceof BeanDefinition) {
 			registerBeanDefinition(property, (BeanDefinition) newValue);
@@ -250,9 +245,7 @@ public class GenericGroovyApplicationContext extends GenericApplicationContext i
 		}
 	}
 
-	@Override
-	@Nullable
-	public Object getProperty(String property) {
+    public Object getProperty(String property) {
 		if (containsBean(property)) {
 			return getBean(property);
 		}

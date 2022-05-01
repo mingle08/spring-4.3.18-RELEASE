@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,9 +21,6 @@ import java.lang.reflect.Method;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
-
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
 
 /**
  * AOP Alliance MethodInterceptor for declarative cache
@@ -45,23 +42,23 @@ import org.springframework.util.Assert;
 public class CacheInterceptor extends CacheAspectSupport implements MethodInterceptor, Serializable {
 
 	@Override
-	@Nullable
 	public Object invoke(final MethodInvocation invocation) throws Throwable {
 		Method method = invocation.getMethod();
 
-		CacheOperationInvoker aopAllianceInvoker = () -> {
-			try {
-				return invocation.proceed();
-			}
-			catch (Throwable ex) {
-				throw new CacheOperationInvoker.ThrowableWrapper(ex);
+		CacheOperationInvoker aopAllianceInvoker = new CacheOperationInvoker() {
+			@Override
+			public Object invoke() {
+				try {
+					return invocation.proceed();
+				}
+				catch (Throwable ex) {
+					throw new ThrowableWrapper(ex);
+				}
 			}
 		};
 
-		Object target = invocation.getThis();
-		Assert.state(target != null, "Target must not be null");
 		try {
-			return execute(aopAllianceInvoker, target, method, invocation.getArguments());
+			return execute(aopAllianceInvoker, invocation.getThis(), method, invocation.getArguments());
 		}
 		catch (CacheOperationInvoker.ThrowableWrapper th) {
 			throw th.getOriginal();

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,21 +30,21 @@ import org.springframework.instrument.classloading.ReflectiveLoadTimeWeaver;
 import org.springframework.instrument.classloading.glassfish.GlassFishLoadTimeWeaver;
 import org.springframework.instrument.classloading.jboss.JBossLoadTimeWeaver;
 import org.springframework.instrument.classloading.tomcat.TomcatLoadTimeWeaver;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
+import org.springframework.instrument.classloading.weblogic.WebLogicLoadTimeWeaver;
+import org.springframework.instrument.classloading.websphere.WebSphereLoadTimeWeaver;
 
 /**
  * Default {@link LoadTimeWeaver} bean for use in an application context,
  * decorating an automatically detected internal {@code LoadTimeWeaver}.
  *
- * <p>Typically registered for the default bean name "{@code loadTimeWeaver}";
- * the most convenient way to achieve this is Spring's
- * {@code <context:load-time-weaver>} XML tag or {@code @EnableLoadTimeWeaving}
- * on a {@code @Configuration} class.
+ * <p>Typically registered for the default bean name
+ * "{@code loadTimeWeaver}"; the most convenient way to achieve this is
+ * Spring's {@code <context:load-time-weaver>} XML tag.
  *
  * <p>This class implements a runtime environment check for obtaining the
- * appropriate weaver implementation, including
- * {@link InstrumentationSavingAgent Spring's VM agent} and any {@link ClassLoader}
+ * appropriate weaver implementation: As of Spring 4.0, it detects Oracle WebLogic 10,
+ * GlassFish 3, Tomcat 6, 7 and 8, JBoss AS 5, 6 and 7, IBM WebSphere 7 and 8,
+ * {@link InstrumentationSavingAgent Spring's VM agent}, and any {@link ClassLoader}
  * supported by Spring's {@link ReflectiveLoadTimeWeaver}.
  *
  * @author Juergen Hoeller
@@ -57,7 +57,6 @@ public class DefaultContextLoadTimeWeaver implements LoadTimeWeaver, BeanClassLo
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	@Nullable
 	private LoadTimeWeaver loadTimeWeaver;
 
 
@@ -73,27 +72,27 @@ public class DefaultContextLoadTimeWeaver implements LoadTimeWeaver, BeanClassLo
 	public void setBeanClassLoader(ClassLoader classLoader) {
 		LoadTimeWeaver serverSpecificLoadTimeWeaver = createServerSpecificLoadTimeWeaver(classLoader);
 		if (serverSpecificLoadTimeWeaver != null) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Determined server-specific load-time weaver: " +
+			if (logger.isInfoEnabled()) {
+				logger.info("Determined server-specific load-time weaver: " +
 						serverSpecificLoadTimeWeaver.getClass().getName());
 			}
 			this.loadTimeWeaver = serverSpecificLoadTimeWeaver;
 		}
 		else if (InstrumentationLoadTimeWeaver.isInstrumentationAvailable()) {
-			logger.debug("Found Spring's JVM agent for instrumentation");
+			logger.info("Found Spring's JVM agent for instrumentation");
 			this.loadTimeWeaver = new InstrumentationLoadTimeWeaver(classLoader);
 		}
 		else {
 			try {
 				this.loadTimeWeaver = new ReflectiveLoadTimeWeaver(classLoader);
-				if (logger.isDebugEnabled()) {
-					logger.debug("Using reflective load-time weaver for class loader: " +
+				if (logger.isInfoEnabled()) {
+					logger.info("Using a reflective load-time weaver for class loader: " +
 							this.loadTimeWeaver.getInstrumentableClassLoader().getClass().getName());
 				}
 			}
 			catch (IllegalStateException ex) {
 				throw new IllegalStateException(ex.getMessage() + " Specify a custom LoadTimeWeaver or start your " +
-						"Java virtual machine with Spring's agent: -javaagent:spring-instrument-{version}.jar");
+						"Java virtual machine with Spring's agent: -javaagent:org.springframework.instrument.jar");
 			}
 		}
 	}
@@ -102,9 +101,11 @@ public class DefaultContextLoadTimeWeaver implements LoadTimeWeaver, BeanClassLo
 	 * This method never fails, allowing to try other possible ways to use an
 	 * server-agnostic weaver. This non-failure logic is required since
 	 * determining a load-time weaver based on the ClassLoader name alone may
-	 * legitimately fail due to other mismatches.
+	 * legitimately fail due to other mismatches. Specific case in point: the
+	 * use of WebLogicLoadTimeWeaver works for WLS 10 but fails due to the lack
+	 * of a specific method (addInstanceClassPreProcessor) for any earlier
+	 * versions even though the ClassLoader name is the same.
 	 */
-	@Nullable
 	protected LoadTimeWeaver createServerSpecificLoadTimeWeaver(ClassLoader classLoader) {
 		String name = classLoader.getClass().getName();
 		try {
@@ -114,8 +115,14 @@ public class DefaultContextLoadTimeWeaver implements LoadTimeWeaver, BeanClassLo
 			else if (name.startsWith("org.glassfish")) {
 				return new GlassFishLoadTimeWeaver(classLoader);
 			}
-			else if (name.startsWith("org.jboss.modules")) {
+			else if (name.startsWith("org.jboss")) {
 				return new JBossLoadTimeWeaver(classLoader);
+			}
+			else if (name.startsWith("com.ibm")) {
+				return new WebSphereLoadTimeWeaver(classLoader);
+			}
+			else if (name.startsWith("weblogic")) {
+				return new WebLogicLoadTimeWeaver(classLoader);
 			}
 		}
 		catch (Exception ex) {
@@ -129,8 +136,8 @@ public class DefaultContextLoadTimeWeaver implements LoadTimeWeaver, BeanClassLo
 	@Override
 	public void destroy() {
 		if (this.loadTimeWeaver instanceof InstrumentationLoadTimeWeaver) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Removing all registered transformers for class loader: " +
+			if (logger.isInfoEnabled()) {
+				logger.info("Removing all registered transformers for class loader: " +
 						this.loadTimeWeaver.getInstrumentableClassLoader().getClass().getName());
 			}
 			((InstrumentationLoadTimeWeaver) this.loadTimeWeaver).removeTransformers();
@@ -140,19 +147,16 @@ public class DefaultContextLoadTimeWeaver implements LoadTimeWeaver, BeanClassLo
 
 	@Override
 	public void addTransformer(ClassFileTransformer transformer) {
-		Assert.state(this.loadTimeWeaver != null, "Not initialized");
 		this.loadTimeWeaver.addTransformer(transformer);
 	}
 
 	@Override
 	public ClassLoader getInstrumentableClassLoader() {
-		Assert.state(this.loadTimeWeaver != null, "Not initialized");
 		return this.loadTimeWeaver.getInstrumentableClassLoader();
 	}
 
 	@Override
 	public ClassLoader getThrowawayClassLoader() {
-		Assert.state(this.loadTimeWeaver != null, "Not initialized");
 		return this.loadTimeWeaver.getThrowawayClassLoader();
 	}
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,15 +17,14 @@
 package org.springframework.beans.factory.support;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Extension of {@link MethodOverride} that represents an arbitrary
+ * Extension of MethodOverride that represents an arbitrary
  * override of a method by the IoC container.
  *
  * <p>Any non-final method can be overridden, irrespective of its
@@ -39,17 +38,17 @@ public class ReplaceOverride extends MethodOverride {
 
 	private final String methodReplacerBeanName;
 
-	private final List<String> typeIdentifiers = new ArrayList<>();
+	private List<String> typeIdentifiers = new LinkedList<String>();
 
 
 	/**
 	 * Construct a new ReplaceOverride.
 	 * @param methodName the name of the method to override
-	 * @param methodReplacerBeanName the bean name of the {@link MethodReplacer}
+	 * @param methodReplacerBeanName the bean name of the MethodReplacer
 	 */
 	public ReplaceOverride(String methodName, String methodReplacerBeanName) {
 		super(methodName);
-		Assert.notNull(methodReplacerBeanName, "Method replacer bean name must not be null");
+		Assert.notNull(methodName, "Method replacer bean name must not be null");
 		this.methodReplacerBeanName = methodReplacerBeanName;
 	}
 
@@ -70,7 +69,6 @@ public class ReplaceOverride extends MethodOverride {
 		this.typeIdentifiers.add(identifier);
 	}
 
-
 	@Override
 	public boolean matches(Method method) {
 		if (!method.getName().equals(getMethodName())) {
@@ -81,13 +79,12 @@ public class ReplaceOverride extends MethodOverride {
 			return true;
 		}
 		// If we get here, we need to insist on precise argument matching...
-		if (this.typeIdentifiers.size() != method.getParameterCount()) {
+		if (this.typeIdentifiers.size() != method.getParameterTypes().length) {
 			return false;
 		}
-		Class<?>[] parameterTypes = method.getParameterTypes();
 		for (int i = 0; i < this.typeIdentifiers.size(); i++) {
 			String identifier = this.typeIdentifiers.get(i);
-			if (!parameterTypes[i].getName().contains(identifier)) {
+			if (!method.getParameterTypes()[i].getName().contains(identifier)) {
 				return false;
 			}
 		}
@@ -96,10 +93,11 @@ public class ReplaceOverride extends MethodOverride {
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
-		if (!(other instanceof ReplaceOverride that) || !super.equals(other)) {
+	public boolean equals(Object other) {
+		if (!(other instanceof ReplaceOverride) || !super.equals(other)) {
 			return false;
 		}
+		ReplaceOverride that = (ReplaceOverride) other;
 		return (ObjectUtils.nullSafeEquals(this.methodReplacerBeanName, that.methodReplacerBeanName) &&
 				ObjectUtils.nullSafeEquals(this.typeIdentifiers, that.typeIdentifiers));
 	}

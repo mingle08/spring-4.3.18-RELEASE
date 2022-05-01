@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,8 +18,6 @@ package org.springframework.transaction.support;
 
 import java.io.Flushable;
 
-import org.springframework.core.Ordered;
-
 /**
  * Interface for transaction synchronization callbacks.
  * Supported by AbstractPlatformTransactionManager.
@@ -31,53 +29,37 @@ import org.springframework.core.Ordered;
  * <p>System synchronizations performed by Spring itself use specific order values,
  * allowing for fine-grained interaction with their execution order (if necessary).
  *
- * <p>Implements the {@link Ordered} interface to enable the execution order of
- * synchronizations to be controlled declaratively, as of 5.3. The default
- * {@link #getOrder() order} is {@link Ordered#LOWEST_PRECEDENCE}, indicating
- * late execution; return a lower value for earlier execution.
- *
  * @author Juergen Hoeller
  * @since 02.06.2003
  * @see TransactionSynchronizationManager
  * @see AbstractPlatformTransactionManager
  * @see org.springframework.jdbc.datasource.DataSourceUtils#CONNECTION_SYNCHRONIZATION_ORDER
  */
-public interface TransactionSynchronization extends Ordered, Flushable {
+public interface TransactionSynchronization extends Flushable {
 
-	/** Completion status in case of proper commit. */
+	/** Completion status in case of proper commit */
 	int STATUS_COMMITTED = 0;
 
-	/** Completion status in case of proper rollback. */
+	/** Completion status in case of proper rollback */
 	int STATUS_ROLLED_BACK = 1;
 
-	/** Completion status in case of heuristic mixed completion or system errors. */
+	/** Completion status in case of heuristic mixed completion or system errors */
 	int STATUS_UNKNOWN = 2;
 
-
-	/**
-	 * Return the execution order for this transaction synchronization.
-	 * <p>Default is {@link Ordered#LOWEST_PRECEDENCE}.
-	 */
-	@Override
-	default int getOrder() {
-		return Ordered.LOWEST_PRECEDENCE;
-	}
 
 	/**
 	 * Suspend this synchronization.
 	 * Supposed to unbind resources from TransactionSynchronizationManager if managing any.
 	 * @see TransactionSynchronizationManager#unbindResource
 	 */
-	default void suspend() {
-	}
+	void suspend();
 
 	/**
 	 * Resume this synchronization.
 	 * Supposed to rebind resources to TransactionSynchronizationManager if managing any.
 	 * @see TransactionSynchronizationManager#bindResource
 	 */
-	default void resume() {
-	}
+	void resume();
 
 	/**
 	 * Flush the underlying session to the datastore, if applicable:
@@ -85,8 +67,7 @@ public interface TransactionSynchronization extends Ordered, Flushable {
 	 * @see org.springframework.transaction.TransactionStatus#flush()
 	 */
 	@Override
-	default void flush() {
-	}
+	void flush();
 
 	/**
 	 * Invoked before transaction commit (before "beforeCompletion").
@@ -102,8 +83,7 @@ public interface TransactionSynchronization extends Ordered, Flushable {
 	 * (note: do not throw TransactionException subclasses here!)
 	 * @see #beforeCompletion
 	 */
-	default void beforeCommit(boolean readOnly) {
-	}
+	void beforeCommit(boolean readOnly);
 
 	/**
 	 * Invoked before transaction commit/rollback.
@@ -116,8 +96,7 @@ public interface TransactionSynchronization extends Ordered, Flushable {
 	 * @see #beforeCommit
 	 * @see #afterCompletion
 	 */
-	default void beforeCompletion() {
-	}
+	void beforeCompletion();
 
 	/**
 	 * Invoked after transaction commit. Can perform further operations right
@@ -134,8 +113,7 @@ public interface TransactionSynchronization extends Ordered, Flushable {
 	 * @throws RuntimeException in case of errors; will be <b>propagated to the caller</b>
 	 * (note: do not throw TransactionException subclasses here!)
 	 */
-	default void afterCommit() {
-	}
+	void afterCommit();
 
 	/**
 	 * Invoked after transaction commit/rollback.
@@ -155,7 +133,6 @@ public interface TransactionSynchronization extends Ordered, Flushable {
 	 * @see #STATUS_UNKNOWN
 	 * @see #beforeCompletion
 	 */
-	default void afterCompletion(int status) {
-	}
+	void afterCompletion(int status);
 
 }

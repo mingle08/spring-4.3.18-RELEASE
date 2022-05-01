@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,19 +16,17 @@
 
 package org.springframework.web.context.support;
 
-import jakarta.servlet.ServletConfig;
-import jakarta.servlet.ServletContext;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.support.AbstractRefreshableConfigApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
-import org.springframework.lang.Nullable;
 import org.springframework.ui.context.Theme;
 import org.springframework.ui.context.ThemeSource;
 import org.springframework.ui.context.support.UiApplicationContextUtils;
-import org.springframework.util.Assert;
 import org.springframework.web.context.ConfigurableWebApplicationContext;
 import org.springframework.web.context.ConfigurableWebEnvironment;
 import org.springframework.web.context.ServletConfigAware;
@@ -81,20 +79,16 @@ import org.springframework.web.context.ServletContextAware;
 public abstract class AbstractRefreshableWebApplicationContext extends AbstractRefreshableConfigApplicationContext
 		implements ConfigurableWebApplicationContext, ThemeSource {
 
-	/** Servlet context that this context runs in. */
-	@Nullable
+	/** Servlet context that this context runs in */
 	private ServletContext servletContext;
 
-	/** Servlet config that this context runs in, if any. */
-	@Nullable
+	/** Servlet config that this context runs in, if any */
 	private ServletConfig servletConfig;
 
-	/** Namespace of this context, or {@code null} if root. */
-	@Nullable
+	/** Namespace of this context, or {@code null} if root */
 	private String namespace;
 
-	/** the ThemeSource for this ApplicationContext. */
-	@Nullable
+	/** the ThemeSource for this ApplicationContext */
 	private ThemeSource themeSource;
 
 
@@ -104,18 +98,17 @@ public abstract class AbstractRefreshableWebApplicationContext extends AbstractR
 
 
 	@Override
-	public void setServletContext(@Nullable ServletContext servletContext) {
+	public void setServletContext(ServletContext servletContext) {
 		this.servletContext = servletContext;
 	}
 
 	@Override
-	@Nullable
 	public ServletContext getServletContext() {
 		return this.servletContext;
 	}
 
 	@Override
-	public void setServletConfig(@Nullable ServletConfig servletConfig) {
+	public void setServletConfig(ServletConfig servletConfig) {
 		this.servletConfig = servletConfig;
 		if (servletConfig != null && this.servletContext == null) {
 			setServletContext(servletConfig.getServletContext());
@@ -123,13 +116,12 @@ public abstract class AbstractRefreshableWebApplicationContext extends AbstractR
 	}
 
 	@Override
-	@Nullable
 	public ServletConfig getServletConfig() {
 		return this.servletConfig;
 	}
 
 	@Override
-	public void setNamespace(@Nullable String namespace) {
+	public void setNamespace(String namespace) {
 		this.namespace = namespace;
 		if (namespace != null) {
 			setDisplayName("WebApplicationContext for namespace '" + namespace + "'");
@@ -137,7 +129,6 @@ public abstract class AbstractRefreshableWebApplicationContext extends AbstractR
 	}
 
 	@Override
-	@Nullable
 	public String getNamespace() {
 		return this.namespace;
 	}
@@ -180,7 +171,6 @@ public abstract class AbstractRefreshableWebApplicationContext extends AbstractR
 	 */
 	@Override
 	protected Resource getResourceByPath(String path) {
-		Assert.state(this.servletContext != null, "No ServletContext available");
 		return new ServletContextResource(this.servletContext, path);
 	}
 
@@ -214,9 +204,7 @@ public abstract class AbstractRefreshableWebApplicationContext extends AbstractR
 	}
 
 	@Override
-	@Nullable
 	public Theme getTheme(String themeName) {
-		Assert.state(this.themeSource != null, "No ThemeSource available");
 		return this.themeSource.getTheme(themeName);
 	}
 

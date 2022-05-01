@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,7 +24,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.testfixture.beans.Employee;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.test.annotation.DirtiesContext;
@@ -32,11 +31,11 @@ import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.transaction.AfterTransaction;
 import org.springframework.test.context.transaction.BeforeTransaction;
+import org.springframework.tests.sample.beans.Employee;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.transaction.TransactionAssert.assertThatTransaction;
-import static org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive;
+import static org.junit.Assert.*;
+import static org.springframework.test.transaction.TransactionTestUtils.*;
 
 /**
  * This set of tests (i.e., all concrete subclasses) investigates the claims made in
@@ -88,17 +87,18 @@ public abstract class AbstractTransactionalAnnotatedConfigClassTests {
 	}
 
 	protected void assertNumRowsInPersonTable(int expectedNumRows, String testState) {
-		assertThat(countRowsInTable("person")).as("the number of rows in the person table (" + testState + ").").isEqualTo(expectedNumRows);
+		assertEquals("the number of rows in the person table (" + testState + ").", expectedNumRows,
+			countRowsInTable("person"));
 	}
 
 	protected void assertAddPerson(final String name) {
-		assertThat(createPerson(name)).as("Adding '" + name + "'").isEqualTo(1);
+		assertEquals("Adding '" + name + "'", 1, createPerson(name));
 	}
 
 	@Test
 	public void autowiringFromConfigClass() {
-		assertThat(employee).as("The employee should have been autowired.").isNotNull();
-		assertThat(employee.getName()).isEqualTo("John Smith");
+		assertNotNull("The employee should have been autowired.", employee);
+		assertEquals("John Smith", employee.getName());
 	}
 
 	@BeforeTransaction
@@ -109,13 +109,13 @@ public abstract class AbstractTransactionalAnnotatedConfigClassTests {
 
 	@Before
 	public void setUp() throws Exception {
-		assertNumRowsInPersonTable((isActualTransactionActive() ? 1 : 0), "before a test method");
+		assertNumRowsInPersonTable((inTransaction() ? 1 : 0), "before a test method");
 	}
 
 	@Test
 	@Transactional
 	public void modifyTestDataWithinTransaction() {
-		assertThatTransaction().isActive();
+		assertInTransaction(true);
 		assertAddPerson(JANE);
 		assertAddPerson(SUE);
 		assertNumRowsInPersonTable(3, "in modifyTestDataWithinTransaction()");
@@ -123,12 +123,12 @@ public abstract class AbstractTransactionalAnnotatedConfigClassTests {
 
 	@After
 	public void tearDown() throws Exception {
-		assertNumRowsInPersonTable((isActualTransactionActive() ? 3 : 0), "after a test method");
+		assertNumRowsInPersonTable((inTransaction() ? 3 : 0), "after a test method");
 	}
 
 	@AfterTransaction
 	public void afterTransaction() {
-		assertThat(deletePerson(YODA)).as("Deleting yoda").isEqualTo(1);
+		assertEquals("Deleting yoda", 1, deletePerson(YODA));
 		assertNumRowsInPersonTable(0, "after a transactional test method");
 	}
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -36,8 +36,8 @@ import org.springframework.util.NumberUtils;
  */
 public class OpGT extends Operator {
 
-	public OpGT(int startPos, int endPos, SpelNodeImpl... operands) {
-		super(">", startPos, endPos, operands);
+	public OpGT(int pos, SpelNodeImpl... operands) {
+		super(">", pos, operands);
 		this.exitTypeDescriptor = "Z";
 	}
 
@@ -49,8 +49,11 @@ public class OpGT extends Operator {
 
 		this.leftActualDescriptor = CodeFlow.toDescriptorFromObject(left);
 		this.rightActualDescriptor = CodeFlow.toDescriptorFromObject(right);
+		
+		if (left instanceof Number && right instanceof Number) {
+			Number leftNumber = (Number) left;
+			Number rightNumber = (Number) right;
 
-		if (left instanceof Number leftNumber && right instanceof Number rightNumber) {
 			if (leftNumber instanceof BigDecimal || rightNumber instanceof BigDecimal) {
 				BigDecimal leftBigDecimal = NumberUtils.convertNumberToTargetClass(leftNumber, BigDecimal.class);
 				BigDecimal rightBigDecimal = NumberUtils.convertNumberToTargetClass(rightNumber, BigDecimal.class);
@@ -97,7 +100,7 @@ public class OpGT extends Operator {
 	public boolean isCompilable() {
 		return isCompilableOperatorUsingNumerics();
 	}
-
+	
 	@Override
 	public void generateCode(MethodVisitor mv, CodeFlow cf) {
 		generateComparisonCode(mv, cf, IFLE, IF_ICMPLE);

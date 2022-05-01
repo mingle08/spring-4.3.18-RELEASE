@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,16 +20,15 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.Writer;
-
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.jsp.JspWriter;
-import jakarta.servlet.jsp.tagext.BodyContent;
-
-import org.springframework.lang.Nullable;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.jsp.JspWriter;
+import javax.servlet.jsp.tagext.BodyContent;
 
 /**
- * Mock implementation of the {@link jakarta.servlet.jsp.tagext.BodyContent} class.
- * Only necessary for testing applications when testing custom JSP tags.
+ * Mock implementation of the {@link javax.servlet.jsp.tagext.BodyContent} class.
+ *
+ * <p>Used for testing the web framework; only necessary for testing
+ * applications when testing custom JSP tags.
  *
  * @author Juergen Hoeller
  * @since 2.5
@@ -63,12 +62,12 @@ public class MockBodyContent extends BodyContent {
 	 * @param response the servlet response to wrap
 	 * @param targetWriter the target Writer to wrap
 	 */
-	public MockBodyContent(String content, @Nullable HttpServletResponse response, @Nullable Writer targetWriter) {
+	public MockBodyContent(String content, HttpServletResponse response, Writer targetWriter) {
 		super(adaptJspWriter(targetWriter, response));
 		this.content = content;
 	}
 
-	private static JspWriter adaptJspWriter(@Nullable Writer targetWriter, @Nullable HttpServletResponse response) {
+	private static JspWriter adaptJspWriter(Writer targetWriter, HttpServletResponse response) {
 		if (targetWriter instanceof JspWriter) {
 			return (JspWriter) targetWriter;
 		}

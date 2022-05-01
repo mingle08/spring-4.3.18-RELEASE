@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,20 +16,18 @@
 
 package org.springframework.jms.listener.endpoint;
 
-import jakarta.jms.Message;
-import jakarta.jms.MessageListener;
-import jakarta.resource.ResourceException;
-import jakarta.resource.spi.UnavailableException;
+import javax.jms.Message;
+import javax.jms.MessageListener;
+import javax.resource.ResourceException;
+import javax.resource.spi.UnavailableException;
 
 import org.springframework.jca.endpoint.AbstractMessageEndpointFactory;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
 
 /**
- * JMS-specific implementation of the JCA 1.7
- * {@link jakarta.resource.spi.endpoint.MessageEndpointFactory} interface,
+ * JMS-specific implementation of the JCA 1.5
+ * {@link javax.resource.spi.endpoint.MessageEndpointFactory} interface,
  * providing transaction management capabilities for a JMS listener object
- * (e.g. a {@link jakarta.jms.MessageListener} object).
+ * (e.g. a {@link javax.jms.MessageListener} object).
  *
  * <p>Uses a static endpoint implementation, simply wrapping the
  * specified message listener object and exposing all of its implemented
@@ -38,7 +36,7 @@ import org.springframework.util.Assert;
  * <p>Typically used with Spring's {@link JmsMessageEndpointManager},
  * but not tied to it. As a consequence, this endpoint factory could
  * also be used with programmatic endpoint management on a native
- * {@link jakarta.resource.spi.ResourceAdapter} instance.
+ * {@link javax.resource.spi.ResourceAdapter} instance.
  *
  * @author Juergen Hoeller
  * @author Stephane Nicoll
@@ -49,7 +47,6 @@ import org.springframework.util.Assert;
  */
 public class JmsMessageEndpointFactory extends AbstractMessageEndpointFactory  {
 
-	@Nullable
 	private MessageListener messageListener;
 
 
@@ -64,7 +61,6 @@ public class JmsMessageEndpointFactory extends AbstractMessageEndpointFactory  {
 	 * Return the JMS MessageListener for this endpoint.
 	 */
 	protected MessageListener getMessageListener() {
-		Assert.state(this.messageListener != null, "No MessageListener set");
 		return this.messageListener;
 	}
 
@@ -95,12 +91,17 @@ public class JmsMessageEndpointFactory extends AbstractMessageEndpointFactory  {
 				}
 			}
 			try {
-				getMessageListener().onMessage(message);
+				messageListener.onMessage(message);
 			}
-			catch (RuntimeException | Error ex) {
+			catch (RuntimeException ex) {
 				endpointEx = ex;
 				onEndpointException(ex);
 				throw ex;
+			}
+			catch (Error err) {
+				endpointEx = err;
+				onEndpointException(err);
+				throw err;
 			}
 			finally {
 				if (applyDeliveryCalls) {

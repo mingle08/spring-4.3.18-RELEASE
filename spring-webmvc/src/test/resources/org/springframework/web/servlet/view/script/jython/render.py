@@ -1,5 +1,5 @@
 from string import Template
 
-def render(template, model, renderingContext):
+def render(template, model, url):
 	s = Template(template)
 	return s.substitute(model)

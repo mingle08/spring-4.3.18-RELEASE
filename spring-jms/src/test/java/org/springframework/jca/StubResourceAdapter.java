@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +16,13 @@
 
 package org.springframework.jca;
 
+import javax.resource.ResourceException;
+import javax.resource.spi.ActivationSpec;
+import javax.resource.spi.BootstrapContext;
+import javax.resource.spi.ResourceAdapter;
+import javax.resource.spi.ResourceAdapterInternalException;
+import javax.resource.spi.endpoint.MessageEndpointFactory;
 import javax.transaction.xa.XAResource;
-
-import jakarta.resource.ResourceException;
-import jakarta.resource.spi.ActivationSpec;
-import jakarta.resource.spi.BootstrapContext;
-import jakarta.resource.spi.ResourceAdapter;
-import jakarta.resource.spi.ResourceAdapterInternalException;
-import jakarta.resource.spi.endpoint.MessageEndpointFactory;
 
 /**
  * @author Juergen Hoeller

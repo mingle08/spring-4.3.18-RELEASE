@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,15 +18,14 @@ package org.springframework.web.context.support;
 
 import java.io.File;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.context.support.StaticApplicationContext;
-import org.springframework.web.testfixture.servlet.MockServletContext;
+import org.springframework.mock.web.test.MockServletContext;
 import org.springframework.web.util.WebUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.junit.Assert.*;
 
 /**
  * @author Juergen Hoeller
@@ -36,7 +35,6 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 public class WebApplicationObjectSupportTests {
 
 	@Test
-	@SuppressWarnings("resource")
 	public void testWebApplicationObjectSupport() {
 		StaticWebApplicationContext wac = new StaticWebApplicationContext();
 		wac.setServletContext(new MockServletContext());
@@ -45,18 +43,22 @@ public class WebApplicationObjectSupportTests {
 		wac.registerBeanDefinition("test", new RootBeanDefinition(TestWebApplicationObject.class));
 		wac.refresh();
 		WebApplicationObjectSupport wao = (WebApplicationObjectSupport) wac.getBean("test");
-		assertThat(wac.getServletContext()).isEqualTo(wao.getServletContext());
-		assertThat(tempDir).isEqualTo(wao.getTempDir());
+		assertEquals(wao.getServletContext(), wac.getServletContext());
+		assertEquals(wao.getTempDir(), tempDir);
 	}
 
 	@Test
-	@SuppressWarnings("resource")
 	public void testWebApplicationObjectSupportWithWrongContext() {
 		StaticApplicationContext ac = new StaticApplicationContext();
 		ac.registerBeanDefinition("test", new RootBeanDefinition(TestWebApplicationObject.class));
 		WebApplicationObjectSupport wao = (WebApplicationObjectSupport) ac.getBean("test");
-		assertThatIllegalStateException().isThrownBy(
-				wao::getWebApplicationContext);
+		try {
+			wao.getWebApplicationContext();
+			fail("Should have thrown IllegalStateException");
+		}
+		catch (IllegalStateException ex) {
+			// expected
+		}
 	}
 
 

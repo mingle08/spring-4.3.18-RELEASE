@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,12 @@
 
 package org.springframework.messaging.simp;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for SimpMessageTypeMessageCondition.
@@ -32,17 +32,14 @@ public class SimpMessageTypeMessageConditionTests {
 
 	@Test
 	public void combine() {
-		SimpMessageType messageType = SimpMessageType.MESSAGE;
-		SimpMessageType subscribeType = SimpMessageType.SUBSCRIBE;
+		SimpMessageType actual = condition(SimpMessageType.MESSAGE).combine(condition(SimpMessageType.SUBSCRIBE)).getMessageType();
+		assertEquals(SimpMessageType.SUBSCRIBE, actual);
 
-		SimpMessageType actual = condition(messageType).combine(condition(subscribeType)).getMessageType();
-		assertThat(actual).isEqualTo(subscribeType);
+		actual = condition(SimpMessageType.MESSAGE).combine(condition(SimpMessageType.MESSAGE)).getMessageType();
+		assertEquals(SimpMessageType.MESSAGE, actual);
 
-		actual = condition(messageType).combine(condition(messageType)).getMessageType();
-		assertThat(actual).isEqualTo(messageType);
-
-		actual = condition(subscribeType).combine(condition(subscribeType)).getMessageType();
-		assertThat(actual).isEqualTo(subscribeType);
+		actual = condition(SimpMessageType.SUBSCRIBE).combine(condition(SimpMessageType.SUBSCRIBE)).getMessageType();
+		assertEquals(SimpMessageType.SUBSCRIBE, actual);
 	}
 
 	@Test
@@ -51,8 +48,8 @@ public class SimpMessageTypeMessageConditionTests {
 		SimpMessageTypeMessageCondition condition = condition(SimpMessageType.MESSAGE);
 		SimpMessageTypeMessageCondition actual = condition.getMatchingCondition(message);
 
-		assertThat(actual).isNotNull();
-		assertThat(actual.getMessageType()).isEqualTo(SimpMessageType.MESSAGE);
+		assertNotNull(actual);
+		assertEquals(SimpMessageType.MESSAGE, actual.getMessageType());
 	}
 
 	@Test
@@ -60,14 +57,14 @@ public class SimpMessageTypeMessageConditionTests {
 		Message<?> message = message(null);
 		SimpMessageTypeMessageCondition condition = condition(SimpMessageType.MESSAGE);
 
-		assertThat(condition.getMatchingCondition(message)).isNull();
+		assertNull(condition.getMatchingCondition(message));
 	}
 
 	@Test
 	public void compareTo() {
 		Message<byte[]> message = message(null);
-		assertThat(condition(SimpMessageType.MESSAGE).compareTo(condition(SimpMessageType.MESSAGE), message)).isEqualTo(0);
-		assertThat(condition(SimpMessageType.MESSAGE).compareTo(condition(SimpMessageType.SUBSCRIBE), message)).isEqualTo(0);
+		assertEquals(0, condition(SimpMessageType.MESSAGE).compareTo(condition(SimpMessageType.MESSAGE), message));
+		assertEquals(0, condition(SimpMessageType.MESSAGE).compareTo(condition(SimpMessageType.SUBSCRIBE), message));
 	}
 
 	private Message<byte[]> message(SimpMessageType messageType) {

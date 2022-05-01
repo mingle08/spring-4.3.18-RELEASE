@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,7 @@
 
 package org.springframework.test.context.support;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -25,6 +25,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextConfigurationAttributes;
 import org.springframework.util.Assert;
@@ -62,17 +63,18 @@ abstract class ApplicationContextInitializerUtils {
 	 * superclasses if appropriate (never {@code null})
 	 * @since 3.2
 	 */
-	static Set<Class<? extends ApplicationContextInitializer<?>>> resolveInitializerClasses(
+	static Set<Class<? extends ApplicationContextInitializer<? extends ConfigurableApplicationContext>>> resolveInitializerClasses(
 			List<ContextConfigurationAttributes> configAttributesList) {
 
-		Assert.notEmpty(configAttributesList, "ContextConfigurationAttributes List must not be empty");
-		Set<Class<? extends ApplicationContextInitializer<?>>> initializerClasses = new LinkedHashSet<>();
+		Assert.notEmpty(configAttributesList, "ContextConfigurationAttributes list must not be empty");
+		Set<Class<? extends ApplicationContextInitializer<? extends ConfigurableApplicationContext>>> initializerClasses =
+				new LinkedHashSet<Class<? extends ApplicationContextInitializer<? extends ConfigurableApplicationContext>>>();
 
 		for (ContextConfigurationAttributes configAttributes : configAttributesList) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Processing context initializers for configuration attributes " + configAttributes);
 			}
-			Collections.addAll(initializerClasses, configAttributes.getInitializers());
+			initializerClasses.addAll(Arrays.asList(configAttributes.getInitializers()));
 			if (!configAttributes.isInheritInitializers()) {
 				break;
 			}

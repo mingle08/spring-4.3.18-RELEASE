@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,9 +18,9 @@ package org.springframework.expression.spel.support;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.expression.BeanResolver;
@@ -34,7 +34,6 @@ import org.springframework.expression.TypeComparator;
 import org.springframework.expression.TypeConverter;
 import org.springframework.expression.TypeLocator;
 import org.springframework.expression.TypedValue;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -50,52 +49,37 @@ import org.springframework.util.Assert;
  * @author Juergen Hoeller
  * @author Sam Brannen
  * @since 3.0
- * @see SimpleEvaluationContext
- * @see ReflectivePropertyAccessor
- * @see ReflectiveConstructorResolver
- * @see ReflectiveMethodResolver
- * @see StandardTypeLocator
- * @see StandardTypeConverter
- * @see StandardTypeComparator
- * @see StandardOperatorOverloader
  */
 public class StandardEvaluationContext implements EvaluationContext {
 
 	private TypedValue rootObject;
 
-	@Nullable
-	private volatile List<PropertyAccessor> propertyAccessors;
+	private List<ConstructorResolver> constructorResolvers;
 
-	@Nullable
-	private volatile List<ConstructorResolver> constructorResolvers;
+	private List<MethodResolver> methodResolvers;
 
-	@Nullable
-	private volatile List<MethodResolver> methodResolvers;
-
-	@Nullable
-	private volatile ReflectiveMethodResolver reflectiveMethodResolver;
-
-	@Nullable
 	private BeanResolver beanResolver;
 
-	@Nullable
+	private ReflectiveMethodResolver reflectiveMethodResolver;
+
+	private List<PropertyAccessor> propertyAccessors;
+
 	private TypeLocator typeLocator;
 
-	@Nullable
 	private TypeConverter typeConverter;
 
 	private TypeComparator typeComparator = new StandardTypeComparator();
 
 	private OperatorOverloader operatorOverloader = new StandardOperatorOverloader();
 
-	private final Map<String, Object> variables = new ConcurrentHashMap<>();
+	private final Map<String, Object> variables = new HashMap<String, Object>();
 
 
 	/**
 	 * Create a {@code StandardEvaluationContext} with a null root object.
 	 */
 	public StandardEvaluationContext() {
-		this.rootObject = TypedValue.NULL;
+		setRootObject(null);
 	}
 
 	/**
@@ -103,16 +87,16 @@ public class StandardEvaluationContext implements EvaluationContext {
 	 * @param rootObject the root object to use
 	 * @see #setRootObject
 	 */
-	public StandardEvaluationContext(@Nullable Object rootObject) {
-		this.rootObject = new TypedValue(rootObject);
+	public StandardEvaluationContext(Object rootObject) {
+		setRootObject(rootObject);
 	}
 
 
-	public void setRootObject(@Nullable Object rootObject, TypeDescriptor typeDescriptor) {
+	public void setRootObject(Object rootObject, TypeDescriptor typeDescriptor) {
 		this.rootObject = new TypedValue(rootObject, typeDescriptor);
 	}
 
-	public void setRootObject(@Nullable Object rootObject) {
+	public void setRootObject(Object rootObject) {
 		this.rootObject = (rootObject != null ? new TypedValue(rootObject) : TypedValue.NULL);
 	}
 
@@ -127,15 +111,17 @@ public class StandardEvaluationContext implements EvaluationContext {
 
 	@Override
 	public List<PropertyAccessor> getPropertyAccessors() {
-		return initPropertyAccessors();
+		ensurePropertyAccessorsInitialized();
+		return this.propertyAccessors;
 	}
 
 	public void addPropertyAccessor(PropertyAccessor accessor) {
-		addBeforeDefault(initPropertyAccessors(), accessor);
+		ensurePropertyAccessorsInitialized();
+		this.propertyAccessors.add(this.propertyAccessors.size() - 1, accessor);
 	}
 
 	public boolean removePropertyAccessor(PropertyAccessor accessor) {
-		return initPropertyAccessors().remove(accessor);
+		return this.propertyAccessors.remove(accessor);
 	}
 
 	public void setConstructorResolvers(List<ConstructorResolver> constructorResolvers) {
@@ -144,15 +130,18 @@ public class StandardEvaluationContext implements EvaluationContext {
 
 	@Override
 	public List<ConstructorResolver> getConstructorResolvers() {
-		return initConstructorResolvers();
+		ensureConstructorResolversInitialized();
+		return this.constructorResolvers;
 	}
 
 	public void addConstructorResolver(ConstructorResolver resolver) {
-		addBeforeDefault(initConstructorResolvers(), resolver);
+		ensureConstructorResolversInitialized();
+		this.constructorResolvers.add(this.constructorResolvers.size() - 1, resolver);
 	}
 
 	public boolean removeConstructorResolver(ConstructorResolver resolver) {
-		return initConstructorResolvers().remove(resolver);
+		ensureConstructorResolversInitialized();
+		return this.constructorResolvers.remove(resolver);
 	}
 
 	public void setMethodResolvers(List<MethodResolver> methodResolvers) {
@@ -161,15 +150,18 @@ public class StandardEvaluationContext implements EvaluationContext {
 
 	@Override
 	public List<MethodResolver> getMethodResolvers() {
-		return initMethodResolvers();
+		ensureMethodResolversInitialized();
+		return this.methodResolvers;
 	}
 
 	public void addMethodResolver(MethodResolver resolver) {
-		addBeforeDefault(initMethodResolvers(), resolver);
+		ensureMethodResolversInitialized();
+		this.methodResolvers.add(this.methodResolvers.size() - 1, resolver);
 	}
 
 	public boolean removeMethodResolver(MethodResolver methodResolver) {
-		return initMethodResolvers().remove(methodResolver);
+		ensureMethodResolversInitialized();
+		return this.methodResolvers.remove(methodResolver);
 	}
 
 	public void setBeanResolver(BeanResolver beanResolver) {
@@ -177,7 +169,6 @@ public class StandardEvaluationContext implements EvaluationContext {
 	}
 
 	@Override
-	@Nullable
 	public BeanResolver getBeanResolver() {
 		return this.beanResolver;
 	}
@@ -203,7 +194,7 @@ public class StandardEvaluationContext implements EvaluationContext {
 	@Override
 	public TypeConverter getTypeConverter() {
 		if (this.typeConverter == null) {
-			this.typeConverter = new StandardTypeConverter();
+			 this.typeConverter = new StandardTypeConverter();
 		}
 		return this.typeConverter;
 	}
@@ -229,22 +220,12 @@ public class StandardEvaluationContext implements EvaluationContext {
 	}
 
 	@Override
-	public void setVariable(@Nullable String name, @Nullable Object value) {
-		// For backwards compatibility, we ignore null names here...
-		// And since ConcurrentHashMap cannot store null values, we simply take null
-		// as a remove from the Map (with the same result from lookupVariable below).
-		if (name != null) {
-			if (value != null) {
-				this.variables.put(name, value);
-			}
-			else {
-				this.variables.remove(name);
-			}
-		}
+	public void setVariable(String name, Object value) {
+		this.variables.put(name, value);
 	}
 
-	public void setVariables(Map<String, Object> variables) {
-		variables.forEach(this::setVariable);
+	public void setVariables(Map<String,Object> variables) {
+		this.variables.putAll(variables);
 	}
 
 	public void registerFunction(String name, Method method) {
@@ -252,7 +233,6 @@ public class StandardEvaluationContext implements EvaluationContext {
 	}
 
 	@Override
-	@Nullable
 	public Object lookupVariable(String name) {
 		return this.variables.get(name);
 	}
@@ -267,49 +247,57 @@ public class StandardEvaluationContext implements EvaluationContext {
 	 * @throws IllegalStateException if the {@link ReflectiveMethodResolver} is not in use
 	 */
 	public void registerMethodFilter(Class<?> type, MethodFilter filter) throws IllegalStateException {
-		initMethodResolvers();
-		ReflectiveMethodResolver resolver = this.reflectiveMethodResolver;
-		if (resolver == null) {
-			throw new IllegalStateException(
-					"Method filter cannot be set as the reflective method resolver is not in use");
+		ensureMethodResolversInitialized();
+		if (this.reflectiveMethodResolver != null) {
+			this.reflectiveMethodResolver.registerMethodFilter(type, filter);
 		}
-		resolver.registerMethodFilter(type, filter);
+		else {
+			throw new IllegalStateException("Method filter cannot be set as the reflective method resolver is not in use");
+		}
 	}
 
 
-	private List<PropertyAccessor> initPropertyAccessors() {
-		List<PropertyAccessor> accessors = this.propertyAccessors;
-		if (accessors == null) {
-			accessors = new ArrayList<>(5);
-			accessors.add(new ReflectivePropertyAccessor());
-			this.propertyAccessors = accessors;
+	private void ensurePropertyAccessorsInitialized() {
+		if (this.propertyAccessors == null) {
+			initializePropertyAccessors();
 		}
-		return accessors;
 	}
 
-	private List<ConstructorResolver> initConstructorResolvers() {
-		List<ConstructorResolver> resolvers = this.constructorResolvers;
-		if (resolvers == null) {
-			resolvers = new ArrayList<>(1);
-			resolvers.add(new ReflectiveConstructorResolver());
-			this.constructorResolvers = resolvers;
+	private synchronized void initializePropertyAccessors() {
+		if (this.propertyAccessors == null) {
+			List<PropertyAccessor> defaultAccessors = new ArrayList<PropertyAccessor>();
+			defaultAccessors.add(new ReflectivePropertyAccessor());
+			this.propertyAccessors = defaultAccessors;
 		}
-		return resolvers;
 	}
 
-	private List<MethodResolver> initMethodResolvers() {
-		List<MethodResolver> resolvers = this.methodResolvers;
-		if (resolvers == null) {
-			resolvers = new ArrayList<>(1);
+	private void ensureConstructorResolversInitialized() {
+		if (this.constructorResolvers == null) {
+			initializeConstructorResolvers();
+		}
+	}
+
+	private synchronized void initializeConstructorResolvers() {
+		if (this.constructorResolvers == null) {
+			List<ConstructorResolver> defaultResolvers = new ArrayList<ConstructorResolver>();
+			defaultResolvers.add(new ReflectiveConstructorResolver());
+			this.constructorResolvers = defaultResolvers;
+		}
+	}
+
+	private void ensureMethodResolversInitialized() {
+		if (this.methodResolvers == null) {
+			initializeMethodResolvers();
+		}
+	}
+
+	private synchronized void initializeMethodResolvers() {
+		if (this.methodResolvers == null) {
+			List<MethodResolver> defaultResolvers = new ArrayList<MethodResolver>();
 			this.reflectiveMethodResolver = new ReflectiveMethodResolver();
-			resolvers.add(this.reflectiveMethodResolver);
-			this.methodResolvers = resolvers;
+			defaultResolvers.add(this.reflectiveMethodResolver);
+			this.methodResolvers = defaultResolvers;
 		}
-		return resolvers;
-	}
-
-	private static <T> void addBeforeDefault(List<T> resolvers, T resolver) {
-		resolvers.add(resolvers.size() - 1, resolver);
 	}
 
 }

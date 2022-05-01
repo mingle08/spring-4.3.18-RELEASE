@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,8 +17,8 @@
 package org.springframework.test.web.servlet.request;
 
 import java.net.URI;
-
-import jakarta.servlet.DispatcherType;
+import javax.servlet.DispatcherType;
+import javax.servlet.ServletContext;
 
 import org.springframework.http.HttpMethod;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -208,18 +208,17 @@ public abstract class MockMvcRequestBuilders {
 	 * Create a {@link MockMultipartHttpServletRequestBuilder} for a multipart request.
 	 * @param urlTemplate a URL template; the resulting URL will be encoded
 	 * @param uriVars zero or more URI variables
-	 * @since 5.0
 	 */
-	public static MockMultipartHttpServletRequestBuilder multipart(String urlTemplate, Object... uriVars) {
+	public static MockMultipartHttpServletRequestBuilder fileUpload(String urlTemplate, Object... uriVars) {
 		return new MockMultipartHttpServletRequestBuilder(urlTemplate, uriVars);
 	}
 
 	/**
 	 * Create a {@link MockMultipartHttpServletRequestBuilder} for a multipart request.
 	 * @param uri the URL
-	 * @since 5.0
+	 * @since 4.0.3
 	 */
-	public static MockMultipartHttpServletRequestBuilder multipart(URI uri) {
+	public static MockMultipartHttpServletRequestBuilder fileUpload(URI uri) {
 		return new MockMultipartHttpServletRequestBuilder(uri);
 	}
 
@@ -242,16 +241,19 @@ public abstract class MockMvcRequestBuilders {
 	 * </pre>
 	 * @param mvcResult the result from the request that started async processing
 	 */
-	public static RequestBuilder asyncDispatch(MvcResult mvcResult) {
+	public static RequestBuilder asyncDispatch(final MvcResult mvcResult) {
 
 		// There must be an async result before dispatching
 		mvcResult.getAsyncResult();
 
-		return servletContext -> {
-			MockHttpServletRequest request = mvcResult.getRequest();
-			request.setDispatcherType(DispatcherType.ASYNC);
-			request.setAsyncStarted(false);
-			return request;
+		return new RequestBuilder() {
+			@Override
+			public MockHttpServletRequest buildRequest(ServletContext servletContext) {
+				MockHttpServletRequest request = mvcResult.getRequest();
+				request.setDispatcherType(DispatcherType.ASYNC);
+				request.setAsyncStarted(false);
+				return request;
+			}
 		};
 	}
 

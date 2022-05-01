@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,13 +16,11 @@
 
 package org.springframework.web.servlet.mvc;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.lang.Nullable;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.support.RequestContextUtils;
@@ -39,11 +37,9 @@ import org.springframework.web.servlet.support.RequestContextUtils;
  */
 public class ParameterizableViewController extends AbstractController {
 
-	@Nullable
 	private Object view;
 
-	@Nullable
-	private HttpStatusCode statusCode;
+	private HttpStatus statusCode;
 
 	private boolean statusOnly;
 
@@ -58,7 +54,7 @@ public class ParameterizableViewController extends AbstractController {
 	 * DispatcherServlet via a ViewResolver. Will override any pre-existing
 	 * view name or View.
 	 */
-	public void setViewName(@Nullable String viewName) {
+	public void setViewName(String viewName) {
 		this.view = viewName;
 	}
 
@@ -66,17 +62,8 @@ public class ParameterizableViewController extends AbstractController {
 	 * Return the name of the view to delegate to, or {@code null} if using a
 	 * View instance.
 	 */
-	@Nullable
 	public String getViewName() {
-		if (this.view instanceof String viewName) {
-			if (getStatusCode() != null && getStatusCode().is3xxRedirection()) {
-				return viewName.startsWith("redirect:") ? viewName : "redirect:" + viewName;
-			}
-			else {
-				return viewName;
-			}
-		}
-		return null;
+		return (this.view instanceof String ? (String) this.view : null);
 	}
 
 	/**
@@ -93,7 +80,6 @@ public class ParameterizableViewController extends AbstractController {
 	 * to be resolved by the DispatcherServlet via a ViewResolver.
 	 * @since 4.1
 	 */
-	@Nullable
 	public View getView() {
 		return (this.view instanceof View ? (View) this.view : null);
 	}
@@ -109,7 +95,7 @@ public class ParameterizableViewController extends AbstractController {
 	 * fully handled within the controller.
 	 * @since 4.1
 	 */
-	public void setStatusCode(@Nullable HttpStatusCode statusCode) {
+	public void setStatusCode(HttpStatus statusCode) {
 		this.statusCode = statusCode;
 	}
 
@@ -117,8 +103,7 @@ public class ParameterizableViewController extends AbstractController {
 	 * Return the configured HTTP status code or {@code null}.
 	 * @since 4.1
 	 */
-	@Nullable
-	public HttpStatusCode getStatusCode() {
+	public HttpStatus getStatusCode() {
 		return this.statusCode;
 	}
 
@@ -157,45 +142,27 @@ public class ParameterizableViewController extends AbstractController {
 		if (getStatusCode() != null) {
 			if (getStatusCode().is3xxRedirection()) {
 				request.setAttribute(View.RESPONSE_STATUS_ATTRIBUTE, getStatusCode());
+				viewName = (viewName != null && !viewName.startsWith("redirect:") ? "redirect:" + viewName : viewName);
 			}
 			else {
 				response.setStatus(getStatusCode().value());
-				if (getStatusCode().equals(HttpStatus.NO_CONTENT) && viewName == null) {
+				if (isStatusOnly() || (getStatusCode().equals(HttpStatus.NO_CONTENT) && getViewName() == null)) {
 					return null;
 				}
 			}
 		}
 
-		if (isStatusOnly()) {
-			return null;
-		}
-
 		ModelAndView modelAndView = new ModelAndView();
 		modelAndView.addAllObjects(RequestContextUtils.getInputFlashMap(request));
-		if (viewName != null) {
+
+		if (getViewName() != null) {
 			modelAndView.setViewName(viewName);
 		}
 		else {
 			modelAndView.setView(getView());
 		}
-		return modelAndView;
+
+		return (isStatusOnly() ? null : modelAndView);
 	}
 
-	@Override
-	public String toString() {
-		return "ParameterizableViewController [" + formatStatusAndView() + "]";
-	}
-
-	private String formatStatusAndView() {
-		StringBuilder sb = new StringBuilder();
-		if (this.statusCode != null) {
-			sb.append("status=").append(this.statusCode);
-		}
-		if (this.view != null) {
-			sb.append(sb.length() != 0 ? ", " : "");
-			String viewName = getViewName();
-			sb.append("view=").append(viewName != null ? "\"" + viewName + "\"" : this.view);
-		}
-		return sb.toString();
-	}
 }

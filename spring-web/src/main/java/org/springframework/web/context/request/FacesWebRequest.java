@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,15 +20,13 @@ import java.security.Principal;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
+import javax.faces.context.ExternalContext;
+import javax.faces.context.FacesContext;
 
-import jakarta.faces.context.ExternalContext;
-import jakarta.faces.context.FacesContext;
-
-import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 /**
- * {@link WebRequest} adapter for a JSF {@link jakarta.faces.context.FacesContext}.
+ * {@link WebRequest} adapter for a JSF {@link javax.faces.context.FacesContext}.
  *
  * <p>Requires JSF 2.0 or higher, as of Spring 4.0.
  *
@@ -40,7 +38,7 @@ public class FacesWebRequest extends FacesRequestAttributes implements NativeWeb
 	/**
 	 * Create a new FacesWebRequest adapter for the given FacesContext.
 	 * @param facesContext the current FacesContext
-	 * @see jakarta.faces.context.FacesContext#getCurrentInstance()
+	 * @see javax.faces.context.FacesContext#getCurrentInstance()
 	 */
 	public FacesWebRequest(FacesContext facesContext) {
 		super(facesContext);
@@ -59,7 +57,7 @@ public class FacesWebRequest extends FacesRequestAttributes implements NativeWeb
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T> T getNativeRequest(@Nullable Class<T> requiredType) {
+	public <T> T getNativeRequest(Class<T> requiredType) {
 		if (requiredType != null) {
 			Object request = getExternalContext().getRequest();
 			if (requiredType.isInstance(request)) {
@@ -71,7 +69,7 @@ public class FacesWebRequest extends FacesRequestAttributes implements NativeWeb
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T> T getNativeResponse(@Nullable Class<T> requiredType) {
+	public <T> T getNativeResponse(Class<T> requiredType) {
 		if (requiredType != null) {
 			Object response = getExternalContext().getResponse();
 			if (requiredType.isInstance(response)) {
@@ -83,13 +81,11 @@ public class FacesWebRequest extends FacesRequestAttributes implements NativeWeb
 
 
 	@Override
-	@Nullable
 	public String getHeader(String headerName) {
 		return getExternalContext().getRequestHeaderMap().get(headerName);
 	}
 
 	@Override
-	@Nullable
 	public String[] getHeaderValues(String headerName) {
 		return getExternalContext().getRequestHeaderValuesMap().get(headerName);
 	}
@@ -100,7 +96,6 @@ public class FacesWebRequest extends FacesRequestAttributes implements NativeWeb
 	}
 
 	@Override
-	@Nullable
 	public String getParameter(String paramName) {
 		return getExternalContext().getRequestParameterMap().get(paramName);
 	}
@@ -111,7 +106,6 @@ public class FacesWebRequest extends FacesRequestAttributes implements NativeWeb
 	}
 
 	@Override
-	@Nullable
 	public String[] getParameterValues(String paramName) {
 		return getExternalContext().getRequestParameterValuesMap().get(paramName);
 	}
@@ -132,13 +126,11 @@ public class FacesWebRequest extends FacesRequestAttributes implements NativeWeb
 	}
 
 	@Override
-	@Nullable
 	public String getRemoteUser() {
 		return getFacesContext().getExternalContext().getRemoteUser();
 	}
 
 	@Override
-	@Nullable
 	public Principal getUserPrincipal() {
 		return getFacesContext().getExternalContext().getUserPrincipal();
 	}
@@ -159,12 +151,17 @@ public class FacesWebRequest extends FacesRequestAttributes implements NativeWeb
 	}
 
 	@Override
-	public boolean checkNotModified(@Nullable String eTag) {
+	public boolean checkNotModified(String eTag) {
 		return false;
 	}
 
+	/**
+	 * Last-modified handling not supported for portlet requests:
+	 * As a consequence, this method always returns {@code false}.
+	 * @since 4.2
+	 */
 	@Override
-	public boolean checkNotModified(@Nullable String etag, long lastModifiedTimestamp) {
+	public boolean checkNotModified(String etag, long lastModifiedTimestamp) {
 		return false;
 	}
 

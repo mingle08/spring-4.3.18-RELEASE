@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,40 +28,32 @@ package org.springframework.transaction;
 public class HeuristicCompletionException extends TransactionException {
 
 	/**
-	 * Unknown outcome state.
+	 * Values for the outcome state of a heuristically completed transaction.
 	 */
 	public static final int STATE_UNKNOWN = 0;
-
-	/**
-	 * Committed outcome state.
-	 */
 	public static final int STATE_COMMITTED = 1;
-
-	/**
-	 * Rolledback outcome state.
-	 */
 	public static final int STATE_ROLLED_BACK = 2;
-
-	/**
-	 * Mixed outcome state.
-	 */
 	public static final int STATE_MIXED = 3;
 
 
 	public static String getStateString(int state) {
-		return switch (state) {
-			case STATE_COMMITTED -> "committed";
-			case STATE_ROLLED_BACK -> "rolled back";
-			case STATE_MIXED -> "mixed";
-			default -> "unknown";
-		};
+		switch (state) {
+			case STATE_COMMITTED:
+				return "committed";
+			case STATE_ROLLED_BACK:
+				return "rolled back";
+			case STATE_MIXED:
+				return "mixed";
+			default:
+				return "unknown";
+		}
 	}
 
 
 	/**
 	 * The outcome state of the transaction: have some or all resources been committed?
 	 */
-	private final int outcomeState;
+	private int outcomeState = STATE_UNKNOWN;
 
 
 	/**
@@ -83,7 +75,7 @@ public class HeuristicCompletionException extends TransactionException {
 	 * @see #STATE_MIXED
 	 */
 	public int getOutcomeState() {
-		return this.outcomeState;
+		return outcomeState;
 	}
 
 }

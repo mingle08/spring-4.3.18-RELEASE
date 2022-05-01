@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,8 @@
 
 package org.springframework.web.util;
 
-import jakarta.servlet.jsp.PageContext;
-import jakarta.servlet.jsp.tagext.Tag;
+import javax.servlet.jsp.PageContext;
+import javax.servlet.jsp.tagext.Tag;
 
 import org.springframework.util.Assert;
 
@@ -28,13 +28,13 @@ import org.springframework.util.Assert;
  * <p>
  * <ul>
  * <li>{@code page} will be transformed to
- * {@link jakarta.servlet.jsp.PageContext#PAGE_SCOPE PageContext.PAGE_SCOPE}
+ * {@link javax.servlet.jsp.PageContext#PAGE_SCOPE PageContext.PAGE_SCOPE}
  * <li>{@code request} will be transformed to
- * {@link jakarta.servlet.jsp.PageContext#REQUEST_SCOPE PageContext.REQUEST_SCOPE}
+ * {@link javax.servlet.jsp.PageContext#REQUEST_SCOPE PageContext.REQUEST_SCOPE}
  * <li>{@code session} will be transformed to
- * {@link jakarta.servlet.jsp.PageContext#SESSION_SCOPE PageContext.SESSION_SCOPE}
+ * {@link javax.servlet.jsp.PageContext#SESSION_SCOPE PageContext.SESSION_SCOPE}
  * <li>{@code application} will be transformed to
- * {@link jakarta.servlet.jsp.PageContext#APPLICATION_SCOPE PageContext.APPLICATION_SCOPE}
+ * {@link javax.servlet.jsp.PageContext#APPLICATION_SCOPE PageContext.APPLICATION_SCOPE}
  * </ul>
  *
  * @author Alef Arendsen
@@ -44,16 +44,16 @@ import org.springframework.util.Assert;
  */
 public abstract class TagUtils {
 
-	/** Constant identifying the page scope. */
+	/** Constant identifying the page scope */
 	public static final String SCOPE_PAGE = "page";
 
-	/** Constant identifying the request scope. */
+	/** Constant identifying the request scope */
 	public static final String SCOPE_REQUEST = "request";
 
-	/** Constant identifying the session scope. */
+	/** Constant identifying the session scope */
 	public static final String SCOPE_SESSION = "session";
 
-	/** Constant identifying the application scope. */
+	/** Constant identifying the application scope */
 	public static final String SCOPE_APPLICATION = "application";
 
 
@@ -123,16 +123,13 @@ public abstract class TagUtils {
 	 * or in the case of the {@link String}-typed arguments, is composed wholly
 	 * of whitespace; or if the supplied {@code ancestorTagClass} is not
 	 * type-assignable to the {@link Tag} class
-	 * @see #hasAncestorOfType(jakarta.servlet.jsp.tagext.Tag, Class)
+	 * @see #hasAncestorOfType(javax.servlet.jsp.tagext.Tag, Class)
 	 */
-	public static void assertHasAncestorOfType(Tag tag, Class<?> ancestorTagClass, String tagName,
-			String ancestorTagName) {
-
+	public static void assertHasAncestorOfType(Tag tag, Class<?> ancestorTagClass, String tagName, String ancestorTagName) {
 		Assert.hasText(tagName, "'tagName' must not be empty");
 		Assert.hasText(ancestorTagName, "'ancestorTagName' must not be empty");
 		if (!TagUtils.hasAncestorOfType(tag, ancestorTagClass)) {
-			throw new IllegalStateException("The '" + tagName +
-					"' tag can only be used inside a valid '" + ancestorTagName + "' tag.");
+			throw new IllegalStateException("The '" + tagName + "' tag can only be used inside a valid '" + ancestorTagName + "' tag.");
 		}
 	}
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,8 +23,6 @@ import java.util.Set;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.converter.ConditionalGenericConverter;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
@@ -32,18 +30,15 @@ import org.springframework.util.StringUtils;
  * Only matches if String.class can be converted to the target array element type.
  *
  * @author Keith Donald
- * @author Juergen Hoeller
  * @since 3.0
  */
 final class StringToArrayConverter implements ConditionalGenericConverter {
 
 	private final ConversionService conversionService;
 
-
 	public StringToArrayConverter(ConversionService conversionService) {
 		this.conversionService = conversionService;
 	}
-
 
 	@Override
 	public Set<ConvertiblePair> getConvertibleTypes() {
@@ -52,24 +47,20 @@ final class StringToArrayConverter implements ConditionalGenericConverter {
 
 	@Override
 	public boolean matches(TypeDescriptor sourceType, TypeDescriptor targetType) {
-		return ConversionUtils.canConvertElements(sourceType, targetType.getElementTypeDescriptor(),
-				this.conversionService);
+		return this.conversionService.canConvert(sourceType, targetType.getElementTypeDescriptor());
 	}
 
 	@Override
-	@Nullable
-	public Object convert(@Nullable Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
+	public Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
 		if (source == null) {
 			return null;
 		}
 		String string = (String) source;
 		String[] fields = StringUtils.commaDelimitedListToStringArray(string);
-		TypeDescriptor targetElementType = targetType.getElementTypeDescriptor();
-		Assert.state(targetElementType != null, "No target element type");
-		Object target = Array.newInstance(targetElementType.getType(), fields.length);
+		Object target = Array.newInstance(targetType.getElementTypeDescriptor().getType(), fields.length);
 		for (int i = 0; i < fields.length; i++) {
 			String sourceElement = fields[i];
-			Object targetElement = this.conversionService.convert(sourceElement.trim(), sourceType, targetElementType);
+			Object targetElement = this.conversionService.convert(sourceElement.trim(), sourceType, targetType.getElementTypeDescriptor());
 			Array.set(target, i, targetElement);
 		}
 		return target;

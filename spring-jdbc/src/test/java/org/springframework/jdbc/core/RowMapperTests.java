@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,19 +24,16 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.util.List;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-import org.springframework.beans.testfixture.beans.TestBean;
 import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 import org.springframework.jdbc.support.SQLStateSQLExceptionTranslator;
+import org.springframework.tests.sample.beans.TestBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Juergen Hoeller
@@ -60,7 +57,7 @@ public class RowMapperTests {
 
 	private List<TestBean> result;
 
-	@BeforeEach
+	@Before
 	public void setUp() throws SQLException {
 		given(connection.createStatement()).willReturn(statement);
 		given(connection.prepareStatement(anyString())).willReturn(preparedStatement);
@@ -75,21 +72,22 @@ public class RowMapperTests {
 		template.afterPropertiesSet();
 	}
 
-	@AfterEach
+	@After
 	public void verifyClosed() throws Exception {
 		verify(resultSet).close();
+		// verify(connection).close();
 	}
 
-	@AfterEach
+	@After
 	public void verifyResults() {
-		assertThat(result).isNotNull();
-		assertThat(result.size()).isEqualTo(2);
+		assertNotNull(result);
+		assertEquals(2, result.size());
 		TestBean testBean1 = result.get(0);
 		TestBean testBean2 = result.get(1);
-		assertThat(testBean1.getName()).isEqualTo("tb1");
-		assertThat(testBean2.getName()).isEqualTo("tb2");
-		assertThat(testBean1.getAge()).isEqualTo(1);
-		assertThat(testBean2.getAge()).isEqualTo(2);
+		assertEquals("tb1", testBean1.getName());
+		assertEquals("tb2", testBean2.getName());
+		assertEquals(1, testBean1.getAge());
+		assertEquals(2, testBean2.getAge());
 	}
 
 	@Test
@@ -112,7 +110,6 @@ public class RowMapperTests {
 	}
 
 	@Test
-	@SuppressWarnings("deprecation")
 	public void queryWithArgsAndRowMapper() throws SQLException {
 		result = template.query("some SQL", new Object[] { "test1", "test2" }, testRowMapper);
 		preparedStatement.setString(1, "test1");

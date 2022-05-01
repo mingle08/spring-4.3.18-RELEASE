@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,19 +17,19 @@
 package org.springframework.aop.config;
 
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.aop.Advisor;
 import org.springframework.aop.framework.Advised;
 import org.springframework.aop.support.AopUtils;
-import org.springframework.aop.testfixture.advice.CountingBeforeAdvice;
-import org.springframework.beans.testfixture.beans.ITestBean;
-import org.springframework.beans.testfixture.beans.TestBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.tests.aop.advice.CountingBeforeAdvice;
+import org.springframework.tests.sample.beans.ITestBean;
+import org.springframework.tests.sample.beans.TestBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for aop namespace.
@@ -42,9 +42,10 @@ public class AopNamespaceHandlerTests {
 	private ApplicationContext context;
 
 
-	@BeforeEach
-	public void setup() {
-		this.context = new ClassPathXmlApplicationContext(getClass().getSimpleName() + "-context.xml", getClass());
+	@Before
+	public void setUp() {
+		this.context =
+				new ClassPathXmlApplicationContext(getClass().getSimpleName() + "-context.xml", getClass());
 	}
 
 	protected ITestBean getTestBean() {
@@ -56,13 +57,13 @@ public class AopNamespaceHandlerTests {
 	public void testIsProxy() throws Exception {
 		ITestBean bean = getTestBean();
 
-		assertThat(AopUtils.isAopProxy(bean)).as("Bean is not a proxy").isTrue();
+		assertTrue("Bean is not a proxy", AopUtils.isAopProxy(bean));
 
 		// check the advice details
 		Advised advised = (Advised) bean;
 		Advisor[] advisors = advised.getAdvisors();
 
-		assertThat(advisors.length > 0).as("Advisors should not be empty").isTrue();
+		assertTrue("Advisors should not be empty", advisors.length > 0);
 	}
 
 	@Test
@@ -72,18 +73,18 @@ public class AopNamespaceHandlerTests {
 
 		ITestBean bean = getTestBean();
 
-		assertThat(getAgeCounter.getCalls("getAge")).as("Incorrect initial getAge count").isEqualTo(0);
-		assertThat(getNameCounter.getCalls("getName")).as("Incorrect initial getName count").isEqualTo(0);
+		assertEquals("Incorrect initial getAge count", 0, getAgeCounter.getCalls("getAge"));
+		assertEquals("Incorrect initial getName count", 0, getNameCounter.getCalls("getName"));
 
 		bean.getAge();
 
-		assertThat(getAgeCounter.getCalls("getAge")).as("Incorrect getAge count on getAge counter").isEqualTo(1);
-		assertThat(getNameCounter.getCalls("getAge")).as("Incorrect getAge count on getName counter").isEqualTo(0);
+		assertEquals("Incorrect getAge count on getAge counter", 1, getAgeCounter.getCalls("getAge"));
+		assertEquals("Incorrect getAge count on getName counter", 0, getNameCounter.getCalls("getAge"));
 
 		bean.getName();
 
-		assertThat(getNameCounter.getCalls("getName")).as("Incorrect getName count on getName counter").isEqualTo(1);
-		assertThat(getAgeCounter.getCalls("getName")).as("Incorrect getName count on getAge counter").isEqualTo(0);
+		assertEquals("Incorrect getName count on getName counter", 1, getNameCounter.getCalls("getName"));
+		assertEquals("Incorrect getName count on getAge counter", 0, getAgeCounter.getCalls("getName"));
 	}
 
 	@Test
@@ -92,60 +93,39 @@ public class AopNamespaceHandlerTests {
 
 		CountingAspectJAdvice advice = (CountingAspectJAdvice) this.context.getBean("countingAdvice");
 
-		assertThat(advice.getBeforeCount()).as("Incorrect before count").isEqualTo(0);
-		assertThat(advice.getAfterCount()).as("Incorrect after count").isEqualTo(0);
+		assertEquals("Incorrect before count", 0, advice.getBeforeCount());
+		assertEquals("Incorrect after count", 0, advice.getAfterCount());
 
 		bean.setName("Sally");
 
-		assertThat(advice.getBeforeCount()).as("Incorrect before count").isEqualTo(1);
-		assertThat(advice.getAfterCount()).as("Incorrect after count").isEqualTo(1);
+		assertEquals("Incorrect before count", 1, advice.getBeforeCount());
+		assertEquals("Incorrect after count", 1, advice.getAfterCount());
 
 		bean.getName();
 
-		assertThat(advice.getBeforeCount()).as("Incorrect before count").isEqualTo(1);
-		assertThat(advice.getAfterCount()).as("Incorrect after count").isEqualTo(1);
+		assertEquals("Incorrect before count", 1, advice.getBeforeCount());
+		assertEquals("Incorrect after count", 1, advice.getAfterCount());
 	}
 
 	@Test
-	public void testAspectAppliedForInitializeBeanWithEmptyName() {
-		ITestBean bean = (ITestBean) this.context.getAutowireCapableBeanFactory().initializeBean(new TestBean(), "");
-
-		CountingAspectJAdvice advice = (CountingAspectJAdvice) this.context.getBean("countingAdvice");
-
-		assertThat(advice.getBeforeCount()).as("Incorrect before count").isEqualTo(0);
-		assertThat(advice.getAfterCount()).as("Incorrect after count").isEqualTo(0);
-
-		bean.setName("Sally");
-
-		assertThat(advice.getBeforeCount()).as("Incorrect before count").isEqualTo(1);
-		assertThat(advice.getAfterCount()).as("Incorrect after count").isEqualTo(1);
-
-		bean.getName();
-
-		assertThat(advice.getBeforeCount()).as("Incorrect before count").isEqualTo(1);
-		assertThat(advice.getAfterCount()).as("Incorrect after count").isEqualTo(1);
-	}
-
-	@Test
-	public void testAspectAppliedForInitializeBeanWithNullName() {
+	public void testAspectAppliedForInitializeBean() {
 		ITestBean bean = (ITestBean) this.context.getAutowireCapableBeanFactory().initializeBean(new TestBean(), null);
 
 		CountingAspectJAdvice advice = (CountingAspectJAdvice) this.context.getBean("countingAdvice");
 
-		assertThat(advice.getBeforeCount()).as("Incorrect before count").isEqualTo(0);
-		assertThat(advice.getAfterCount()).as("Incorrect after count").isEqualTo(0);
+		assertEquals("Incorrect before count", 0, advice.getBeforeCount());
+		assertEquals("Incorrect after count", 0, advice.getAfterCount());
 
 		bean.setName("Sally");
 
-		assertThat(advice.getBeforeCount()).as("Incorrect before count").isEqualTo(1);
-		assertThat(advice.getAfterCount()).as("Incorrect after count").isEqualTo(1);
+		assertEquals("Incorrect before count", 1, advice.getBeforeCount());
+		assertEquals("Incorrect after count", 1, advice.getAfterCount());
 
 		bean.getName();
 
-		assertThat(advice.getBeforeCount()).as("Incorrect before count").isEqualTo(1);
-		assertThat(advice.getAfterCount()).as("Incorrect after count").isEqualTo(1);
+		assertEquals("Incorrect before count", 1, advice.getBeforeCount());
+		assertEquals("Incorrect after count", 1, advice.getAfterCount());
 	}
-
 }
 
 

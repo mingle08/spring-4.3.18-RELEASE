@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,10 +16,7 @@
 
 package org.springframework.test.context.web.socket;
 
-import jakarta.servlet.ServletContext;
-
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.lang.Nullable;
 import org.springframework.test.context.ContextCustomizer;
 import org.springframework.test.context.MergedContextConfiguration;
 import org.springframework.web.context.WebApplicationContext;
@@ -27,7 +24,7 @@ import org.springframework.web.context.WebApplicationContext;
 /**
  * {@link ContextCustomizer} that instantiates a new {@link MockServerContainer}
  * and stores it in the {@code ServletContext} under the attribute named
- * {@code "jakarta.websocket.server.ServerContainer"}.
+ * {@code "javax.websocket.server.ServerContainer"}.
  *
  * @author Sam Brannen
  * @since 4.3.1
@@ -36,16 +33,14 @@ class MockServerContainerContextCustomizer implements ContextCustomizer {
 
 	@Override
 	public void customizeContext(ConfigurableApplicationContext context, MergedContextConfiguration mergedConfig) {
-		if (context instanceof WebApplicationContext wac) {
-			ServletContext sc = wac.getServletContext();
-			if (sc != null) {
-				sc.setAttribute("jakarta.websocket.server.ServerContainer", new MockServerContainer());
-			}
+		if (context instanceof WebApplicationContext) {
+			WebApplicationContext wac = (WebApplicationContext) context;
+			wac.getServletContext().setAttribute("javax.websocket.server.ServerContainer", new MockServerContainer());
 		}
 	}
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		return (this == other || (other != null && getClass() == other.getClass()));
 	}
 

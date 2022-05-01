@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,27 +17,23 @@
 package org.springframework.util.xml;
 
 import java.io.StringReader;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.XMLReaderFactory;
 
-import org.springframework.core.testfixture.xml.XmlContent;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.custommonkey.xmlunit.XMLAssert.*;
 
 /**
  * Unit tests for {@link DomContentHandler}.
  */
-class DomContentHandlerTests {
+public class DomContentHandlerTests {
 
 	private static final String XML_1 =
 			"<?xml version='1.0' encoding='UTF-8'?>" + "<?pi content?>" + "<root xmlns='namespace'>" +
@@ -51,7 +47,6 @@ class DomContentHandlerTests {
 	private static final String XML_2_SNIPPET =
 			"<?xml version='1.0' encoding='UTF-8'?>" + "<child xmlns='namespace2' />";
 
-
 	private Document expected;
 
 	private DomContentHandler handler;
@@ -62,48 +57,44 @@ class DomContentHandlerTests {
 
 	private DocumentBuilder documentBuilder;
 
-
-	@BeforeEach
-	void setUp() throws Exception {
+	@Before
+	public void setUp() throws Exception {
 		DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 		documentBuilderFactory.setNamespaceAware(true);
 		documentBuilder = documentBuilderFactory.newDocumentBuilder();
 		result = documentBuilder.newDocument();
-		SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
-		saxParserFactory.setNamespaceAware(true);
-		SAXParser saxParser = saxParserFactory.newSAXParser();
-		xmlReader = saxParser.getXMLReader();
+		xmlReader = XMLReaderFactory.createXMLReader();
 	}
 
-
 	@Test
-	void contentHandlerDocumentNamespacePrefixes() throws Exception {
+	public void contentHandlerDocumentNamespacePrefixes() throws Exception {
 		xmlReader.setFeature("http://xml.org/sax/features/namespace-prefixes", true);
 		handler = new DomContentHandler(result);
 		expected = documentBuilder.parse(new InputSource(new StringReader(XML_1)));
 		xmlReader.setContentHandler(handler);
 		xmlReader.parse(new InputSource(new StringReader(XML_1)));
-		assertThat(XmlContent.of(result)).as("Invalid result").isSimilarTo(expected);
+		assertXMLEqual("Invalid result", expected, result);
 	}
 
 	@Test
-	void contentHandlerDocumentNoNamespacePrefixes() throws Exception {
+	public void contentHandlerDocumentNoNamespacePrefixes() throws Exception {
 		handler = new DomContentHandler(result);
 		expected = documentBuilder.parse(new InputSource(new StringReader(XML_1)));
 		xmlReader.setContentHandler(handler);
 		xmlReader.parse(new InputSource(new StringReader(XML_1)));
-		assertThat(XmlContent.of(result)).as("Invalid result").isSimilarTo(expected);
+		assertXMLEqual("Invalid result", expected, result);
 	}
 
 	@Test
-	void contentHandlerElement() throws Exception {
+	public void contentHandlerElement() throws Exception {
 		Element rootElement = result.createElementNS("namespace", "root");
 		result.appendChild(rootElement);
 		handler = new DomContentHandler(rootElement);
 		expected = documentBuilder.parse(new InputSource(new StringReader(XML_2_EXPECTED)));
 		xmlReader.setContentHandler(handler);
 		xmlReader.parse(new InputSource(new StringReader(XML_2_SNIPPET)));
-		assertThat(XmlContent.of(result)).as("Invalid result").isSimilarTo(expected);
+		assertXMLEqual("Invalid result", expected, result);
+
 	}
 
 }

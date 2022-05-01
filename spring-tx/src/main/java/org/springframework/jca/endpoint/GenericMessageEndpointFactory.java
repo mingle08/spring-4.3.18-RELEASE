@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,26 +16,24 @@
 
 package org.springframework.jca.endpoint;
 
+import javax.resource.ResourceException;
+import javax.resource.spi.UnavailableException;
+import javax.resource.spi.endpoint.MessageEndpoint;
 import javax.transaction.xa.XAResource;
 
-import jakarta.resource.ResourceException;
-import jakarta.resource.spi.UnavailableException;
-import jakarta.resource.spi.endpoint.MessageEndpoint;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DelegatingIntroductionInterceptor;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * Generic implementation of the JCA 1.7
- * {@link jakarta.resource.spi.endpoint.MessageEndpointFactory} interface,
+ * Generic implementation of the JCA 1.5
+ * {@link javax.resource.spi.endpoint.MessageEndpointFactory} interface,
  * providing transaction management capabilities for any kind of message
- * listener object (e.g. {@link jakarta.jms.MessageListener} objects or
- * {@link jakarta.resource.cci.MessageListener} objects.
+ * listener object (e.g. {@link javax.jms.MessageListener} objects or
+ * {@link javax.resource.cci.MessageListener} objects.
  *
  * <p>Uses AOP proxies for concrete endpoint instances, simply wrapping
  * the specified message listener object and exposing all of its implemented
@@ -44,7 +42,7 @@ import org.springframework.util.ReflectionUtils;
  * <p>Typically used with Spring's {@link GenericMessageEndpointManager},
  * but not tied to it. As a consequence, this endpoint factory could
  * also be used with programmatic endpoint management on a native
- * {@link jakarta.resource.spi.ResourceAdapter} instance.
+ * {@link javax.resource.spi.ResourceAdapter} instance.
  *
  * @author Juergen Hoeller
  * @since 2.5
@@ -54,26 +52,16 @@ import org.springframework.util.ReflectionUtils;
  */
 public class GenericMessageEndpointFactory extends AbstractMessageEndpointFactory {
 
-	@Nullable
 	private Object messageListener;
 
 
 	/**
 	 * Specify the message listener object that the endpoint should expose
-	 * (e.g. a {@link jakarta.jms.MessageListener} objects or
-	 * {@link jakarta.resource.cci.MessageListener} implementation).
+	 * (e.g. a {@link javax.jms.MessageListener} objects or
+	 * {@link javax.resource.cci.MessageListener} implementation).
 	 */
 	public void setMessageListener(Object messageListener) {
 		this.messageListener = messageListener;
-	}
-
-	/**
-	 * Return the message listener object for this endpoint.
-	 * @since 5.0
-	 */
-	protected Object getMessageListener() {
-		Assert.state(this.messageListener != null, "No message listener set");
-		return this.messageListener;
 	}
 
 	/**
@@ -84,7 +72,7 @@ public class GenericMessageEndpointFactory extends AbstractMessageEndpointFactor
 	@Override
 	public MessageEndpoint createEndpoint(XAResource xaResource) throws UnavailableException {
 		GenericMessageEndpoint endpoint = (GenericMessageEndpoint) super.createEndpoint(xaResource);
-		ProxyFactory proxyFactory = new ProxyFactory(getMessageListener());
+		ProxyFactory proxyFactory = new ProxyFactory(this.messageListener);
 		DelegatingIntroductionInterceptor introduction = new DelegatingIntroductionInterceptor(endpoint);
 		introduction.suppressInterface(MethodInterceptor.class);
 		proxyFactory.addAdvice(introduction);
@@ -107,7 +95,6 @@ public class GenericMessageEndpointFactory extends AbstractMessageEndpointFactor
 	private class GenericMessageEndpoint extends AbstractMessageEndpoint implements MethodInterceptor {
 
 		@Override
-		@Nullable
 		public Object invoke(MethodInvocation methodInvocation) throws Throwable {
 			Throwable endpointEx = null;
 			boolean applyDeliveryCalls = !hasBeforeDeliveryBeenCalled();
@@ -152,7 +139,7 @@ public class GenericMessageEndpointFactory extends AbstractMessageEndpointFactor
 
 		@Override
 		protected ClassLoader getEndpointClassLoader() {
-			return getMessageListener().getClass().getClassLoader();
+			return messageListener.getClass().getClassLoader();
 		}
 	}
 
@@ -168,7 +155,7 @@ public class GenericMessageEndpointFactory extends AbstractMessageEndpointFactor
 	@SuppressWarnings("serial")
 	public static class InternalResourceException extends RuntimeException {
 
-		public InternalResourceException(ResourceException cause) {
+		protected InternalResourceException(ResourceException cause) {
 			super(cause);
 		}
 	}

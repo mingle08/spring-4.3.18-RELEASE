@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +16,14 @@
 
 package org.springframework.context.annotation;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Tests cornering bug SPR-8514.
@@ -32,70 +32,63 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Juergen Hoeller
  * @since 3.1
  */
-class ConfigurationWithFactoryBeanAndAutowiringTests {
+public class ConfigurationWithFactoryBeanAndAutowiringTests {
 
 	@Test
-	void withConcreteFactoryBeanImplementationAsReturnType() {
+	public void withConcreteFactoryBeanImplementationAsReturnType() {
 		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
 		ctx.register(AppConfig.class);
 		ctx.register(ConcreteFactoryBeanImplementationConfig.class);
 		ctx.refresh();
-		ctx.close();
 	}
 
 	@Test
-	void withParameterizedFactoryBeanImplementationAsReturnType() {
+	public void withParameterizedFactoryBeanImplementationAsReturnType() {
 		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
 		ctx.register(AppConfig.class);
 		ctx.register(ParameterizedFactoryBeanImplementationConfig.class);
 		ctx.refresh();
-		ctx.close();
 	}
 
 	@Test
-	void withParameterizedFactoryBeanInterfaceAsReturnType() {
+	public void withParameterizedFactoryBeanInterfaceAsReturnType() {
 		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
 		ctx.register(AppConfig.class);
 		ctx.register(ParameterizedFactoryBeanInterfaceConfig.class);
 		ctx.refresh();
-		ctx.close();
 	}
 
 	@Test
-	void withNonPublicParameterizedFactoryBeanInterfaceAsReturnType() {
+	public void withNonPublicParameterizedFactoryBeanInterfaceAsReturnType() {
 		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
 		ctx.register(AppConfig.class);
 		ctx.register(NonPublicParameterizedFactoryBeanInterfaceConfig.class);
 		ctx.refresh();
-		ctx.close();
 	}
 
 	@Test
-	void withRawFactoryBeanInterfaceAsReturnType() {
+	public void withRawFactoryBeanInterfaceAsReturnType() {
 		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
 		ctx.register(AppConfig.class);
 		ctx.register(RawFactoryBeanInterfaceConfig.class);
 		ctx.refresh();
-		ctx.close();
 	}
 
 	@Test
-	void withWildcardParameterizedFactoryBeanInterfaceAsReturnType() {
+	public void withWildcardParameterizedFactoryBeanInterfaceAsReturnType() {
 		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
 		ctx.register(AppConfig.class);
 		ctx.register(WildcardParameterizedFactoryBeanInterfaceConfig.class);
 		ctx.refresh();
-		ctx.close();
 	}
 
 	@Test
-	void withFactoryBeanCallingBean() {
+	public void withFactoryBeanCallingBean() {
 		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
 		ctx.register(AppConfig.class);
 		ctx.register(FactoryBeanCallingConfig.class);
 		ctx.refresh();
-		assertThat(ctx.getBean("myString")).isEqualTo("true");
-		ctx.close();
+		assertEquals("true", ctx.getBean("myString"));
 	}
 
 
@@ -192,7 +185,7 @@ class ConfigurationWithFactoryBeanAndAutowiringTests {
 		@Bean
 		public MyParameterizedFactoryBean<String> factoryBean() {
 			Assert.notNull(dummyBean, "DummyBean was not injected.");
-			return new MyParameterizedFactoryBean<>("whatev");
+			return new MyParameterizedFactoryBean<String>("whatev");
 		}
 	}
 

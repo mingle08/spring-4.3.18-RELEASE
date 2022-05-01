@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,8 +17,7 @@
 package org.springframework.orm.jpa.persistenceunit;
 
 import java.util.List;
-
-import jakarta.persistence.spi.PersistenceUnitInfo;
+import javax.persistence.spi.PersistenceUnitInfo;
 
 /**
  * Extension of the standard JPA PersistenceUnitInfo interface, for advanced collaboration
@@ -42,7 +41,7 @@ public interface SmartPersistenceUnitInfo extends PersistenceUnitInfo {
 
 	/**
 	 * Set the persistence provider's own package name, for exclusion from class transformation.
-	 * @see #addTransformer(jakarta.persistence.spi.ClassTransformer)
+	 * @see #addTransformer(javax.persistence.spi.ClassTransformer)
 	 * @see #getNewTempClassLoader()
 	 */
 	void setPersistenceProviderPackageName(String persistenceProviderPackageName);

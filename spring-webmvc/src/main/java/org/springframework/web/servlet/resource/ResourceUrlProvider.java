@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,25 +17,23 @@
 package org.springframework.web.servlet.resource;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
-import org.springframework.lang.Nullable;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.PathMatcher;
-import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.handler.SimpleUrlHandlerMapping;
 import org.springframework.web.util.UrlPathHelper;
 
@@ -48,33 +46,24 @@ import org.springframework.web.util.UrlPathHelper;
  * {@code ResourceHttpRequestHandler}s to make its decisions.
  *
  * @author Rossen Stoyanchev
- * @author Brian Clozel
  * @since 4.1
  */
-public class ResourceUrlProvider implements ApplicationListener<ContextRefreshedEvent>, ApplicationContextAware {
+public class ResourceUrlProvider implements ApplicationListener<ContextRefreshedEvent> {
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	@Nullable
-	private ApplicationContext applicationContext;
-
-	private UrlPathHelper urlPathHelper = UrlPathHelper.defaultInstance;
+	private UrlPathHelper urlPathHelper = new UrlPathHelper();
 
 	private PathMatcher pathMatcher = new AntPathMatcher();
 
-	private final Map<String, ResourceHttpRequestHandler> handlerMap = new LinkedHashMap<>();
+	private final Map<String, ResourceHttpRequestHandler> handlerMap = new LinkedHashMap<String, ResourceHttpRequestHandler>();
 
 	private boolean autodetect = true;
 
 
-	@Override
-	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-		this.applicationContext = applicationContext;
-	}
-
 	/**
 	 * Configure a {@code UrlPathHelper} to use in
-	 * {@link #getForRequestUrl(jakarta.servlet.http.HttpServletRequest, String)}
+	 * {@link #getForRequestUrl(javax.servlet.http.HttpServletRequest, String)}
 	 * in order to derive the lookup path for a target request URL path.
 	 */
 	public void setUrlPathHelper(UrlPathHelper urlPathHelper) {
@@ -86,6 +75,14 @@ public class ResourceUrlProvider implements ApplicationListener<ContextRefreshed
 	 * @since 4.2.8
 	 */
 	public UrlPathHelper getUrlPathHelper() {
+		return this.urlPathHelper;
+	}
+
+	/**
+	 * @deprecated as of Spring 4.2.8, in favor of {@link #getUrlPathHelper}
+	 */
+	@Deprecated
+	public UrlPathHelper getPathHelper() {
 		return this.urlPathHelper;
 	}
 
@@ -110,7 +107,7 @@ public class ResourceUrlProvider implements ApplicationListener<ContextRefreshed
 	 * from the Spring {@code ApplicationContext}. However if this property is
 	 * used, the auto-detection is turned off.
 	 */
-	public void setHandlerMap(@Nullable Map<String, ResourceHttpRequestHandler> handlerMap) {
+	public void setHandlerMap(Map<String, ResourceHttpRequestHandler> handlerMap) {
 		if (handlerMap != null) {
 			this.handlerMap.clear();
 			this.handlerMap.putAll(handlerMap);
@@ -134,34 +131,41 @@ public class ResourceUrlProvider implements ApplicationListener<ContextRefreshed
 		return this.autodetect;
 	}
 
-
 	@Override
 	public void onApplicationEvent(ContextRefreshedEvent event) {
-		if (event.getApplicationContext() == this.applicationContext && isAutodetect()) {
+		if (isAutodetect()) {
 			this.handlerMap.clear();
-			detectResourceHandlers(this.applicationContext);
+			detectResourceHandlers(event.getApplicationContext());
+			if (this.handlerMap.isEmpty() && logger.isDebugEnabled()) {
+				logger.debug("No resource handling mappings found");
+			}
 			if (!this.handlerMap.isEmpty()) {
 				this.autodetect = false;
 			}
 		}
 	}
 
+
 	protected void detectResourceHandlers(ApplicationContext appContext) {
+		logger.debug("Looking for resource handler mappings");
+
 		Map<String, SimpleUrlHandlerMapping> beans = appContext.getBeansOfType(SimpleUrlHandlerMapping.class);
-		List<SimpleUrlHandlerMapping> mappings = new ArrayList<>(beans.values());
+		List<SimpleUrlHandlerMapping> mappings = new ArrayList<SimpleUrlHandlerMapping>(beans.values());
 		AnnotationAwareOrderComparator.sort(mappings);
 
 		for (SimpleUrlHandlerMapping mapping : mappings) {
 			for (String pattern : mapping.getHandlerMap().keySet()) {
 				Object handler = mapping.getHandlerMap().get(pattern);
-				if (handler instanceof ResourceHttpRequestHandler resourceHandler) {
+				if (handler instanceof ResourceHttpRequestHandler) {
+					ResourceHttpRequestHandler resourceHandler = (ResourceHttpRequestHandler) handler;
+					if (logger.isDebugEnabled()) {
+						logger.debug("Found resource handler mapping: URL pattern=\"" + pattern + "\", " +
+								"locations=" + resourceHandler.getLocations() + ", " +
+								"resolvers=" + resourceHandler.getResourceResolvers());
+					}
 					this.handlerMap.put(pattern, resourceHandler);
 				}
 			}
-		}
-
-		if (this.handlerMap.isEmpty()) {
-			logger.trace("No resource handling mappings found");
 		}
 	}
 
@@ -173,8 +177,10 @@ public class ResourceUrlProvider implements ApplicationListener<ContextRefreshed
 	 * @param requestUrl the request URL path to resolve
 	 * @return the resolved public URL path, or {@code null} if unresolved
 	 */
-	@Nullable
 	public final String getForRequestUrl(HttpServletRequest request, String requestUrl) {
+		if (logger.isTraceEnabled()) {
+			logger.trace("Getting resource URL for request URL \"" + requestUrl + "\"");
+		}
 		int prefixIndex = getLookupPathIndex(request);
 		int suffixIndex = getEndPathIndex(requestUrl);
 		if (prefixIndex >= suffixIndex) {
@@ -189,11 +195,8 @@ public class ResourceUrlProvider implements ApplicationListener<ContextRefreshed
 
 	private int getLookupPathIndex(HttpServletRequest request) {
 		UrlPathHelper pathHelper = getUrlPathHelper();
-		if (request.getAttribute(UrlPathHelper.PATH_ATTRIBUTE) == null) {
-			pathHelper.resolveAndCacheLookupPath(request);
-		}
 		String requestUri = pathHelper.getRequestUri(request);
-		String lookupPath = UrlPathHelper.getResolvedLookupPath(request);
+		String lookupPath = pathHelper.getLookupPathForRequest(request);
 		return requestUri.indexOf(lookupPath);
 	}
 
@@ -222,16 +225,12 @@ public class ResourceUrlProvider implements ApplicationListener<ContextRefreshed
 	 * @param lookupPath the lookup path to check
 	 * @return the resolved public URL path, or {@code null} if unresolved
 	 */
-	@Nullable
 	public final String getForLookupPath(String lookupPath) {
-		// Clean duplicate slashes or pathWithinPattern won't match lookupPath
-		String previous;
-		do {
-			previous = lookupPath;
-			lookupPath = StringUtils.replace(lookupPath, "//", "/");
-		} while (!lookupPath.equals(previous));
+		if (logger.isTraceEnabled()) {
+			logger.trace("Getting resource URL for lookup path \"" + lookupPath + "\"");
+		}
 
-		List<String> matchingPatterns = new ArrayList<>();
+		List<String> matchingPatterns = new ArrayList<String>();
 		for (String pattern : this.handlerMap.keySet()) {
 			if (getPathMatcher().match(pattern, lookupPath)) {
 				matchingPatterns.add(pattern);
@@ -240,24 +239,29 @@ public class ResourceUrlProvider implements ApplicationListener<ContextRefreshed
 
 		if (!matchingPatterns.isEmpty()) {
 			Comparator<String> patternComparator = getPathMatcher().getPatternComparator(lookupPath);
-			matchingPatterns.sort(patternComparator);
+			Collections.sort(matchingPatterns, patternComparator);
 			for (String pattern : matchingPatterns) {
 				String pathWithinMapping = getPathMatcher().extractPathWithinPattern(pattern, lookupPath);
 				String pathMapping = lookupPath.substring(0, lookupPath.indexOf(pathWithinMapping));
+				if (logger.isTraceEnabled()) {
+					logger.trace("Invoking ResourceResolverChain for URL pattern \"" + pattern + "\"");
+				}
 				ResourceHttpRequestHandler handler = this.handlerMap.get(pattern);
 				ResourceResolverChain chain = new DefaultResourceResolverChain(handler.getResourceResolvers());
 				String resolved = chain.resolveUrlPath(pathWithinMapping, handler.getLocations());
 				if (resolved == null) {
 					continue;
 				}
+				if (logger.isTraceEnabled()) {
+					logger.trace("Resolved public resource URL path \"" + resolved + "\"");
+				}
 				return pathMapping + resolved;
 			}
 		}
 
-		if (logger.isTraceEnabled()) {
-			logger.trace("No match for \"" + lookupPath + "\"");
+		if (logger.isDebugEnabled()) {
+			logger.debug("No matching resource mapping for lookup path \"" + lookupPath + "\"");
 		}
-
 		return null;
 	}
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2010 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,12 +18,11 @@ package org.springframework.core.io;
 
 import java.beans.PropertyEditor;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.core.env.StandardEnvironment;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for the {@link ResourceEditor} class.
@@ -32,74 +31,58 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  * @author Arjen Poutsma
  * @author Dave Syer
  */
-class ResourceEditorTests {
+public final class ResourceEditorTests {
 
 	@Test
-	void sunnyDay() {
+	public void sunnyDay() throws Exception {
 		PropertyEditor editor = new ResourceEditor();
 		editor.setAsText("classpath:org/springframework/core/io/ResourceEditorTests.class");
 		Resource resource = (Resource) editor.getValue();
-		assertThat(resource).isNotNull();
-		assertThat(resource.exists()).isTrue();
+		assertNotNull(resource);
+		assertTrue(resource.exists());
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void ctorWithNullCtorArgs() throws Exception {
+		new ResourceEditor(null, null);
 	}
 
 	@Test
-	void ctorWithNullCtorArgs() {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				new ResourceEditor(null, null));
-	}
-
-	@Test
-	void setAndGetAsTextWithNull() {
+	public void setAndGetAsTextWithNull() throws Exception {
 		PropertyEditor editor = new ResourceEditor();
 		editor.setAsText(null);
-		assertThat(editor.getAsText()).isEqualTo("");
+		assertEquals("", editor.getAsText());
 	}
 
 	@Test
-	void setAndGetAsTextWithWhitespaceResource() {
+	public void setAndGetAsTextWithWhitespaceResource() throws Exception {
 		PropertyEditor editor = new ResourceEditor();
 		editor.setAsText("  ");
-		assertThat(editor.getAsText()).isEqualTo("");
+		assertEquals("", editor.getAsText());
 	}
 
 	@Test
-	void systemPropertyReplacement() {
-		PropertyEditor editor = new ResourceEditor();
-		System.setProperty("test.prop", "foo");
-		try {
-			editor.setAsText("${test.prop}");
-			Resource resolved = (Resource) editor.getValue();
-			assertThat(resolved.getFilename()).isEqualTo("foo");
-		}
-		finally {
-			System.getProperties().remove("test.prop");
-		}
-	}
-
-	@Test
-	void systemPropertyReplacementWithUnresolvablePlaceholder() {
+	public void testSystemPropertyReplacement() {
 		PropertyEditor editor = new ResourceEditor();
 		System.setProperty("test.prop", "foo");
 		try {
 			editor.setAsText("${test.prop}-${bar}");
 			Resource resolved = (Resource) editor.getValue();
-			assertThat(resolved.getFilename()).isEqualTo("foo-${bar}");
+			assertEquals("foo-${bar}", resolved.getFilename());
 		}
 		finally {
 			System.getProperties().remove("test.prop");
 		}
 	}
 
-	@Test
-	void strictSystemPropertyReplacementWithUnresolvablePlaceholder() {
+	@Test(expected=IllegalArgumentException.class)
+	public void testStrictSystemPropertyReplacement() {
 		PropertyEditor editor = new ResourceEditor(new DefaultResourceLoader(), new StandardEnvironment(), false);
 		System.setProperty("test.prop", "foo");
 		try {
-			assertThatIllegalArgumentException().isThrownBy(() -> {
-					editor.setAsText("${test.prop}-${bar}");
-					editor.getValue();
-			});
+			editor.setAsText("${test.prop}-${bar}");
+			Resource resolved = (Resource) editor.getValue();
+			assertEquals("foo-${bar}", resolved.getFilename());
 		}
 		finally {
 			System.getProperties().remove("test.prop");

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,9 +22,9 @@ import java.util.List;
 import org.springframework.aop.TargetSource;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.PatternMatchUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Auto proxy creator that identifies beans to proxy via a list of names.
@@ -36,7 +36,6 @@ import org.springframework.util.PatternMatchUtils;
  * "interceptorNames" property.
  *
  * @author Juergen Hoeller
- * @author Sam Brannen
  * @since 10.10.2003
  * @see #setBeanNames
  * @see #isMatch
@@ -46,9 +45,6 @@ import org.springframework.util.PatternMatchUtils;
 @SuppressWarnings("serial")
 public class BeanNameAutoProxyCreator extends AbstractAutoProxyCreator {
 
-	private static final String[] NO_ALIASES = new String[0];
-
-	@Nullable
 	private List<String> beanNames;
 
 
@@ -60,84 +56,51 @@ public class BeanNameAutoProxyCreator extends AbstractAutoProxyCreator {
 	 * FactoryBean will get proxied. This default behavior applies as of Spring 2.0.
 	 * If you intend to proxy a FactoryBean instance itself (a rare use case, but
 	 * Spring 1.2's default behavior), specify the bean name of the FactoryBean
-	 * including the factory-bean prefix "&amp;": e.g. "&amp;myFactoryBean".
+	 * including the factory-bean prefix "&": e.g. "&myFactoryBean".
 	 * @see org.springframework.beans.factory.FactoryBean
 	 * @see org.springframework.beans.factory.BeanFactory#FACTORY_BEAN_PREFIX
 	 */
 	public void setBeanNames(String... beanNames) {
 		Assert.notEmpty(beanNames, "'beanNames' must not be empty");
-		this.beanNames = new ArrayList<>(beanNames.length);
+		this.beanNames = new ArrayList<String>(beanNames.length);
 		for (String mappedName : beanNames) {
-			this.beanNames.add(mappedName.strip());
+			this.beanNames.add(StringUtils.trimWhitespace(mappedName));
 		}
 	}
 
 
 	/**
-	 * Delegate to {@link AbstractAutoProxyCreator#getCustomTargetSource(Class, String)}
-	 * if the bean name matches one of the names in the configured list of supported
-	 * names, returning {@code null} otherwise.
-	 * @since 5.3
-	 * @see #setBeanNames(String...)
+	 * Identify as bean to proxy if the bean name is in the configured list of names.
 	 */
 	@Override
-	protected TargetSource getCustomTargetSource(Class<?> beanClass, String beanName) {
-		return (isSupportedBeanName(beanClass, beanName) ?
-				super.getCustomTargetSource(beanClass, beanName) : null);
-	}
-
-	/**
-	 * Identify as a bean to proxy if the bean name matches one of the names in
-	 * the configured list of supported names.
-	 * @see #setBeanNames(String...)
-	 */
-	@Override
-	@Nullable
-	protected Object[] getAdvicesAndAdvisorsForBean(
-			Class<?> beanClass, String beanName, @Nullable TargetSource targetSource) {
-
-		return (isSupportedBeanName(beanClass, beanName) ?
-				PROXY_WITHOUT_ADDITIONAL_INTERCEPTORS : DO_NOT_PROXY);
-	}
-
-	/**
-	 * Determine if the bean name for the given bean class matches one of the names
-	 * in the configured list of supported names.
-	 * @param beanClass the class of the bean to advise
-	 * @param beanName the name of the bean
-	 * @return {@code true} if the given bean name is supported
-	 * @see #setBeanNames(String...)
-	 */
-	private boolean isSupportedBeanName(Class<?> beanClass, String beanName) {
+	protected Object[] getAdvicesAndAdvisorsForBean(Class<?> beanClass, String beanName, TargetSource targetSource) {
 		if (this.beanNames != null) {
-			boolean isFactoryBean = FactoryBean.class.isAssignableFrom(beanClass);
 			for (String mappedName : this.beanNames) {
-				if (isFactoryBean) {
+				if (FactoryBean.class.isAssignableFrom(beanClass)) {
 					if (!mappedName.startsWith(BeanFactory.FACTORY_BEAN_PREFIX)) {
 						continue;
 					}
 					mappedName = mappedName.substring(BeanFactory.FACTORY_BEAN_PREFIX.length());
 				}
 				if (isMatch(beanName, mappedName)) {
-					return true;
+					return PROXY_WITHOUT_ADDITIONAL_INTERCEPTORS;
 				}
-			}
-
-			BeanFactory beanFactory = getBeanFactory();
-			String[] aliases = (beanFactory != null ? beanFactory.getAliases(beanName) : NO_ALIASES);
-			for (String alias : aliases) {
-				for (String mappedName : this.beanNames) {
-					if (isMatch(alias, mappedName)) {
-						return true;
+				BeanFactory beanFactory = getBeanFactory();
+				if (beanFactory != null) {
+					String[] aliases = beanFactory.getAliases(beanName);
+					for (String alias : aliases) {
+						if (isMatch(alias, mappedName)) {
+							return PROXY_WITHOUT_ADDITIONAL_INTERCEPTORS;
+						}
 					}
 				}
 			}
 		}
-		return false;
+		return DO_NOT_PROXY;
 	}
 
 	/**
-	 * Determine if the given bean name matches the mapped name.
+	 * Return if the given bean name matches the mapped name.
 	 * <p>The default implementation checks for "xxx*", "*xxx" and "*xxx*" matches,
 	 * as well as direct equality. Can be overridden in subclasses.
 	 * @param beanName the bean name to check

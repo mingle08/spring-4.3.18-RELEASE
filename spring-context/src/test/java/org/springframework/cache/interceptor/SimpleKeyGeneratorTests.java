@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,18 +16,16 @@
 
 package org.springframework.cache.interceptor;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import org.springframework.core.testfixture.io.SerializationTestUtils;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link SimpleKeyGenerator} and {@link SimpleKey}.
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
- * @author Juergen Hoeller
  */
 public class SimpleKeyGeneratorTests {
 
@@ -39,33 +37,33 @@ public class SimpleKeyGeneratorTests {
 		Object k1 = generateKey(new Object[] {});
 		Object k2 = generateKey(new Object[] {});
 		Object k3 = generateKey(new Object[] { "different" });
-		assertThat(k1.hashCode()).isEqualTo(k2.hashCode());
-		assertThat(k1.hashCode()).isNotEqualTo(k3.hashCode());
-		assertThat(k1).isEqualTo(k2);
-		assertThat(k1).isNotEqualTo(k3);
+		assertThat(k1.hashCode(), equalTo(k2.hashCode()));
+		assertThat(k1.hashCode(), not(equalTo(k3.hashCode())));
+		assertThat(k1, equalTo(k2));
+		assertThat(k1, not(equalTo(k3)));
 	}
 
 	@Test
-	public void singleValue() {
+	public void singleValue(){
 		Object k1 = generateKey(new Object[] { "a" });
 		Object k2 = generateKey(new Object[] { "a" });
 		Object k3 = generateKey(new Object[] { "different" });
-		assertThat(k1.hashCode()).isEqualTo(k2.hashCode());
-		assertThat(k1.hashCode()).isNotEqualTo(k3.hashCode());
-		assertThat(k1).isEqualTo(k2);
-		assertThat(k1).isNotEqualTo(k3);
-		assertThat(k1).isEqualTo("a");
+		assertThat(k1.hashCode(), equalTo(k2.hashCode()));
+		assertThat(k1.hashCode(), not(equalTo(k3.hashCode())));
+		assertThat(k1, equalTo(k2));
+		assertThat(k1, not(equalTo(k3)));
+		assertThat(k1, equalTo((Object) "a"));
 	}
 
 	@Test
-	public void multipleValues() {
+	public void multipleValues()  {
 		Object k1 = generateKey(new Object[] { "a", 1, "b" });
 		Object k2 = generateKey(new Object[] { "a", 1, "b" });
 		Object k3 = generateKey(new Object[] { "b", 1, "a" });
-		assertThat(k1.hashCode()).isEqualTo(k2.hashCode());
-		assertThat(k1.hashCode()).isNotEqualTo(k3.hashCode());
-		assertThat(k1).isEqualTo(k2);
-		assertThat(k1).isNotEqualTo(k3);
+		assertThat(k1.hashCode(), equalTo(k2.hashCode()));
+		assertThat(k1.hashCode(), not(equalTo(k3.hashCode())));
+		assertThat(k1, equalTo(k2));
+		assertThat(k1, not(equalTo(k3)));
 	}
 
 	@Test
@@ -73,11 +71,11 @@ public class SimpleKeyGeneratorTests {
 		Object k1 = generateKey(new Object[] { null });
 		Object k2 = generateKey(new Object[] { null });
 		Object k3 = generateKey(new Object[] { "different" });
-		assertThat(k1.hashCode()).isEqualTo(k2.hashCode());
-		assertThat(k1.hashCode()).isNotEqualTo(k3.hashCode());
-		assertThat(k1).isEqualTo(k2);
-		assertThat(k1).isNotEqualTo(k3);
-		assertThat(k1).isInstanceOf(SimpleKey.class);
+		assertThat(k1.hashCode(), equalTo(k2.hashCode()));
+		assertThat(k1.hashCode(), not(equalTo(k3.hashCode())));
+		assertThat(k1, equalTo(k2));
+		assertThat(k1, not(equalTo(k3)));
+		assertThat(k1, instanceOf(SimpleKey.class));
 	}
 
 	@Test
@@ -85,10 +83,10 @@ public class SimpleKeyGeneratorTests {
 		Object k1 = generateKey(new Object[] { "a", null, "b", null });
 		Object k2 = generateKey(new Object[] { "a", null, "b", null });
 		Object k3 = generateKey(new Object[] { "a", null, "b" });
-		assertThat(k1.hashCode()).isEqualTo(k2.hashCode());
-		assertThat(k1.hashCode()).isNotEqualTo(k3.hashCode());
-		assertThat(k1).isEqualTo(k2);
-		assertThat(k1).isNotEqualTo(k3);
+		assertThat(k1.hashCode(), equalTo(k2.hashCode()));
+		assertThat(k1.hashCode(), not(equalTo(k3.hashCode())));
+		assertThat(k1, equalTo(k2));
+		assertThat(k1, not(equalTo(k3)));
 	}
 
 	@Test
@@ -96,10 +94,10 @@ public class SimpleKeyGeneratorTests {
 		Object k1 = generateKey(new Object[] { new String[]{"a", "b"} });
 		Object k2 = generateKey(new Object[] { new String[]{"a", "b"} });
 		Object k3 = generateKey(new Object[] { new String[]{"b", "a"} });
-		assertThat(k1.hashCode()).isEqualTo(k2.hashCode());
-		assertThat(k1.hashCode()).isNotEqualTo(k3.hashCode());
-		assertThat(k1).isEqualTo(k2);
-		assertThat(k1).isNotEqualTo(k3);
+		assertThat(k1.hashCode(), equalTo(k2.hashCode()));
+		assertThat(k1.hashCode(), not(equalTo(k3.hashCode())));
+		assertThat(k1, equalTo(k2));
+		assertThat(k1, not(equalTo(k3)));
 	}
 
 	@Test
@@ -107,21 +105,10 @@ public class SimpleKeyGeneratorTests {
 		Object k1 = generateKey(new Object[] { new String[]{"a", "b"}, "c" });
 		Object k2 = generateKey(new Object[] { new String[]{"a", "b"}, "c" });
 		Object k3 = generateKey(new Object[] { new String[]{"b", "a"}, "c" });
-		assertThat(k1.hashCode()).isEqualTo(k2.hashCode());
-		assertThat(k1.hashCode()).isNotEqualTo(k3.hashCode());
-		assertThat(k1).isEqualTo(k2);
-		assertThat(k1).isNotEqualTo(k3);
-	}
-
-	@Test
-	public void serializedKeys() throws Exception {
-		Object k1 = SerializationTestUtils.serializeAndDeserialize(generateKey(new Object[] { "a", 1, "b" }));
-		Object k2 = SerializationTestUtils.serializeAndDeserialize(generateKey(new Object[] { "a", 1, "b" }));
-		Object k3 = SerializationTestUtils.serializeAndDeserialize(generateKey(new Object[] { "b", 1, "a" }));
-		assertThat(k1.hashCode()).isEqualTo(k2.hashCode());
-		assertThat(k1.hashCode()).isNotEqualTo(k3.hashCode());
-		assertThat(k1).isEqualTo(k2);
-		assertThat(k1).isNotEqualTo(k3);
+		assertThat(k1.hashCode(), equalTo(k2.hashCode()));
+		assertThat(k1.hashCode(), not(equalTo(k3.hashCode())));
+		assertThat(k1, equalTo(k2));
+		assertThat(k1, not(equalTo(k3)));
 	}
 
 

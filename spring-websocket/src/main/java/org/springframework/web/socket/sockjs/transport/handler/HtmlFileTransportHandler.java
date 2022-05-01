@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@
 package org.springframework.web.socket.sockjs.transport.handler;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -36,15 +35,14 @@ import org.springframework.web.socket.sockjs.transport.SockJsSession;
 import org.springframework.web.socket.sockjs.transport.TransportHandler;
 import org.springframework.web.socket.sockjs.transport.TransportType;
 import org.springframework.web.socket.sockjs.transport.session.AbstractHttpSockJsSession;
+import org.springframework.web.socket.sockjs.transport.session.PollingSockJsSession;
 import org.springframework.web.socket.sockjs.transport.session.StreamingSockJsSession;
 import org.springframework.web.util.JavaScriptUtils;
 
 /**
- * An HTTP {@link TransportHandler} that uses a famous browser
- * {@code document.domain technique}. See <a href=
- * "https://stackoverflow.com/questions/1481251/what-does-document-domain-document-domain-do">
- * stackoverflow.com/questions/1481251/what-does-document-domain-document-domain-do</a>
- * for details.
+ * An HTTP {@link TransportHandler} that uses a famous browser document.domain technique:
+ * <a href="http://stackoverflow.com/questions/1481251/what-does-document-domain-document-domain-do">
+ * http://stackoverflow.com/questions/1481251/what-does-document-domain-document-domain-do</a>
  *
  * @author Rossen Stoyanchev
  * @since 4.0
@@ -54,7 +52,7 @@ public class HtmlFileTransportHandler extends AbstractHttpSendingTransportHandle
 	private static final String PARTIAL_HTML_CONTENT;
 
 	// Safari needs at least 1024 bytes to parse the website.
-	// https://code.google.com/p/browsersec/wiki/Part2#Survey_of_content_sniffing_behaviors
+	// http://code.google.com/p/browsersec/wiki/Part2#Survey_of_content_sniffing_behaviors
 	private static final int MINIMUM_PARTIAL_HTML_CONTENT_LENGTH = 1024;
 
 
@@ -75,7 +73,7 @@ public class HtmlFileTransportHandler extends AbstractHttpSendingTransportHandle
 				);
 
 		while (sb.length() < MINIMUM_PARTIAL_HTML_CONTENT_LENGTH) {
-			sb.append(' ');
+			sb.append(" ");
 		}
 		PARTIAL_HTML_CONTENT = sb.toString();
 	}
@@ -88,12 +86,12 @@ public class HtmlFileTransportHandler extends AbstractHttpSendingTransportHandle
 
 	@Override
 	protected MediaType getContentType() {
-		return new MediaType("text", "html", StandardCharsets.UTF_8);
+		return new MediaType("text", "html", UTF8_CHARSET);
 	}
 
 	@Override
 	public boolean checkSessionType(SockJsSession session) {
-		return (session instanceof HtmlFileStreamingSockJsSession);
+		return session instanceof HtmlFileStreamingSockJsSession;
 	}
 
 	@Override
@@ -111,7 +109,7 @@ public class HtmlFileTransportHandler extends AbstractHttpSendingTransportHandle
 		if (!StringUtils.hasText(callback)) {
 			response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
 			try {
-				response.getBody().write("\"callback\" parameter required".getBytes(StandardCharsets.UTF_8));
+				response.getBody().write("\"callback\" parameter required".getBytes(UTF8_CHARSET));
 			}
 			catch (IOException ex) {
 				sockJsSession.tryCloseWithSockJsTransportError(ex, CloseStatus.SERVER_ERROR);
@@ -147,7 +145,7 @@ public class HtmlFileTransportHandler extends AbstractHttpSendingTransportHandle
 			// We already validated the parameter above...
 			String callback = getCallbackParam(request);
 			String html = String.format(PARTIAL_HTML_CONTENT, callback);
-			return html.getBytes(StandardCharsets.UTF_8);
+			return html.getBytes(UTF8_CHARSET);
 		}
 	}
 

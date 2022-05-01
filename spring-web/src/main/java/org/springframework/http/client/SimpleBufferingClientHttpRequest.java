@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -47,15 +49,10 @@ final class SimpleBufferingClientHttpRequest extends AbstractBufferingClientHttp
 		this.outputStreaming = outputStreaming;
 	}
 
-	@Override
-	public HttpMethod getMethod() {
-		return HttpMethod.valueOf(this.connection.getRequestMethod());
-	}
 
 	@Override
-	@Deprecated
-	public String getMethodValue() {
-		return this.connection.getRequestMethod();
+	public HttpMethod getMethod() {
+		return HttpMethod.resolve(this.connection.getRequestMethod());
 	}
 
 	@Override
@@ -96,26 +93,19 @@ final class SimpleBufferingClientHttpRequest extends AbstractBufferingClientHttp
 	 * @param headers the headers to add
 	 */
 	static void addHeaders(HttpURLConnection connection, HttpHeaders headers) {
-		String method = connection.getRequestMethod();
-		if (method.equals("PUT") || method.equals("DELETE")) {
-			if (!StringUtils.hasText(headers.getFirst(HttpHeaders.ACCEPT))) {
-				// Avoid "text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2"
-				// from HttpUrlConnection which prevents JSON error response details.
-				headers.set(HttpHeaders.ACCEPT, "*/*");
-			}
-		}
-		headers.forEach((headerName, headerValues) -> {
+		for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+			String headerName = entry.getKey();
 			if (HttpHeaders.COOKIE.equalsIgnoreCase(headerName)) {  // RFC 6265
-				String headerValue = StringUtils.collectionToDelimitedString(headerValues, "; ");
+				String headerValue = StringUtils.collectionToDelimitedString(entry.getValue(), "; ");
 				connection.setRequestProperty(headerName, headerValue);
 			}
 			else {
-				for (String headerValue : headerValues) {
+				for (String headerValue : entry.getValue()) {
 					String actualHeaderValue = headerValue != null ? headerValue : "";
 					connection.addRequestProperty(headerName, actualHeaderValue);
 				}
 			}
-		});
+		}
 	}
 
 }

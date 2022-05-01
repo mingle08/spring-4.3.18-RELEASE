@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.scheduling.quartz;
 
 import java.util.Map;
 
-import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobDetail;
 import org.quartz.Scheduler;
@@ -29,8 +28,6 @@ import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
 
 /**
  * A Spring {@link FactoryBean} for creating a Quartz {@link org.quartz.JobDetail}
@@ -50,14 +47,11 @@ import org.springframework.util.Assert;
 public class JobDetailFactoryBean
 		implements FactoryBean<JobDetail>, BeanNameAware, ApplicationContextAware, InitializingBean {
 
-	@Nullable
 	private String name;
 
-	@Nullable
 	private String group;
 
-	@Nullable
-	private Class<? extends Job> jobClass;
+	private Class<?> jobClass;
 
 	private JobDataMap jobDataMap = new JobDataMap();
 
@@ -65,19 +59,14 @@ public class JobDetailFactoryBean
 
 	private boolean requestsRecovery = false;
 
-	@Nullable
 	private String description;
 
-	@Nullable
 	private String beanName;
 
-	@Nullable
 	private ApplicationContext applicationContext;
 
-	@Nullable
 	private String applicationContextJobDataKey;
 
-	@Nullable
 	private JobDetail jobDetail;
 
 
@@ -98,7 +87,7 @@ public class JobDetailFactoryBean
 	/**
 	 * Specify the job's implementation class.
 	 */
-	public void setJobClass(Class<? extends Job> jobClass) {
+	public void setJobClass(Class<?> jobClass) {
 		this.jobClass = jobClass;
 	}
 
@@ -124,7 +113,7 @@ public class JobDetailFactoryBean
 	 * <p>Note: When using persistent Jobs whose JobDetail will be kept in the
 	 * database, do not put Spring-managed beans or an ApplicationContext
 	 * reference into the JobDataMap but rather into the SchedulerContext.
-	 * @param jobDataAsMap a Map with String keys and any objects as values
+	 * @param jobDataAsMap Map with String keys and any objects as values
 	 * (for example Spring-managed beans)
 	 * @see org.springframework.scheduling.quartz.SchedulerFactoryBean#setSchedulerContextAsMap
 	 */
@@ -187,9 +176,8 @@ public class JobDetailFactoryBean
 
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void afterPropertiesSet() {
-		Assert.notNull(this.jobClass, "Property 'jobClass' is required");
-
 		if (this.name == null) {
 			this.name = this.beanName;
 		}
@@ -199,16 +187,16 @@ public class JobDetailFactoryBean
 		if (this.applicationContextJobDataKey != null) {
 			if (this.applicationContext == null) {
 				throw new IllegalStateException(
-						"JobDetailBean needs to be set up in an ApplicationContext " +
-						"to be able to handle an 'applicationContextJobDataKey'");
+					"JobDetailBean needs to be set up in an ApplicationContext " +
+					"to be able to handle an 'applicationContextJobDataKey'");
 			}
 			getJobDataMap().put(this.applicationContextJobDataKey, this.applicationContext);
 		}
 
 		JobDetailImpl jdi = new JobDetailImpl();
-		jdi.setName(this.name != null ? this.name : toString());
+		jdi.setName(this.name);
 		jdi.setGroup(this.group);
-		jdi.setJobClass(this.jobClass);
+		jdi.setJobClass((Class) this.jobClass);
 		jdi.setJobDataMap(this.jobDataMap);
 		jdi.setDurability(this.durability);
 		jdi.setRequestsRecovery(this.requestsRecovery);
@@ -218,7 +206,6 @@ public class JobDetailFactoryBean
 
 
 	@Override
-	@Nullable
 	public JobDetail getObject() {
 		return this.jobDetail;
 	}

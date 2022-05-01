@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,6 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jms.JmsException;
 import org.springframework.jms.listener.MessageListenerContainer;
-import org.springframework.jms.support.QosSettings;
 import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.jms.support.destination.DestinationResolver;
 
@@ -52,39 +51,39 @@ public class MessageListenerTestContainer implements MessageListenerContainer, I
 	}
 
 	public JmsListenerEndpoint getEndpoint() {
-		return this.endpoint;
+		return endpoint;
 	}
 
 	public boolean isStarted() {
-		return this.startInvoked && this.initializationInvoked;
+		return startInvoked && initializationInvoked;
 	}
 
 	public boolean isStopped() {
-		return this.stopInvoked && this.destroyInvoked;
+		return stopInvoked && destroyInvoked;
 	}
 
 	@Override
 	public void start() throws JmsException {
-		if (!this.initializationInvoked) {
+		if (!initializationInvoked) {
 			throw new IllegalStateException("afterPropertiesSet should have been invoked before start on " + this);
 		}
-		if (this.startInvoked) {
+		if (startInvoked) {
 			throw new IllegalStateException("Start already invoked on " + this);
 		}
-		this.startInvoked = true;
+		startInvoked = true;
 	}
 
 	@Override
 	public void stop() throws JmsException {
-		if (this.stopInvoked) {
+		if (stopInvoked) {
 			throw new IllegalStateException("Stop already invoked on " + this);
 		}
-		this.stopInvoked = true;
+		stopInvoked = true;
 	}
 
 	@Override
 	public boolean isRunning() {
-		return this.startInvoked && !this.stopInvoked;
+		return startInvoked && !stopInvoked;
 	}
 
 	@Override
@@ -99,7 +98,7 @@ public class MessageListenerTestContainer implements MessageListenerContainer, I
 
 	@Override
 	public void stop(Runnable callback) {
-		this.stopInvoked = true;
+		stopInvoked = true;
 		callback.run();
 	}
 
@@ -128,31 +127,26 @@ public class MessageListenerTestContainer implements MessageListenerContainer, I
 	}
 
 	@Override
-	public QosSettings getReplyQosSettings() {
-		return null;
-	}
-
-	@Override
 	public void afterPropertiesSet() {
-		this.initializationInvoked = true;
+		initializationInvoked = true;
 	}
 
 	@Override
 	public void destroy() {
-		if (!this.stopInvoked) {
+		if (!stopInvoked) {
 			throw new IllegalStateException("Stop should have been invoked before " + "destroy on " + this);
 		}
-		this.destroyInvoked = true;
+		destroyInvoked = true;
 	}
 
 	@Override
 	public String toString() {
 		final StringBuilder sb = new StringBuilder("TestContainer{");
-		sb.append("endpoint=").append(this.endpoint);
-		sb.append(", startInvoked=").append(this.startInvoked);
-		sb.append(", initializationInvoked=").append(this.initializationInvoked);
-		sb.append(", stopInvoked=").append(this.stopInvoked);
-		sb.append(", destroyInvoked=").append(this.destroyInvoked);
+		sb.append("endpoint=").append(endpoint);
+		sb.append(", startInvoked=").append(startInvoked);
+		sb.append(", initializationInvoked=").append(initializationInvoked);
+		sb.append(", stopInvoked=").append(stopInvoked);
+		sb.append(", destroyInvoked=").append(destroyInvoked);
 		sb.append('}');
 		return sb.toString();
 	}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,12 @@
 
 package org.springframework.cache.config;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
-import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
+import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CachingConfigurer;
+import org.springframework.cache.CacheTestUtils;
+import org.springframework.cache.annotation.CachingConfigurerSupport;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.interceptor.CacheErrorHandler;
 import org.springframework.cache.interceptor.CacheInterceptor;
@@ -35,15 +35,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.testfixture.cache.AbstractCacheAnnotationTests;
-import org.springframework.context.testfixture.cache.CacheTestUtils;
-import org.springframework.context.testfixture.cache.SomeCustomKeyGenerator;
-import org.springframework.context.testfixture.cache.SomeKeyGenerator;
-import org.springframework.context.testfixture.cache.beans.AnnotatedClassCacheableService;
-import org.springframework.context.testfixture.cache.beans.CacheableService;
-import org.springframework.context.testfixture.cache.beans.DefaultCacheableService;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Integration tests for {@code @EnableCaching} and its related
@@ -52,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Chris Beams
  * @author Stephane Nicoll
  */
-class EnableCachingTests extends AbstractCacheAnnotationTests {
+public class EnableCachingTests extends AbstractCacheAnnotationTests {
 
 	/** hook into superclass suite of tests */
 	@Override
@@ -61,97 +54,96 @@ class EnableCachingTests extends AbstractCacheAnnotationTests {
 	}
 
 	@Test
-	void keyStrategy() {
+	public void testKeyStrategy() {
 		CacheInterceptor ci = this.ctx.getBean(CacheInterceptor.class);
-		assertThat(ci.getKeyGenerator()).isSameAs(this.ctx.getBean("keyGenerator", KeyGenerator.class));
+		assertSame(this.ctx.getBean("keyGenerator", KeyGenerator.class), ci.getKeyGenerator());
 	}
 
 	@Test
-	void cacheErrorHandler() {
+	public void testCacheErrorHandler() {
 		CacheInterceptor ci = this.ctx.getBean(CacheInterceptor.class);
-		assertThat(ci.getErrorHandler()).isSameAs(this.ctx.getBean("errorHandler", CacheErrorHandler.class));
+		assertSame(this.ctx.getBean("errorHandler", CacheErrorHandler.class), ci.getErrorHandler());
 	}
 
 	@Test
-	void singleCacheManagerBean() {
+	public void singleCacheManagerBean() throws Throwable {
 		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
 		ctx.register(SingleCacheManagerConfig.class);
 		ctx.refresh();
-		ctx.close();
 	}
 
-	@Test
-	void multipleCacheManagerBeans() {
-		@SuppressWarnings("resource")
+	@Test(expected = IllegalStateException.class)
+	public void multipleCacheManagerBeans() throws Throwable {
 		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
 		ctx.register(MultiCacheManagerConfig.class);
 		try {
 			ctx.refresh();
 		}
-		catch (IllegalStateException ex) {
-			assertThat(ex.getMessage().contains("no unique bean of type CacheManager")).isTrue();
-			assertThat(ex).hasCauseInstanceOf(NoUniqueBeanDefinitionException.class);
+		catch (BeanCreationException ex) {
+			Throwable root = ex.getRootCause();
+			assertTrue(root.getMessage().contains("beans of type CacheManager"));
+			throw root;
 		}
 	}
 
 	@Test
-	void multipleCacheManagerBeans_implementsCachingConfigurer() {
+	public void multipleCacheManagerBeans_implementsCachingConfigurer() {
 		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
 		ctx.register(MultiCacheManagerConfigurer.class);
 		ctx.refresh();  // does not throw an exception
-		ctx.close();
 	}
 
-	@Test
-	void multipleCachingConfigurers() {
-		@SuppressWarnings("resource")
+	@Test(expected = IllegalStateException.class)
+	public void multipleCachingConfigurers() throws Throwable {
 		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
 		ctx.register(MultiCacheManagerConfigurer.class, EnableCachingConfig.class);
 		try {
 			ctx.refresh();
 		}
-		catch (IllegalStateException ex) {
-			assertThat(ex.getMessage().contains("implementations of CachingConfigurer")).isTrue();
+		catch (BeanCreationException ex) {
+			Throwable root = ex.getRootCause();
+			assertTrue(root.getMessage().contains("implementations of CachingConfigurer"));
+			throw root;
 		}
 	}
 
-	@Test
-	void noCacheManagerBeans() {
-		@SuppressWarnings("resource")
+	@Test(expected = IllegalStateException.class)
+	public void noCacheManagerBeans() throws Throwable {
 		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
 		ctx.register(EmptyConfig.class);
 		try {
 			ctx.refresh();
 		}
-		catch (IllegalStateException ex) {
-			assertThat(ex.getMessage().contains("no bean of type CacheManager")).isTrue();
-			assertThat(ex).hasCauseInstanceOf(NoSuchBeanDefinitionException.class);
+		catch (BeanCreationException ex) {
+			Throwable root = ex.getRootCause();
+			assertTrue(root.getMessage().contains("No bean of type CacheManager"));
+			throw root;
 		}
 	}
 
 	@Test
-	void emptyConfigSupport() {
+	public void emptyConfigSupport() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(EmptyConfigSupportConfig.class);
 		CacheInterceptor ci = context.getBean(CacheInterceptor.class);
-		assertThat(ci.getCacheResolver()).isNotNull();
-		assertThat(ci.getCacheResolver().getClass()).isEqualTo(SimpleCacheResolver.class);
-		assertThat(((SimpleCacheResolver) ci.getCacheResolver()).getCacheManager()).isSameAs(context.getBean(CacheManager.class));
+		assertNotNull(ci.getCacheResolver());
+		assertEquals(SimpleCacheResolver.class, ci.getCacheResolver().getClass());
+		assertSame(context.getBean(CacheManager.class), ((SimpleCacheResolver)ci.getCacheResolver()).getCacheManager());
 		context.close();
 	}
 
 	@Test
-	void bothSetOnlyResolverIsUsed() {
+	public void bothSetOnlyResolverIsUsed() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(FullCachingConfig.class);
 		CacheInterceptor ci = context.getBean(CacheInterceptor.class);
-		assertThat(ci.getCacheResolver()).isSameAs(context.getBean("cacheResolver"));
-		assertThat(ci.getKeyGenerator()).isSameAs(context.getBean("keyGenerator"));
+		assertSame(context.getBean("cacheResolver"), ci.getCacheResolver());
+		assertSame(context.getBean("keyGenerator"), ci.getKeyGenerator());
 		context.close();
 	}
 
 
 	@Configuration
 	@EnableCaching
-	static class EnableCachingConfig implements CachingConfigurer {
+	static class EnableCachingConfig extends CachingConfigurerSupport {
 
 		@Override
 		@Bean
@@ -228,7 +220,7 @@ class EnableCachingTests extends AbstractCacheAnnotationTests {
 
 	@Configuration
 	@EnableCaching
-	static class MultiCacheManagerConfigurer implements CachingConfigurer {
+	static class MultiCacheManagerConfigurer extends CachingConfigurerSupport {
 
 		@Bean
 		public CacheManager cm1() {
@@ -254,7 +246,7 @@ class EnableCachingTests extends AbstractCacheAnnotationTests {
 
 	@Configuration
 	@EnableCaching
-	static class EmptyConfigSupportConfig implements CachingConfigurer {
+	static class EmptyConfigSupportConfig extends CachingConfigurerSupport {
 
 		@Bean
 		public CacheManager cm() {
@@ -265,7 +257,7 @@ class EnableCachingTests extends AbstractCacheAnnotationTests {
 
 	@Configuration
 	@EnableCaching
-	static class FullCachingConfig implements CachingConfigurer {
+	static class FullCachingConfig extends CachingConfigurerSupport {
 
 		@Override
 		@Bean

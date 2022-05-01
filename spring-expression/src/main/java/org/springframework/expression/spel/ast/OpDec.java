@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,7 +34,6 @@ import org.springframework.util.Assert;
  * @author Andy Clement
  * @author Juergen Hoeller
  * @author Giovanni Dall'Oglio Risso
- * @author Sam Brannen
  * @since 3.2
  */
 public class OpDec extends Operator {
@@ -42,8 +41,8 @@ public class OpDec extends Operator {
 	private final boolean postfix;  // false means prefix
 
 
-	public OpDec(int startPos, int endPos, boolean postfix, SpelNodeImpl... operands) {
-		super("--", startPos, endPos, operands);
+	public OpDec(int pos, boolean postfix, SpelNodeImpl... operands) {
+		super("--", pos, operands);
 		this.postfix = postfix;
 		Assert.notEmpty(operands, "Operands must not be empty");
 	}
@@ -61,9 +60,10 @@ public class OpDec extends Operator {
 		TypedValue returnValue = operandTypedValue;
 		TypedValue newValue = null;
 
-		if (operandValue instanceof Number op1) {
-			if (op1 instanceof BigDecimal bigDecimal) {
-				newValue = new TypedValue(bigDecimal.subtract(BigDecimal.ONE), operandTypedValue.getTypeDescriptor());
+		if (operandValue instanceof Number) {
+			Number op1 = (Number) operandValue;
+			if (op1 instanceof BigDecimal) {
+				newValue = new TypedValue(((BigDecimal) op1).subtract(BigDecimal.ONE), operandTypedValue.getTypeDescriptor());
 			}
 			else if (op1 instanceof Double) {
 				newValue = new TypedValue(op1.doubleValue() - 1.0d, operandTypedValue.getTypeDescriptor());
@@ -71,8 +71,8 @@ public class OpDec extends Operator {
 			else if (op1 instanceof Float) {
 				newValue = new TypedValue(op1.floatValue() - 1.0f, operandTypedValue.getTypeDescriptor());
 			}
-			else if (op1 instanceof BigInteger bigInteger) {
-				newValue = new TypedValue(bigInteger.subtract(BigInteger.ONE), operandTypedValue.getTypeDescriptor());
+			else if (op1 instanceof BigInteger) {
+				newValue = new TypedValue(((BigInteger) op1).subtract(BigInteger.ONE), operandTypedValue.getTypeDescriptor());
 			}
 			else if (op1 instanceof Long) {
 				newValue = new TypedValue(op1.longValue() - 1L, operandTypedValue.getTypeDescriptor());
@@ -138,7 +138,7 @@ public class OpDec extends Operator {
 
 	@Override
 	public SpelNodeImpl getRightOperand() {
-		throw new IllegalStateException("No right operand");
+		return null;
 	}
 
 }

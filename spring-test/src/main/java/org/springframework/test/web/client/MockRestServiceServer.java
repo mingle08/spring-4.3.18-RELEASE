@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,15 +18,16 @@ package org.springframework.test.web.client;
 
 import java.io.IOException;
 import java.net.URI;
-import java.time.Duration;
 
 import org.springframework.http.HttpMethod;
-import org.springframework.http.client.BufferingClientHttpRequestFactory;
+import org.springframework.http.client.AsyncClientHttpRequest;
+import org.springframework.http.client.AsyncClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.mock.http.client.MockClientHttpRequest;
+import org.springframework.mock.http.client.MockAsyncClientHttpRequest;
 import org.springframework.util.Assert;
+import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.support.RestGatewaySupport;
 
@@ -64,7 +65,7 @@ import org.springframework.web.client.support.RestGatewaySupport;
  * @author Rossen Stoyanchev
  * @since 3.2
  */
-public final class MockRestServiceServer {
+public class MockRestServiceServer {
 
 	private final RequestExpectationManager expectationManager;
 
@@ -110,23 +111,10 @@ public final class MockRestServiceServer {
 	/**
 	 * Verify that all expected requests set up via
 	 * {@link #expect(RequestMatcher)} were indeed performed.
-	 * @throws AssertionError if not all expectations are met
+	 * @throws AssertionError when some expectations were not met
 	 */
 	public void verify() {
 		this.expectationManager.verify();
-	}
-
-	/**
-	 * Variant of {@link #verify()} that waits for up to the specified time for
-	 * all expectations to be fulfilled. This can be useful for tests that
-	 * involve asynchronous requests.
-	 * @param timeout how long to wait for all expecations to be met
-	 * @throws AssertionError if not all expectations are met by the specified
-	 * timeout, or if any expectation fails at any time before that.
-	 * @since 5.3.4
-	 */
-	public void verify(Duration timeout) {
-		this.expectationManager.verify(timeout);
 	}
 
 	/**
@@ -148,12 +136,21 @@ public final class MockRestServiceServer {
 
 	/**
 	 * Return a builder for a {@code MockRestServiceServer} that should be used
+	 * to reply to the given {@code AsyncRestTemplate}.
+	 * @since 4.3
+	 */
+	public static MockRestServiceServerBuilder bindTo(AsyncRestTemplate asyncRestTemplate) {
+		return new DefaultBuilder(asyncRestTemplate);
+	}
+
+	/**
+	 * Return a builder for a {@code MockRestServiceServer} that should be used
 	 * to reply to the given {@code RestGatewaySupport}.
 	 * @since 4.3
 	 */
-	public static MockRestServiceServerBuilder bindTo(RestGatewaySupport restGatewaySupport) {
-		Assert.notNull(restGatewaySupport, "'restGatewaySupport' must not be null");
-		return new DefaultBuilder(restGatewaySupport.getRestTemplate());
+	public static MockRestServiceServerBuilder bindTo(RestGatewaySupport restGateway) {
+		Assert.notNull(restGateway, "'gatewaySupport' must not be null");
+		return new DefaultBuilder(restGateway.getRestTemplate());
 	}
 
 
@@ -164,6 +161,15 @@ public final class MockRestServiceServer {
 	 */
 	public static MockRestServiceServer createServer(RestTemplate restTemplate) {
 		return bindTo(restTemplate).build();
+	}
+
+	/**
+	 * A shortcut for {@code bindTo(asyncRestTemplate).build()}.
+	 * @param asyncRestTemplate the AsyncRestTemplate to set up for mock testing
+	 * @return the created mock server
+	 */
+	public static MockRestServiceServer createServer(AsyncRestTemplate asyncRestTemplate) {
+		return bindTo(asyncRestTemplate).build();
 	}
 
 	/**
@@ -184,25 +190,16 @@ public final class MockRestServiceServer {
 		/**
 		 * Whether to allow expected requests to be executed in any order not
 		 * necessarily matching the order of declaration.
-		 * <p>Effectively a shortcut for:<br>
+		 * <p>When set to "true" this is effectively a shortcut for:<br>
 		 * {@code builder.build(new UnorderedRequestExpectationManager)}.
-		 * <p>By default this is set to {@code false}
 		 * @param ignoreExpectOrder whether to ignore the order of expectations
 		 */
 		MockRestServiceServerBuilder ignoreExpectOrder(boolean ignoreExpectOrder);
 
 		/**
-		 * Use the {@link BufferingClientHttpRequestFactory} wrapper to buffer
-		 * the input and output streams, and for example, allow multiple reads
-		 * of the response body.
-		 * @since 5.0.5
-		 */
-		MockRestServiceServerBuilder bufferContent();
-
-		/**
 		 * Build the {@code MockRestServiceServer} and set up the underlying
-		 * {@code RestTemplate} with a {@link ClientHttpRequestFactory} that
-		 * creates mock requests.
+		 * {@code RestTemplate} or {@code AsyncRestTemplate} with a
+		 * {@link ClientHttpRequestFactory} that creates mock requests.
 		 */
 		MockRestServiceServer build();
 
@@ -218,25 +215,25 @@ public final class MockRestServiceServer {
 
 		private final RestTemplate restTemplate;
 
+		private final AsyncRestTemplate asyncRestTemplate;
+
 		private boolean ignoreExpectOrder;
-
-		private boolean bufferContent;
-
 
 		public DefaultBuilder(RestTemplate restTemplate) {
 			Assert.notNull(restTemplate, "RestTemplate must not be null");
 			this.restTemplate = restTemplate;
+			this.asyncRestTemplate = null;
+		}
+
+		public DefaultBuilder(AsyncRestTemplate asyncRestTemplate) {
+			Assert.notNull(asyncRestTemplate, "AsyncRestTemplate must not be null");
+			this.restTemplate = null;
+			this.asyncRestTemplate = asyncRestTemplate;
 		}
 
 		@Override
 		public MockRestServiceServerBuilder ignoreExpectOrder(boolean ignoreExpectOrder) {
 			this.ignoreExpectOrder = ignoreExpectOrder;
-			return this;
-		}
-
-		@Override
-		public MockRestServiceServerBuilder bufferContent() {
-			this.bufferContent = true;
 			return this;
 		}
 
@@ -254,11 +251,11 @@ public final class MockRestServiceServer {
 		public MockRestServiceServer build(RequestExpectationManager manager) {
 			MockRestServiceServer server = new MockRestServiceServer(manager);
 			MockClientHttpRequestFactory factory = server.new MockClientHttpRequestFactory();
-			if (this.bufferContent) {
-				this.restTemplate.setRequestFactory(new BufferingClientHttpRequestFactory(factory));
-			}
-			else {
+			if (this.restTemplate != null) {
 				this.restTemplate.setRequestFactory(factory);
+			}
+			if (this.asyncRestTemplate != null) {
+				this.asyncRestTemplate.setAsyncRequestFactory(factory);
 			}
 			return server;
 		}
@@ -269,18 +266,23 @@ public final class MockRestServiceServer {
 	 * Mock ClientHttpRequestFactory that creates requests by iterating
 	 * over the list of expected {@link DefaultRequestExpectation}'s.
 	 */
-	private class MockClientHttpRequestFactory implements ClientHttpRequestFactory {
+	private class MockClientHttpRequestFactory implements ClientHttpRequestFactory, AsyncClientHttpRequestFactory {
 
 		@Override
 		public ClientHttpRequest createRequest(URI uri, HttpMethod httpMethod) {
 			return createRequestInternal(uri, httpMethod);
 		}
 
-		private MockClientHttpRequest createRequestInternal(URI uri, HttpMethod httpMethod) {
-			Assert.notNull(uri, "'uri' must not be null");
-			Assert.notNull(httpMethod, "'httpMethod' must not be null");
+		@Override
+		public AsyncClientHttpRequest createAsyncRequest(URI uri, HttpMethod httpMethod) {
+			return createRequestInternal(uri, httpMethod);
+		}
 
-			return new MockClientHttpRequest(httpMethod, uri) {
+		private MockAsyncClientHttpRequest createRequestInternal(URI uri, HttpMethod method) {
+			Assert.notNull(uri, "'uri' must not be null");
+			Assert.notNull(method, "'httpMethod' must not be null");
+
+			return new MockAsyncClientHttpRequest(method, uri) {
 
 				@Override
 				protected ClientHttpResponse executeInternal() throws IOException {

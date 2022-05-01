@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -72,8 +72,8 @@ public interface ContextLoader {
 	 * contexts} loaded by this ContextLoader. Beans will therefore automatically
 	 * be candidates for annotation-based dependency injection using
 	 * {@link org.springframework.beans.factory.annotation.Autowired @Autowired},
-	 * {@link jakarta.annotation.Resource @Resource}, and
-	 * {@link jakarta.inject.Inject @Inject}.
+	 * {@link javax.annotation.Resource @Resource}, and
+	 * {@link javax.inject.Inject @Inject}.
 	 * <p>Any ApplicationContext loaded by a ContextLoader <strong>must</strong>
 	 * register a JVM shutdown hook for itself. Unless the context gets closed
 	 * early, all context instances will be automatically closed on JVM

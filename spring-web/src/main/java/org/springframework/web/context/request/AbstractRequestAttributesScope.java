@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.web.context.request;
 
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.config.Scope;
-import org.springframework.lang.Nullable;
 
 /**
  * Abstract {@link Scope} implementation that reads from a particular scope
@@ -57,7 +56,6 @@ public abstract class AbstractRequestAttributesScope implements Scope {
 	}
 
 	@Override
-	@Nullable
 	public Object remove(String name) {
 		RequestAttributes attributes = RequestContextHolder.currentRequestAttributes();
 		Object scopedObject = attributes.getAttribute(name, getScope());
@@ -77,7 +75,6 @@ public abstract class AbstractRequestAttributesScope implements Scope {
 	}
 
 	@Override
-	@Nullable
 	public Object resolveContextualObject(String key) {
 		RequestAttributes attributes = RequestContextHolder.currentRequestAttributes();
 		return attributes.resolveReference(key);
@@ -90,6 +87,7 @@ public abstract class AbstractRequestAttributesScope implements Scope {
 	 * {@link RequestAttributes} constant
 	 * @see RequestAttributes#SCOPE_REQUEST
 	 * @see RequestAttributes#SCOPE_SESSION
+	 * @see RequestAttributes#SCOPE_GLOBAL_SESSION
 	 */
 	protected abstract int getScope();
 

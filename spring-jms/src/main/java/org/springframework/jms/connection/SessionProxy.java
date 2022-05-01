@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,17 +16,17 @@
 
 package org.springframework.jms.connection;
 
-import jakarta.jms.Session;
+import javax.jms.Session;
 
 /**
- * Subinterface of {@link jakarta.jms.Session} to be implemented by
+ * Subinterface of {@link javax.jms.Session} to be implemented by
  * Session proxies. Allows access to the underlying target Session.
  *
  * @author Juergen Hoeller
  * @since 2.0.4
  * @see TransactionAwareConnectionFactoryProxy
  * @see CachingConnectionFactory
- * @see ConnectionFactoryUtils#getTargetSession(jakarta.jms.Session)
+ * @see ConnectionFactoryUtils#getTargetSession(javax.jms.Session)
  */
 public interface SessionProxy extends Session {
 

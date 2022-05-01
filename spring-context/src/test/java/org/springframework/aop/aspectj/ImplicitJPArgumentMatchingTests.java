@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.aop.aspectj;
 
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -28,11 +27,10 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  * @author Ramnivas Laddad
  * @author Chris Beams
  */
-class ImplicitJPArgumentMatchingTests {
+public final class ImplicitJPArgumentMatchingTests {
 
 	@Test
-	@SuppressWarnings("resource")
-	void testAspect() {
+	public void testAspect() {
 		// nothing to really test; it is enough if we don't get error while creating app context
 		new ClassPathXmlApplicationContext(getClass().getSimpleName() + ".xml", getClass());
 	}

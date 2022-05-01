@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,15 +22,14 @@ import java.util.Collection;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
-import org.springframework.beans.testfixture.beans.Employee;
-import org.springframework.beans.testfixture.beans.TestBean;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.tests.sample.beans.Employee;
+import org.springframework.tests.sample.beans.TestBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Tests ensuring that after-returning advice for generic parameters bound to
@@ -41,18 +40,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Ramnivas Laddad
  * @author Chris Beams
  */
-class AfterReturningGenericTypeMatchingTests {
-
-	private ClassPathXmlApplicationContext ctx;
+public final class AfterReturningGenericTypeMatchingTests {
 
 	private GenericReturnTypeVariationClass testBean;
 
 	private CounterAspect counterAspect;
 
 
-	@BeforeEach
-	void setup() {
-		this.ctx = new ClassPathXmlApplicationContext(getClass().getSimpleName() + "-context.xml", getClass());
+	@Before
+	public void setUp() {
+		ClassPathXmlApplicationContext ctx =
+			new ClassPathXmlApplicationContext(getClass().getSimpleName() + "-context.xml", getClass());
 
 		counterAspect = (CounterAspect) ctx.getBean("counterAspect");
 		counterAspect.reset();
@@ -60,51 +58,45 @@ class AfterReturningGenericTypeMatchingTests {
 		testBean = (GenericReturnTypeVariationClass) ctx.getBean("testBean");
 	}
 
-	@AfterEach
-	void tearDown() {
-		this.ctx.close();
-	}
-
-
 	@Test
-	void returnTypeExactMatching() {
+	public void testReturnTypeExactMatching() {
 		testBean.getStrings();
-		assertThat(counterAspect.getStringsInvocationsCount).isEqualTo(1);
-		assertThat(counterAspect.getIntegersInvocationsCount).isEqualTo(0);
+		assertEquals(1, counterAspect.getStringsInvocationsCount);
+		assertEquals(0, counterAspect.getIntegersInvocationsCount);
 
 		counterAspect.reset();
 
 		testBean.getIntegers();
-		assertThat(counterAspect.getStringsInvocationsCount).isEqualTo(0);
-		assertThat(counterAspect.getIntegersInvocationsCount).isEqualTo(1);
+		assertEquals(0, counterAspect.getStringsInvocationsCount);
+		assertEquals(1, counterAspect.getIntegersInvocationsCount);
 	}
 
 	@Test
-	void returnTypeRawMatching() {
+	public void testReturnTypeRawMatching() {
 		testBean.getStrings();
-		assertThat(counterAspect.getRawsInvocationsCount).isEqualTo(1);
+		assertEquals(1, counterAspect.getRawsInvocationsCount);
 
 		counterAspect.reset();
 
 		testBean.getIntegers();
-		assertThat(counterAspect.getRawsInvocationsCount).isEqualTo(1);
+		assertEquals(1, counterAspect.getRawsInvocationsCount);
 	}
 
 	@Test
-	void returnTypeUpperBoundMatching() {
+	public void testReturnTypeUpperBoundMatching() {
 		testBean.getIntegers();
-		assertThat(counterAspect.getNumbersInvocationsCount).isEqualTo(1);
+		assertEquals(1, counterAspect.getNumbersInvocationsCount);
 	}
 
 	@Test
-	void returnTypeLowerBoundMatching() {
+	public void testReturnTypeLowerBoundMatching() {
 		testBean.getTestBeans();
-		assertThat(counterAspect.getTestBeanInvocationsCount).isEqualTo(1);
+		assertEquals(1, counterAspect.getTestBeanInvocationsCount);
 
 		counterAspect.reset();
 
 		testBean.getEmployees();
-		assertThat(counterAspect.getTestBeanInvocationsCount).isEqualTo(0);
+		assertEquals(0, counterAspect.getTestBeanInvocationsCount);
 	}
 
 }
@@ -113,19 +105,19 @@ class AfterReturningGenericTypeMatchingTests {
 class GenericReturnTypeVariationClass {
 
 	public Collection<String> getStrings() {
-		return new ArrayList<>();
+		return new ArrayList<String>();
 	}
 
 	public Collection<Integer> getIntegers() {
-		return new ArrayList<>();
+		return new ArrayList<Integer>();
 	}
 
 	public Collection<TestBean> getTestBeans() {
-		return new ArrayList<>();
+		return new ArrayList<TestBean>();
 	}
 
 	public Collection<Employee> getEmployees() {
-		return new ArrayList<>();
+		return new ArrayList<Employee>();
 	}
 }
 

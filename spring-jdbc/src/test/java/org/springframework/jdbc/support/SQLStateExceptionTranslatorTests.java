@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,11 +18,11 @@ package org.springframework.jdbc.support;
 
 import java.sql.SQLException;
 
-import org.junit.jupiter.api.Test;
-
+import org.junit.Test;
 import org.springframework.jdbc.BadSqlGrammarException;
+import org.springframework.jdbc.UncategorizedSQLException;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Rod Johnson
@@ -45,15 +45,22 @@ public class SQLStateExceptionTranslatorTests {
 		}
 		catch (BadSqlGrammarException ex) {
 			// OK
-			assertThat(sql.equals(ex.getSql())).as("SQL is correct").isTrue();
-			assertThat(sex.equals(ex.getSQLException())).as("Exception matches").isTrue();
+			assertTrue("SQL is correct", sql.equals(ex.getSql()));
+			assertTrue("Exception matches", sex.equals(ex.getSQLException()));
 		}
 	}
 
 	@Test
 	public void invalidSqlStateCode() {
 		SQLException sex = new SQLException("Message", "NO SUCH CODE", 1);
-		assertThat(this.trans.translate("task", sql, sex)).isNull();
+		try {
+			throw this.trans.translate("task", sql, sex);
+		}
+		catch (UncategorizedSQLException ex) {
+			// OK
+			assertTrue("SQL is correct", sql.equals(ex.getSql()));
+			assertTrue("Exception matches", sex.equals(ex.getSQLException()));
+		}
 	}
 
 	/**
@@ -64,14 +71,26 @@ public class SQLStateExceptionTranslatorTests {
 	@Test
 	public void malformedSqlStateCodes() {
 		SQLException sex = new SQLException("Message", null, 1);
-		assertThat(this.trans.translate("task", sql, sex)).isNull();
+		testMalformedSqlStateCode(sex);
 
 		sex = new SQLException("Message", "", 1);
-		assertThat(this.trans.translate("task", sql, sex)).isNull();
+		testMalformedSqlStateCode(sex);
 
 		// One char's not allowed
 		sex = new SQLException("Message", "I", 1);
-		assertThat(this.trans.translate("task", sql, sex)).isNull();
+		testMalformedSqlStateCode(sex);
+	}
+
+
+	private void testMalformedSqlStateCode(SQLException sex) {
+		try {
+			throw this.trans.translate("task", sql, sex);
+		}
+		catch (UncategorizedSQLException ex) {
+			// OK
+			assertTrue("SQL is correct", sql.equals(ex.getSql()));
+			assertTrue("Exception matches", sex.equals(ex.getSQLException()));
+		}
 	}
 
 }

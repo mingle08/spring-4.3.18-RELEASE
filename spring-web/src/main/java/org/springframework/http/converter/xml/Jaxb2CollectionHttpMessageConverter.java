@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,18 +25,17 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.UnmarshalException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlType;
 import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLResolver;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.Result;
 import javax.xml.transform.Source;
-
-import jakarta.xml.bind.JAXBException;
-import jakarta.xml.bind.UnmarshalException;
-import jakarta.xml.bind.Unmarshaller;
-import jakarta.xml.bind.annotation.XmlRootElement;
-import jakarta.xml.bind.annotation.XmlType;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
@@ -46,9 +45,7 @@ import org.springframework.http.converter.GenericHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConversionException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
-import org.springframework.lang.Nullable;
-import org.springframework.util.ReflectionUtils;
-import org.springframework.util.xml.StaxUtils;
+import org.springframework.util.StreamUtils;
 
 /**
  * An {@code HttpMessageConverter} that can read XML collections using JAXB2.
@@ -59,9 +56,7 @@ import org.springframework.util.xml.StaxUtils;
  *
  * @author Arjen Poutsma
  * @author Rossen Stoyanchev
- * @author Sam Brannen
  * @since 3.2
- * @param <T> the converted object type
  */
 @SuppressWarnings("rawtypes")
 public class Jaxb2CollectionHttpMessageConverter<T extends Collection>
@@ -75,7 +70,7 @@ public class Jaxb2CollectionHttpMessageConverter<T extends Collection>
 	 * required generic type information in order to read a Collection.
 	 */
 	@Override
-	public boolean canRead(Class<?> clazz, @Nullable MediaType mediaType) {
+	public boolean canRead(Class<?> clazz, MediaType mediaType) {
 		return false;
 	}
 
@@ -86,13 +81,15 @@ public class Jaxb2CollectionHttpMessageConverter<T extends Collection>
 	 * {@link XmlRootElement} or {@link XmlType}.
 	 */
 	@Override
-	public boolean canRead(Type type, @Nullable Class<?> contextClass, @Nullable MediaType mediaType) {
-		if (!(type instanceof ParameterizedType parameterizedType)) {
+	public boolean canRead(Type type, Class<?> contextClass, MediaType mediaType) {
+		if (!(type instanceof ParameterizedType)) {
 			return false;
 		}
-		if (!(parameterizedType.getRawType() instanceof Class<?> rawType)) {
+		ParameterizedType parameterizedType = (ParameterizedType) type;
+		if (!(parameterizedType.getRawType() instanceof Class)) {
 			return false;
 		}
+		Class<?> rawType = (Class<?>) parameterizedType.getRawType();
 		if (!(Collection.class.isAssignableFrom(rawType))) {
 			return false;
 		}
@@ -100,9 +97,10 @@ public class Jaxb2CollectionHttpMessageConverter<T extends Collection>
 			return false;
 		}
 		Type typeArgument = parameterizedType.getActualTypeArguments()[0];
-		if (!(typeArgument instanceof Class<?> typeArgumentClass)) {
+		if (!(typeArgument instanceof Class)) {
 			return false;
 		}
+		Class<?> typeArgumentClass = (Class<?>) typeArgument;
 		return (typeArgumentClass.isAnnotationPresent(XmlRootElement.class) ||
 				typeArgumentClass.isAnnotationPresent(XmlType.class)) && canRead(mediaType);
 	}
@@ -112,7 +110,7 @@ public class Jaxb2CollectionHttpMessageConverter<T extends Collection>
 	 * does not convert collections to XML.
 	 */
 	@Override
-	public boolean canWrite(Class<?> clazz, @Nullable MediaType mediaType) {
+	public boolean canWrite(Class<?> clazz, MediaType mediaType) {
 		return false;
 	}
 
@@ -121,7 +119,7 @@ public class Jaxb2CollectionHttpMessageConverter<T extends Collection>
 	 * does not convert collections to XML.
 	 */
 	@Override
-	public boolean canWrite(@Nullable Type type, @Nullable Class<?> clazz, @Nullable MediaType mediaType) {
+	public boolean canWrite(Type type, Class<?> clazz, MediaType mediaType) {
 		return false;
 	}
 
@@ -132,14 +130,14 @@ public class Jaxb2CollectionHttpMessageConverter<T extends Collection>
 	}
 
 	@Override
-	protected T readFromSource(Class<? extends T> clazz, HttpHeaders headers, Source source) throws Exception {
+	protected T readFromSource(Class<? extends T> clazz, HttpHeaders headers, Source source) throws IOException {
 		// should not be called, since we return false for canRead(Class)
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public T read(Type type, @Nullable Class<?> contextClass, HttpInputMessage inputMessage)
+	public T read(Type type, Class<?> contextClass, HttpInputMessage inputMessage)
 			throws IOException, HttpMessageNotReadableException {
 
 		ParameterizedType parameterizedType = (ParameterizedType) type;
@@ -160,23 +158,21 @@ public class Jaxb2CollectionHttpMessageConverter<T extends Collection>
 				}
 				else {
 					// should not happen, since we check in canRead(Type)
-					throw new HttpMessageNotReadableException(
-							"Cannot unmarshal to [" + elementClass + "]", inputMessage);
+					throw new HttpMessageConversionException("Could not unmarshal to [" + elementClass + "]");
 				}
 				event = moveToNextElement(streamReader);
 			}
 			return result;
 		}
-		catch (XMLStreamException ex) {
-			throw new HttpMessageNotReadableException(
-					"Failed to read XML stream: " + ex.getMessage(), ex, inputMessage);
-		}
 		catch (UnmarshalException ex) {
 			throw new HttpMessageNotReadableException(
-					"Could not unmarshal to [" + elementClass + "]: " + ex.getMessage(), ex, inputMessage);
+					"Could not unmarshal to [" + elementClass + "]: " + ex.getMessage(), ex);
 		}
 		catch (JAXBException ex) {
-			throw new HttpMessageConversionException("Invalid JAXB setup: " + ex.getMessage(), ex);
+			throw new HttpMessageConversionException("Could not instantiate JAXBContext: " + ex.getMessage(), ex);
+		}
+		catch (XMLStreamException ex) {
+			throw new HttpMessageConversionException(ex.getMessage(), ex);
 		}
 	}
 
@@ -190,7 +186,7 @@ public class Jaxb2CollectionHttpMessageConverter<T extends Collection>
 	protected T createCollection(Class<?> collectionClass) {
 		if (!collectionClass.isInterface()) {
 			try {
-				return (T) ReflectionUtils.accessibleConstructor(collectionClass).newInstance();
+				return (T) collectionClass.newInstance();
 			}
 			catch (Throwable ex) {
 				throw new IllegalArgumentException(
@@ -232,27 +228,37 @@ public class Jaxb2CollectionHttpMessageConverter<T extends Collection>
 	}
 
 	@Override
-	public void write(T t, @Nullable Type type, @Nullable MediaType contentType, HttpOutputMessage outputMessage)
+	public void write(T t, Type type, MediaType contentType, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
 
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	protected void writeToResult(T t, HttpHeaders headers, Result result) throws Exception {
+	protected void writeToResult(T t, HttpHeaders headers, Result result) throws IOException {
 		throw new UnsupportedOperationException();
 	}
 
 	/**
-	 * Create an {@code XMLInputFactory} that this converter will use to create
-	 * {@link javax.xml.stream.XMLStreamReader} and {@link javax.xml.stream.XMLEventReader}
-	 * objects.
+	 * Create a {@code XMLInputFactory} that this converter will use to create {@link
+	 * javax.xml.stream.XMLStreamReader} and {@link javax.xml.stream.XMLEventReader} objects.
 	 * <p>Can be overridden in subclasses, adding further initialization of the factory.
 	 * The resulting factory is cached, so this method will only be called once.
-	 * @see StaxUtils#createDefensiveInputFactory()
 	 */
 	protected XMLInputFactory createXmlInputFactory() {
-		return StaxUtils.createDefensiveInputFactory();
+		XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+		inputFactory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+		inputFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
+		inputFactory.setXMLResolver(NO_OP_XML_RESOLVER);
+		return inputFactory;
 	}
+
+
+	private static final XMLResolver NO_OP_XML_RESOLVER = new XMLResolver() {
+		@Override
+		public Object resolveEntity(String publicID, String systemID, String base, String ns) {
+			return StreamUtils.emptyInput();
+		}
+	};
 
 }

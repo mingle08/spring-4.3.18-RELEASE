@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,16 +18,16 @@ package org.springframework.orm.jpa;
 
 import java.util.Map;
 import java.util.Properties;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.spi.PersistenceProvider;
+import javax.persistence.spi.PersistenceUnitInfo;
+import javax.persistence.spi.ProviderUtil;
 
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.spi.PersistenceProvider;
-import jakarta.persistence.spi.PersistenceUnitInfo;
-import jakarta.persistence.spi.ProviderUtil;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Rod Johnson
@@ -42,7 +42,7 @@ public class LocalEntityManagerFactoryBeanTests extends AbstractEntityManagerFac
 
 	private static Map actualProps;
 
-	@AfterEach
+	@After
 	public void verifyClosed() throws Exception {
 		verify(mockEmf).close();
 	}
@@ -72,9 +72,9 @@ public class LocalEntityManagerFactoryBeanTests extends AbstractEntityManagerFac
 		}
 		lemfb.afterPropertiesSet();
 
-		assertThat(actualName).isSameAs(entityManagerName);
+		assertSame(entityManagerName, actualName);
 		if (props != null) {
-			assertThat((Object) actualProps).isEqualTo(props);
+			assertEquals(props, actualProps);
 		}
 		checkInvariants(lemfb);
 
@@ -102,13 +102,11 @@ public class LocalEntityManagerFactoryBeanTests extends AbstractEntityManagerFac
 		}
 
 		// JPA 2.1 method
-		@Override
 		public void generateSchema(PersistenceUnitInfo persistenceUnitInfo, Map map) {
 			throw new UnsupportedOperationException();
 		}
 
 		// JPA 2.1 method
-		@Override
 		public boolean generateSchema(String persistenceUnitName, Map map) {
 			throw new UnsupportedOperationException();
 		}

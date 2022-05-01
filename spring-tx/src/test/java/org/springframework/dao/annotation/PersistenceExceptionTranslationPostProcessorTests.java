@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,14 @@
 
 package org.springframework.dao.annotation;
 
-import jakarta.persistence.PersistenceException;
+import javax.persistence.PersistenceException;
+
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
+import org.springframework.aop.Advisor;
 import org.springframework.aop.aspectj.annotation.AnnotationAwareAspectJAutoProxyCreator;
 import org.springframework.aop.framework.Advised;
 import org.springframework.aop.support.AopUtils;
@@ -36,8 +38,7 @@ import org.springframework.dao.annotation.PersistenceExceptionTranslationAdvisor
 import org.springframework.dao.support.PersistenceExceptionTranslator;
 import org.springframework.stereotype.Repository;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
  * @author Rod Johnson
@@ -65,26 +66,35 @@ public class PersistenceExceptionTranslationPostProcessorTests {
 		gac.refresh();
 
 		RepositoryInterface shouldNotBeProxied = (RepositoryInterface) gac.getBean("notProxied");
-		assertThat(AopUtils.isAopProxy(shouldNotBeProxied)).isFalse();
+		assertFalse(AopUtils.isAopProxy(shouldNotBeProxied));
 		RepositoryInterface shouldBeProxied = (RepositoryInterface) gac.getBean("proxied");
-		assertThat(AopUtils.isAopProxy(shouldBeProxied)).isTrue();
+		assertTrue(AopUtils.isAopProxy(shouldBeProxied));
 		RepositoryWithoutInterface rwi = (RepositoryWithoutInterface) gac.getBean("classProxied");
-		assertThat(AopUtils.isAopProxy(rwi)).isTrue();
+		assertTrue(AopUtils.isAopProxy(rwi));
 		checkWillTranslateExceptions(rwi);
 
 		Additional rwi2 = (Additional) gac.getBean("classProxiedAndAdvised");
-		assertThat(AopUtils.isAopProxy(rwi2)).isTrue();
+		assertTrue(AopUtils.isAopProxy(rwi2));
 		rwi2.additionalMethod(false);
 		checkWillTranslateExceptions(rwi2);
-		assertThatExceptionOfType(DataAccessResourceFailureException.class).isThrownBy(() ->
-				rwi2.additionalMethod(true))
-			.withMessage("my failure");
+		try {
+			rwi2.additionalMethod(true);
+			fail("Should have thrown DataAccessResourceFailureException");
+		}
+		catch (DataAccessResourceFailureException ex) {
+			assertEquals("my failure", ex.getMessage());
+		}
 	}
 
 	protected void checkWillTranslateExceptions(Object o) {
-		assertThat(o).isInstanceOf(Advised.class);
-		assertThat(((Advised) o).getAdvisors()).anyMatch(
-				PersistenceExceptionTranslationAdvisor.class::isInstance);
+		assertTrue(o instanceof Advised);
+		Advised a = (Advised) o;
+		for (Advisor advisor : a.getAdvisors()) {
+			if (advisor instanceof PersistenceExceptionTranslationAdvisor) {
+				return;
+			}
+		}
+		fail("No translation");
 	}
 
 

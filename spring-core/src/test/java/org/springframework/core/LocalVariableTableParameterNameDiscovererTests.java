@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,205 +22,205 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Date;
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import org.springframework.tests.sample.objects.TestObject;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Adrian Colyer
  */
-class LocalVariableTableParameterNameDiscovererTests {
+public class LocalVariableTableParameterNameDiscovererTests {
 
 	private final LocalVariableTableParameterNameDiscoverer discoverer = new LocalVariableTableParameterNameDiscoverer();
 
 
 	@Test
-	void methodParameterNameDiscoveryNoArgs() throws NoSuchMethodException {
+	public void methodParameterNameDiscoveryNoArgs() throws NoSuchMethodException {
 		Method getName = TestObject.class.getMethod("getName");
 		String[] names = discoverer.getParameterNames(getName);
-		assertThat(names).as("should find method info").isNotNull();
-		assertThat(names.length).as("no argument names").isEqualTo(0);
+		assertNotNull("should find method info", names);
+		assertEquals("no argument names", 0, names.length);
 	}
 
 	@Test
-	void methodParameterNameDiscoveryWithArgs() throws NoSuchMethodException {
+	public void methodParameterNameDiscoveryWithArgs() throws NoSuchMethodException {
 		Method setName = TestObject.class.getMethod("setName", String.class);
 		String[] names = discoverer.getParameterNames(setName);
-		assertThat(names).as("should find method info").isNotNull();
-		assertThat(names.length).as("one argument").isEqualTo(1);
-		assertThat(names[0]).isEqualTo("name");
+		assertNotNull("should find method info", names);
+		assertEquals("one argument", 1, names.length);
+		assertEquals("name", names[0]);
 	}
 
 	@Test
-	void consParameterNameDiscoveryNoArgs() throws NoSuchMethodException {
+	public void consParameterNameDiscoveryNoArgs() throws NoSuchMethodException {
 		Constructor<TestObject> noArgsCons = TestObject.class.getConstructor();
 		String[] names = discoverer.getParameterNames(noArgsCons);
-		assertThat(names).as("should find cons info").isNotNull();
-		assertThat(names.length).as("no argument names").isEqualTo(0);
+		assertNotNull("should find cons info", names);
+		assertEquals("no argument names", 0, names.length);
 	}
 
 	@Test
-	void consParameterNameDiscoveryArgs() throws NoSuchMethodException {
+	public void consParameterNameDiscoveryArgs() throws NoSuchMethodException {
 		Constructor<TestObject> twoArgCons = TestObject.class.getConstructor(String.class, int.class);
 		String[] names = discoverer.getParameterNames(twoArgCons);
-		assertThat(names).as("should find cons info").isNotNull();
-		assertThat(names.length).as("one argument").isEqualTo(2);
-		assertThat(names[0]).isEqualTo("name");
-		assertThat(names[1]).isEqualTo("age");
+		assertNotNull("should find cons info", names);
+		assertEquals("one argument", 2, names.length);
+		assertEquals("name", names[0]);
+		assertEquals("age", names[1]);
 	}
 
 	@Test
-	void staticMethodParameterNameDiscoveryNoArgs() throws NoSuchMethodException {
+	public void staticMethodParameterNameDiscoveryNoArgs() throws NoSuchMethodException {
 		Method m = getClass().getMethod("staticMethodNoLocalVars");
 		String[] names = discoverer.getParameterNames(m);
-		assertThat(names).as("should find method info").isNotNull();
-		assertThat(names.length).as("no argument names").isEqualTo(0);
+		assertNotNull("should find method info", names);
+		assertEquals("no argument names", 0, names.length);
 	}
 
 	@Test
-	void overloadedStaticMethod() throws Exception {
+	public void overloadedStaticMethod() throws Exception {
 		Class<? extends LocalVariableTableParameterNameDiscovererTests> clazz = this.getClass();
 
 		Method m1 = clazz.getMethod("staticMethod", Long.TYPE, Long.TYPE);
 		String[] names = discoverer.getParameterNames(m1);
-		assertThat(names).as("should find method info").isNotNull();
-		assertThat(names.length).as("two arguments").isEqualTo(2);
-		assertThat(names[0]).isEqualTo("x");
-		assertThat(names[1]).isEqualTo("y");
+		assertNotNull("should find method info", names);
+		assertEquals("two arguments", 2, names.length);
+		assertEquals("x", names[0]);
+		assertEquals("y", names[1]);
 
 		Method m2 = clazz.getMethod("staticMethod", Long.TYPE, Long.TYPE, Long.TYPE);
 		names = discoverer.getParameterNames(m2);
-		assertThat(names).as("should find method info").isNotNull();
-		assertThat(names.length).as("three arguments").isEqualTo(3);
-		assertThat(names[0]).isEqualTo("x");
-		assertThat(names[1]).isEqualTo("y");
-		assertThat(names[2]).isEqualTo("z");
+		assertNotNull("should find method info", names);
+		assertEquals("three arguments", 3, names.length);
+		assertEquals("x", names[0]);
+		assertEquals("y", names[1]);
+		assertEquals("z", names[2]);
 	}
 
 	@Test
-	void overloadedStaticMethodInInnerClass() throws Exception {
+	public void overloadedStaticMethodInInnerClass() throws Exception {
 		Class<InnerClass> clazz = InnerClass.class;
 
 		Method m1 = clazz.getMethod("staticMethod", Long.TYPE);
 		String[] names = discoverer.getParameterNames(m1);
-		assertThat(names).as("should find method info").isNotNull();
-		assertThat(names.length).as("one argument").isEqualTo(1);
-		assertThat(names[0]).isEqualTo("x");
+		assertNotNull("should find method info", names);
+		assertEquals("one argument", 1, names.length);
+		assertEquals("x", names[0]);
 
 		Method m2 = clazz.getMethod("staticMethod", Long.TYPE, Long.TYPE);
 		names = discoverer.getParameterNames(m2);
-		assertThat(names).as("should find method info").isNotNull();
-		assertThat(names.length).as("two arguments").isEqualTo(2);
-		assertThat(names[0]).isEqualTo("x");
-		assertThat(names[1]).isEqualTo("y");
+		assertNotNull("should find method info", names);
+		assertEquals("two arguments", 2, names.length);
+		assertEquals("x", names[0]);
+		assertEquals("y", names[1]);
 	}
 
 	@Test
-	void overloadedMethod() throws Exception {
+	public void overloadedMethod() throws Exception {
 		Class<? extends LocalVariableTableParameterNameDiscovererTests> clazz = this.getClass();
 
 		Method m1 = clazz.getMethod("instanceMethod", Double.TYPE, Double.TYPE);
 		String[] names = discoverer.getParameterNames(m1);
-		assertThat(names).as("should find method info").isNotNull();
-		assertThat(names.length).as("two arguments").isEqualTo(2);
-		assertThat(names[0]).isEqualTo("x");
-		assertThat(names[1]).isEqualTo("y");
+		assertNotNull("should find method info", names);
+		assertEquals("two arguments", 2, names.length);
+		assertEquals("x", names[0]);
+		assertEquals("y", names[1]);
 
 		Method m2 = clazz.getMethod("instanceMethod", Double.TYPE, Double.TYPE, Double.TYPE);
 		names = discoverer.getParameterNames(m2);
-		assertThat(names).as("should find method info").isNotNull();
-		assertThat(names.length).as("three arguments").isEqualTo(3);
-		assertThat(names[0]).isEqualTo("x");
-		assertThat(names[1]).isEqualTo("y");
-		assertThat(names[2]).isEqualTo("z");
+		assertNotNull("should find method info", names);
+		assertEquals("three arguments", 3, names.length);
+		assertEquals("x", names[0]);
+		assertEquals("y", names[1]);
+		assertEquals("z", names[2]);
 	}
 
 	@Test
-	void overloadedMethodInInnerClass() throws Exception {
+	public void overloadedMethodInInnerClass() throws Exception {
 		Class<InnerClass> clazz = InnerClass.class;
 
 		Method m1 = clazz.getMethod("instanceMethod", String.class);
 		String[] names = discoverer.getParameterNames(m1);
-		assertThat(names).as("should find method info").isNotNull();
-		assertThat(names.length).as("one argument").isEqualTo(1);
-		assertThat(names[0]).isEqualTo("aa");
+		assertNotNull("should find method info", names);
+		assertEquals("one argument", 1, names.length);
+		assertEquals("aa", names[0]);
 
 		Method m2 = clazz.getMethod("instanceMethod", String.class, String.class);
 		names = discoverer.getParameterNames(m2);
-		assertThat(names).as("should find method info").isNotNull();
-		assertThat(names.length).as("two arguments").isEqualTo(2);
-		assertThat(names[0]).isEqualTo("aa");
-		assertThat(names[1]).isEqualTo("bb");
+		assertNotNull("should find method info", names);
+		assertEquals("two arguments", 2, names.length);
+		assertEquals("aa", names[0]);
+		assertEquals("bb", names[1]);
 	}
 
 	@Test
-	void generifiedClass() throws Exception {
+	public void generifiedClass() throws Exception {
 		Class<?> clazz = GenerifiedClass.class;
 
 		Constructor<?> ctor = clazz.getDeclaredConstructor(Object.class);
 		String[] names = discoverer.getParameterNames(ctor);
-		assertThat(names.length).isEqualTo(1);
-		assertThat(names[0]).isEqualTo("key");
+		assertEquals(1, names.length);
+		assertEquals("key", names[0]);
 
 		ctor = clazz.getDeclaredConstructor(Object.class, Object.class);
 		names = discoverer.getParameterNames(ctor);
-		assertThat(names.length).isEqualTo(2);
-		assertThat(names[0]).isEqualTo("key");
-		assertThat(names[1]).isEqualTo("value");
+		assertEquals(2, names.length);
+		assertEquals("key", names[0]);
+		assertEquals("value", names[1]);
 
 		Method m = clazz.getMethod("generifiedStaticMethod", Object.class);
 		names = discoverer.getParameterNames(m);
-		assertThat(names.length).isEqualTo(1);
-		assertThat(names[0]).isEqualTo("param");
+		assertEquals(1, names.length);
+		assertEquals("param", names[0]);
 
 		m = clazz.getMethod("generifiedMethod", Object.class, long.class, Object.class, Object.class);
 		names = discoverer.getParameterNames(m);
-		assertThat(names.length).isEqualTo(4);
-		assertThat(names[0]).isEqualTo("param");
-		assertThat(names[1]).isEqualTo("x");
-		assertThat(names[2]).isEqualTo("key");
-		assertThat(names[3]).isEqualTo("value");
+		assertEquals(4, names.length);
+		assertEquals("param", names[0]);
+		assertEquals("x", names[1]);
+		assertEquals("key", names[2]);
+		assertEquals("value", names[3]);
 
 		m = clazz.getMethod("voidStaticMethod", Object.class, long.class, int.class);
 		names = discoverer.getParameterNames(m);
-		assertThat(names.length).isEqualTo(3);
-		assertThat(names[0]).isEqualTo("obj");
-		assertThat(names[1]).isEqualTo("x");
-		assertThat(names[2]).isEqualTo("i");
+		assertEquals(3, names.length);
+		assertEquals("obj", names[0]);
+		assertEquals("x", names[1]);
+		assertEquals("i", names[2]);
 
 		m = clazz.getMethod("nonVoidStaticMethod", Object.class, long.class, int.class);
 		names = discoverer.getParameterNames(m);
-		assertThat(names.length).isEqualTo(3);
-		assertThat(names[0]).isEqualTo("obj");
-		assertThat(names[1]).isEqualTo("x");
-		assertThat(names[2]).isEqualTo("i");
+		assertEquals(3, names.length);
+		assertEquals("obj", names[0]);
+		assertEquals("x", names[1]);
+		assertEquals("i", names[2]);
 
 		m = clazz.getMethod("getDate");
 		names = discoverer.getParameterNames(m);
-		assertThat(names.length).isEqualTo(0);
+		assertEquals(0, names.length);
 	}
 
-	@Disabled("Ignored because Ubuntu packages OpenJDK with debug symbols enabled. See SPR-8078.")
+	@Ignore("Ignored because Ubuntu packages OpenJDK with debug symbols enabled. See SPR-8078.")
 	@Test
-	void classesWithoutDebugSymbols() throws Exception {
+	public void classesWithoutDebugSymbols() throws Exception {
 		// JDK classes don't have debug information (usually)
 		Class<Component> clazz = Component.class;
 		String methodName = "list";
 
 		Method m = clazz.getMethod(methodName);
 		String[] names = discoverer.getParameterNames(m);
-		assertThat(names).isNull();
+		assertNull(names);
 
 		m = clazz.getMethod(methodName, PrintStream.class);
 		names = discoverer.getParameterNames(m);
-		assertThat(names).isNull();
+		assertNull(names);
 
 		m = clazz.getMethod(methodName, PrintStream.class, int.class);
 		names = discoverer.getParameterNames(m);
-		assertThat(names).isNull();
+		assertNull(names);
 	}
 
 

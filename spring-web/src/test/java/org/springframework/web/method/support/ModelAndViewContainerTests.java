@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,12 @@
 
 package org.springframework.web.method.support;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.ui.ModelMap;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Test fixture for {@link ModelAndViewContainer}.
@@ -34,7 +34,7 @@ public class ModelAndViewContainerTests {
 	private ModelAndViewContainer mavContainer;
 
 
-	@BeforeEach
+	@Before
 	public void setup() {
 		this.mavContainer = new ModelAndViewContainer();
 	}
@@ -43,8 +43,8 @@ public class ModelAndViewContainerTests {
 	@Test
 	public void getModel() {
 		this.mavContainer.addAttribute("name", "value");
-		assertThat(this.mavContainer.getModel().size()).isEqualTo(1);
-		assertThat(this.mavContainer.getModel().get("name")).isEqualTo("value");
+		assertEquals(1, this.mavContainer.getModel().size());
+		assertEquals("value", this.mavContainer.getModel().get("name"));
 	}
 
 	@Test
@@ -53,8 +53,8 @@ public class ModelAndViewContainerTests {
 		this.mavContainer.setRedirectModel(new ModelMap("name2", "value2"));
 		this.mavContainer.setRedirectModelScenario(true);
 
-		assertThat(this.mavContainer.getModel().size()).isEqualTo(1);
-		assertThat(this.mavContainer.getModel().get("name2")).isEqualTo("value2");
+		assertEquals(1, this.mavContainer.getModel().size());
+		assertEquals("value2", this.mavContainer.getModel().get("name2"));
 	}
 
 	@Test
@@ -62,8 +62,8 @@ public class ModelAndViewContainerTests {
 		this.mavContainer.addAttribute("name", "value");
 		this.mavContainer.setRedirectModelScenario(true);
 
-		assertThat(this.mavContainer.getModel().size()).isEqualTo(1);
-		assertThat(this.mavContainer.getModel().get("name")).isEqualTo("value");
+		assertEquals(1, this.mavContainer.getModel().size());
+		assertEquals("value", this.mavContainer.getModel().get("name"));
 	}
 
 	@Test
@@ -72,7 +72,7 @@ public class ModelAndViewContainerTests {
 		this.mavContainer.addAttribute("name", "value");
 		this.mavContainer.setRedirectModelScenario(true);
 
-		assertThat(this.mavContainer.getModel().isEmpty()).isTrue();
+		assertTrue(this.mavContainer.getModel().isEmpty());
 	}
 
 	@Test  // SPR-14045
@@ -81,8 +81,8 @@ public class ModelAndViewContainerTests {
 		this.mavContainer.setRedirectModelScenario(true);
 		this.mavContainer.addAttribute("name", "value");
 
-		assertThat(this.mavContainer.getModel().size()).isEqualTo(1);
-		assertThat(this.mavContainer.getModel().get("name")).isEqualTo("value");
+		assertEquals(1, this.mavContainer.getModel().size());
+		assertEquals("value", this.mavContainer.getModel().get("name"));
 	}
 
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,8 +18,6 @@ package org.springframework.jdbc.core.metadata;
 
 import java.sql.DatabaseMetaData;
 
-import org.springframework.lang.Nullable;
-
 /**
  * Holder of meta-data for a specific parameter that is used for call processing.
  *
@@ -30,29 +28,23 @@ import org.springframework.lang.Nullable;
  */
 public class CallParameterMetaData {
 
-	private final boolean function;
+	private String parameterName;
 
-	@Nullable
-	private final String parameterName;
+	private int parameterType;
 
-	private final int parameterType;
+	private int sqlType;
 
-	private final int sqlType;
+	private String typeName;
 
-	@Nullable
-	private final String typeName;
-
-	private final boolean nullable;
+	private boolean nullable;
 
 
 	/**
-	 * Constructor taking all the properties including the function marker.
-	 * @since 5.2.9
+	 * Constructor taking all the properties.
 	 */
-	public CallParameterMetaData(boolean function, @Nullable String columnName, int columnType,
-			int sqlType, @Nullable String typeName, boolean nullable) {
+	public CallParameterMetaData(
+			String columnName, int columnType, int sqlType, String typeName, boolean nullable) {
 
-		this.function = function;
 		this.parameterName = columnName;
 		this.parameterType = columnType;
 		this.sqlType = sqlType;
@@ -62,23 +54,14 @@ public class CallParameterMetaData {
 
 
 	/**
-	 * Return whether this parameter is declared in a function.
-	 * @since 5.2.9
+	 * Get the parameter name.
 	 */
-	public boolean isFunction() {
-		return this.function;
-	}
-
-	/**
-	 * Return the parameter name.
-	 */
-	@Nullable
 	public String getParameterName() {
 		return this.parameterName;
 	}
 
 	/**
-	 * Return the parameter type.
+	 * Get the parameter type.
 	 */
 	public int getParameterType() {
 		return this.parameterType;
@@ -87,33 +70,30 @@ public class CallParameterMetaData {
 	/**
 	 * Determine whether the declared parameter qualifies as a 'return' parameter
 	 * for our purposes: type {@link DatabaseMetaData#procedureColumnReturn} or
-	 * {@link DatabaseMetaData#procedureColumnResult}, or in case of a function,
-	 * {@link DatabaseMetaData#functionReturn}.
+	 * {@link DatabaseMetaData#procedureColumnResult}.
 	 * @since 4.3.15
 	 */
 	public boolean isReturnParameter() {
-		return (this.function ? this.parameterType == DatabaseMetaData.functionReturn :
-				(this.parameterType == DatabaseMetaData.procedureColumnReturn ||
-						this.parameterType == DatabaseMetaData.procedureColumnResult));
+		return (this.parameterType == DatabaseMetaData.procedureColumnReturn ||
+				this.parameterType == DatabaseMetaData.procedureColumnResult);
 	}
 
 	/**
-	 * Return the parameter SQL type.
+	 * Get the parameter SQL type.
 	 */
 	public int getSqlType() {
 		return this.sqlType;
 	}
 
 	/**
-	 * Return the parameter type name.
+	 * Get the parameter type name.
 	 */
-	@Nullable
 	public String getTypeName() {
 		return this.typeName;
 	}
 
 	/**
-	 * Return whether the parameter is nullable.
+	 * Get whether the parameter is nullable.
 	 */
 	public boolean isNullable() {
 		return this.nullable;

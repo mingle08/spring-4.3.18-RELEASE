@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,8 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -43,10 +41,9 @@ public class MockMultipartFile implements MultipartFile {
 
 	private final String name;
 
-	private final String originalFilename;
+	private String originalFilename;
 
-	@Nullable
-	private final String contentType;
+	private String contentType;
 
 	private final byte[] content;
 
@@ -56,7 +53,7 @@ public class MockMultipartFile implements MultipartFile {
 	 * @param name the name of the file
 	 * @param content the content of the file
 	 */
-	public MockMultipartFile(String name, @Nullable byte[] content) {
+	public MockMultipartFile(String name, byte[] content) {
 		this(name, "", null, content);
 	}
 
@@ -77,10 +74,8 @@ public class MockMultipartFile implements MultipartFile {
 	 * @param contentType the content type (if known)
 	 * @param content the content of the file
 	 */
-	public MockMultipartFile(
-			String name, @Nullable String originalFilename, @Nullable String contentType, @Nullable byte[] content) {
-
-		Assert.hasLength(name, "Name must not be empty");
+	public MockMultipartFile(String name, String originalFilename, String contentType, byte[] content) {
+		Assert.hasLength(name, "Name must not be null");
 		this.name = name;
 		this.originalFilename = (originalFilename != null ? originalFilename : "");
 		this.contentType = contentType;
@@ -95,13 +90,11 @@ public class MockMultipartFile implements MultipartFile {
 	 * @param contentStream the content of the file as stream
 	 * @throws IOException if reading from the stream failed
 	 */
-	public MockMultipartFile(
-			String name, @Nullable String originalFilename, @Nullable String contentType, InputStream contentStream)
+	public MockMultipartFile(String name, String originalFilename, String contentType, InputStream contentStream)
 			throws IOException {
 
 		this(name, originalFilename, contentType, FileCopyUtils.copyToByteArray(contentStream));
 	}
-
 
 	@Override
 	public String getName() {
@@ -109,13 +102,11 @@ public class MockMultipartFile implements MultipartFile {
 	}
 
 	@Override
-	@NonNull
 	public String getOriginalFilename() {
 		return this.originalFilename;
 	}
 
 	@Override
-	@Nullable
 	public String getContentType() {
 		return this.contentType;
 	}

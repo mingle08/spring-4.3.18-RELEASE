@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@
 package org.springframework.web.servlet.mvc.method.annotation;
 
 import org.springframework.core.MethodParameter;
-import org.springframework.lang.Nullable;
 import org.springframework.util.PatternMatchUtils;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodReturnValueHandler;
@@ -44,7 +43,6 @@ import org.springframework.web.servlet.View;
  */
 public class ModelAndViewMethodReturnValueHandler implements HandlerMethodReturnValueHandler {
 
-	@Nullable
 	private String[] redirectPatterns;
 
 
@@ -55,7 +53,7 @@ public class ModelAndViewMethodReturnValueHandler implements HandlerMethodReturn
 	 * There must be a custom {@link View} that recognizes the prefix as well.
 	 * @since 4.1
 	 */
-	public void setRedirectPatterns(@Nullable String... redirectPatterns) {
+	public void setRedirectPatterns(String... redirectPatterns) {
 		this.redirectPatterns = redirectPatterns;
 	}
 
@@ -63,7 +61,6 @@ public class ModelAndViewMethodReturnValueHandler implements HandlerMethodReturn
 	 * Return the configured redirect patterns, if any.
 	 * @since 4.1
 	 */
-	@Nullable
 	public String[] getRedirectPatterns() {
 		return this.redirectPatterns;
 	}
@@ -75,7 +72,7 @@ public class ModelAndViewMethodReturnValueHandler implements HandlerMethodReturn
 	}
 
 	@Override
-	public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
+	public void handleReturnValue(Object returnValue, MethodParameter returnType,
 			ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception {
 
 		if (returnValue == null) {
@@ -94,8 +91,10 @@ public class ModelAndViewMethodReturnValueHandler implements HandlerMethodReturn
 		else {
 			View view = mav.getView();
 			mavContainer.setView(view);
-			if (view instanceof SmartView && ((SmartView) view).isRedirectView()) {
-				mavContainer.setRedirectModelScenario(true);
+			if (view instanceof SmartView) {
+				if (((SmartView) view).isRedirectView()) {
+					mavContainer.setRedirectModelScenario(true);
+				}
 			}
 		}
 		mavContainer.setStatus(mav.getStatus());
@@ -111,7 +110,10 @@ public class ModelAndViewMethodReturnValueHandler implements HandlerMethodReturn
 	 * reference; "false" otherwise.
 	 */
 	protected boolean isRedirectViewName(String viewName) {
-		return (PatternMatchUtils.simpleMatch(this.redirectPatterns, viewName) || viewName.startsWith("redirect:"));
+		if (PatternMatchUtils.simpleMatch(this.redirectPatterns, viewName)) {
+			return true;
+		}
+		return viewName.startsWith("redirect:");
 	}
 
 }

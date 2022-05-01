@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,52 +16,48 @@
 
 package org.springframework.orm.jpa.hibernate;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
-import org.junit.jupiter.api.Test;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.orm.jpa.AbstractContainerEntityManagerFactoryIntegrationTests;
-import org.springframework.orm.jpa.EntityManagerFactoryInfo;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * Hibernate-specific JPA tests with multiple EntityManagerFactory instances.
  *
  * @author Juergen Hoeller
  */
-public class HibernateMultiEntityManagerFactoryIntegrationTests extends AbstractContainerEntityManagerFactoryIntegrationTests {
+@SuppressWarnings("deprecation")
+public class HibernateMultiEntityManagerFactoryIntegrationTests extends
+		AbstractContainerEntityManagerFactoryIntegrationTests {
 
-	@Autowired
+	{
+		setAutowireMode(AUTOWIRE_BY_NAME);
+	}
+
 	private EntityManagerFactory entityManagerFactory2;
 
 
+	public void setEntityManagerFactory2(EntityManagerFactory entityManagerFactory2) {
+		this.entityManagerFactory2 = entityManagerFactory2;
+	}
+
 	@Override
-	protected String[] getConfigLocations() {
-		return new String[] {"/org/springframework/orm/jpa/hibernate/hibernate-manager-multi.xml",
-				"/org/springframework/orm/jpa/memdb.xml"};
+	protected String[] getConfigPaths() {
+		return new String[] {
+			"/org/springframework/orm/jpa/hibernate/hibernate-manager-multi.xml",
+			"/org/springframework/orm/jpa/memdb.xml",
+		};
 	}
 
 
-	@Override
-	@Test
-	public void testEntityManagerFactoryImplementsEntityManagerFactoryInfo() {
-		boolean condition = this.entityManagerFactory instanceof EntityManagerFactoryInfo;
-		assertThat(condition).as("Must have introduced config interface").isTrue();
-		EntityManagerFactoryInfo emfi = (EntityManagerFactoryInfo) this.entityManagerFactory;
-		assertThat(emfi.getPersistenceUnitName()).isEqualTo("Drivers");
-		assertThat(emfi.getPersistenceUnitInfo()).as("PersistenceUnitInfo must be available").isNotNull();
-		assertThat(emfi.getNativeEntityManagerFactory()).as("Raw EntityManagerFactory must be available").isNotNull();
-	}
-
-	@Test
 	public void testEntityManagerFactory2() {
 		EntityManager em = this.entityManagerFactory2.createEntityManager();
 		try {
-			assertThatIllegalArgumentException().isThrownBy(() ->
-					em.createQuery("select tb from TestBean"));
+			em.createQuery("select tb from TestBean");
+			fail("Should have thrown IllegalArgumentException");
+		}
+		catch (IllegalArgumentException ex) {
+			// expected
 		}
 		finally {
 			em.close();

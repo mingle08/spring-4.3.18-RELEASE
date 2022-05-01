@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,23 +21,29 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.jsp.jstl.core.Config;
+import javax.servlet.jsp.jstl.fmt.LocalizationContext;
 
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.jsp.jstl.core.Config;
-import jakarta.servlet.jsp.jstl.fmt.LocalizationContext;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.PropertyValue;
 import org.springframework.beans.factory.BeanDefinitionStoreException;
-import org.springframework.beans.testfixture.beans.TestBean;
+import org.springframework.context.ApplicationContextException;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.mock.web.test.MockHttpServletResponse;
+import org.springframework.mock.web.test.MockRequestDispatcher;
+import org.springframework.mock.web.test.MockServletContext;
+import org.springframework.tests.sample.beans.TestBean;
 import org.springframework.web.context.support.ServletContextResource;
 import org.springframework.web.context.support.StaticWebApplicationContext;
 import org.springframework.web.servlet.DispatcherServlet;
@@ -46,456 +52,466 @@ import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver;
 import org.springframework.web.servlet.i18n.FixedLocaleResolver;
 import org.springframework.web.servlet.support.RequestContext;
 import org.springframework.web.servlet.theme.FixedThemeResolver;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
-import org.springframework.web.testfixture.servlet.MockHttpServletResponse;
-import org.springframework.web.testfixture.servlet.MockRequestDispatcher;
-import org.springframework.web.testfixture.servlet.MockServletContext;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.*;
 
 /**
- * Unit tests for {@link BeanNameViewResolver}, {@link UrlBasedViewResolver},
- * {@link InternalResourceViewResolver}, {@link org.springframework.web.servlet.view.XmlViewResolver},
- * and {@link AbstractCachingViewResolver}.
- *
  * @author Juergen Hoeller
  * @author Chris Beams
- * @author Sam Brannen
  * @since 18.06.2003
  */
 public class ViewResolverTests {
 
-	private final StaticWebApplicationContext wac = new StaticWebApplicationContext();
-	private final MockServletContext sc = new MockServletContext();
-	private final MockHttpServletRequest request = new MockHttpServletRequest(this.sc);
-	private final HttpServletResponse response = new MockHttpServletResponse();
-
-	@BeforeEach
-	public void setUp() {
-		this.wac.setServletContext(this.sc);
-	}
-
 	@Test
-	public void beanNameViewResolver() {
+	public void testBeanNameViewResolver() throws ServletException {
+		StaticWebApplicationContext wac = new StaticWebApplicationContext();
+		wac.setServletContext(new MockServletContext());
 		MutablePropertyValues pvs1 = new MutablePropertyValues();
 		pvs1.addPropertyValue(new PropertyValue("url", "/example1.jsp"));
-		this.wac.registerSingleton("example1", InternalResourceView.class, pvs1);
+		wac.registerSingleton("example1", InternalResourceView.class, pvs1);
 		MutablePropertyValues pvs2 = new MutablePropertyValues();
 		pvs2.addPropertyValue(new PropertyValue("url", "/example2.jsp"));
-		this.wac.registerSingleton("example2", JstlView.class, pvs2);
+		wac.registerSingleton("example2", JstlView.class, pvs2);
 		BeanNameViewResolver vr = new BeanNameViewResolver();
-		vr.setApplicationContext(this.wac);
-		this.wac.refresh();
+		vr.setApplicationContext(wac);
+		wac.refresh();
 
 		View view = vr.resolveViewName("example1", Locale.getDefault());
-		assertThat(view.getClass()).as("Correct view class").isEqualTo(InternalResourceView.class);
-		assertThat(((InternalResourceView) view).getUrl()).as("Correct URL").isEqualTo("/example1.jsp");
+		assertEquals("Correct view class", InternalResourceView.class, view.getClass());
+		assertEquals("Correct URL", "/example1.jsp", ((InternalResourceView) view).getUrl());
 
 		view = vr.resolveViewName("example2", Locale.getDefault());
-		assertThat(view).isInstanceOf(JstlView.class);
-		assertThat(((JstlView) view).getUrl()).as("Correct URL").isEqualTo("/example2.jsp");
+		assertEquals("Correct view class", JstlView.class, view.getClass());
+		assertEquals("Correct URL", "/example2.jsp", ((JstlView) view).getUrl());
 	}
 
 	@Test
-	public void urlBasedViewResolverOverridesCustomRequestContextAttributeWithNonNullValue() throws Exception {
-		assertThat(new TestView().getRequestContextAttribute())
-			.as("requestContextAttribute when instantiated directly")
-			.isEqualTo("testRequestContext");
-
-		UrlBasedViewResolver vr = new UrlBasedViewResolver();
-		vr.setViewClass(TestView.class);
-		vr.setApplicationContext(this.wac);
-		vr.setRequestContextAttribute("viewResolverRequestContext");
-		this.wac.refresh();
-
-		View view = vr.resolveViewName("example", Locale.getDefault());
-		assertThat(view).isInstanceOf(TestView.class);
-		assertThat(((TestView) view).getRequestContextAttribute())
-			.as("requestContextAttribute when instantiated dynamically by UrlBasedViewResolver")
-			.isEqualTo("viewResolverRequestContext");
+	public void testUrlBasedViewResolverWithNullViewClass() {
+		UrlBasedViewResolver resolver = new UrlBasedViewResolver();
+		try {
+			resolver.setViewClass(null);
+			fail("Should have thrown IllegalArgumentException");
+		}
+		catch (IllegalArgumentException ex) {
+			// expected
+		}
 	}
 
 	@Test
-	public void urlBasedViewResolverDoesNotOverrideCustomRequestContextAttributeWithNull() throws Exception {
-		assertThat(new TestView().getRequestContextAttribute())
-			.as("requestContextAttribute when instantiated directly")
-			.isEqualTo("testRequestContext");
-
-		UrlBasedViewResolver vr = new UrlBasedViewResolver();
-		vr.setViewClass(TestView.class);
-		vr.setApplicationContext(this.wac);
-		this.wac.refresh();
-
-		View view = vr.resolveViewName("example", Locale.getDefault());
-		assertThat(view).isInstanceOf(TestView.class);
-		assertThat(((TestView) view).getRequestContextAttribute())
-			.as("requestContextAttribute when instantiated dynamically by UrlBasedViewResolver")
-			.isEqualTo("testRequestContext");
-	}
-
-	@Test
-	public void urlBasedViewResolverWithoutPrefixes() throws Exception {
+	public void testUrlBasedViewResolverWithoutPrefixes() throws Exception {
 		UrlBasedViewResolver vr = new UrlBasedViewResolver();
 		vr.setViewClass(JstlView.class);
 		doTestUrlBasedViewResolverWithoutPrefixes(vr);
 	}
 
 	@Test
-	public void urlBasedViewResolverWithPrefixes() throws Exception {
+	public void testUrlBasedViewResolverWithPrefixes() throws Exception {
 		UrlBasedViewResolver vr = new UrlBasedViewResolver();
 		vr.setViewClass(JstlView.class);
 		doTestUrlBasedViewResolverWithPrefixes(vr);
 	}
 
 	@Test
-	public void internalResourceViewResolverWithoutPrefixes() throws Exception {
+	public void testInternalResourceViewResolverWithoutPrefixes() throws Exception {
 		doTestUrlBasedViewResolverWithoutPrefixes(new InternalResourceViewResolver());
 	}
 
 	@Test
-	public void internalResourceViewResolverWithPrefixes() throws Exception {
+	public void testInternalResourceViewResolverWithPrefixes() throws Exception {
 		doTestUrlBasedViewResolverWithPrefixes(new InternalResourceViewResolver());
 	}
 
 	private void doTestUrlBasedViewResolverWithoutPrefixes(UrlBasedViewResolver vr) throws Exception {
-		this.wac.refresh();
-		vr.setApplicationContext(this.wac);
+		StaticWebApplicationContext wac = new StaticWebApplicationContext();
+		wac.setServletContext(new MockServletContext());
+		wac.refresh();
+		vr.setApplicationContext(wac);
 		vr.setContentType("myContentType");
 		vr.setRequestContextAttribute("rc");
 
 		View view = vr.resolveViewName("example1", Locale.getDefault());
-		assertThat(view).isInstanceOf(JstlView.class);
-		assertThat(((InternalResourceView) view).getUrl()).as("Correct URL").isEqualTo("example1");
-		assertThat(((InternalResourceView) view).getContentType()).as("Correct textContentType").isEqualTo("myContentType");
+		assertEquals("Correct view class", JstlView.class, view.getClass());
+		assertEquals("Correct URL", "example1", ((InternalResourceView) view).getUrl());
+		assertEquals("Correct textContentType", "myContentType", ((InternalResourceView) view).getContentType());
 
 		view = vr.resolveViewName("example2", Locale.getDefault());
-		assertThat(view).isInstanceOf(JstlView.class);
-		assertThat(((InternalResourceView) view).getUrl()).as("Correct URL").isEqualTo("example2");
-		assertThat(((InternalResourceView) view).getContentType()).as("Correct textContentType").isEqualTo("myContentType");
+		assertEquals("Correct view class", JstlView.class, view.getClass());
+		assertEquals("Correct URL", "example2", ((InternalResourceView) view).getUrl());
+		assertEquals("Correct textContentType", "myContentType", ((InternalResourceView) view).getContentType());
 
-		this.request.setAttribute(DispatcherServlet.WEB_APPLICATION_CONTEXT_ATTRIBUTE, this.wac);
-		this.request.setAttribute(DispatcherServlet.LOCALE_RESOLVER_ATTRIBUTE, new AcceptHeaderLocaleResolver());
-		this.request.setAttribute(DispatcherServlet.THEME_RESOLVER_ATTRIBUTE, new FixedThemeResolver());
-		Map<String, Object> model = new HashMap<>();
+		HttpServletRequest request = new MockHttpServletRequest(wac.getServletContext());
+		HttpServletResponse response = new MockHttpServletResponse();
+		request.setAttribute(DispatcherServlet.WEB_APPLICATION_CONTEXT_ATTRIBUTE, wac);
+		request.setAttribute(DispatcherServlet.LOCALE_RESOLVER_ATTRIBUTE, new AcceptHeaderLocaleResolver());
+		request.setAttribute(DispatcherServlet.THEME_RESOLVER_ATTRIBUTE, new FixedThemeResolver());
+		Map model = new HashMap();
 		TestBean tb = new TestBean();
 		model.put("tb", tb);
-		view.render(model, this.request, this.response);
-		assertThat(tb.equals(this.request.getAttribute("tb"))).as("Correct tb attribute").isTrue();
-		boolean condition = this.request.getAttribute("rc") instanceof RequestContext;
-		assertThat(condition).as("Correct rc attribute").isTrue();
+		view.render(model, request, response);
+		assertTrue("Correct tb attribute", tb.equals(request.getAttribute("tb")));
+		assertTrue("Correct rc attribute", request.getAttribute("rc") instanceof RequestContext);
 
 		view = vr.resolveViewName("redirect:myUrl", Locale.getDefault());
-		assertThat(view.getClass()).as("Correct view class").isEqualTo(RedirectView.class);
-		assertThat(((RedirectView) view).getUrl()).as("Correct URL").isEqualTo("myUrl");
-		assertThat(((RedirectView) view).getApplicationContext()).as("View not initialized as bean").isSameAs(this.wac);
+		assertEquals("Correct view class", RedirectView.class, view.getClass());
+		assertEquals("Correct URL", "myUrl", ((RedirectView) view).getUrl());
+		assertSame("View not initialized as bean", wac, ((RedirectView) view).getApplicationContext());
 
 		view = vr.resolveViewName("forward:myUrl", Locale.getDefault());
-		assertThat(view.getClass()).as("Correct view class").isEqualTo(InternalResourceView.class);
-		assertThat(((InternalResourceView) view).getUrl()).as("Correct URL").isEqualTo("myUrl");
+		assertEquals("Correct view class", InternalResourceView.class, view.getClass());
+		assertEquals("Correct URL", "myUrl", ((InternalResourceView) view).getUrl());
 	}
 
 	private void doTestUrlBasedViewResolverWithPrefixes(UrlBasedViewResolver vr) throws Exception {
-		this.wac.refresh();
+		StaticWebApplicationContext wac = new StaticWebApplicationContext();
+		wac.setServletContext(new MockServletContext());
+		wac.refresh();
 		vr.setPrefix("/WEB-INF/");
 		vr.setSuffix(".jsp");
-		vr.setApplicationContext(this.wac);
+		vr.setApplicationContext(wac);
 
 		View view = vr.resolveViewName("example1", Locale.getDefault());
-		assertThat(view).isInstanceOf(JstlView.class);
-		assertThat(((InternalResourceView) view).getUrl()).as("Correct URL").isEqualTo("/WEB-INF/example1.jsp");
+		assertEquals("Correct view class", JstlView.class, view.getClass());
+		assertEquals("Correct URL", "/WEB-INF/example1.jsp", ((InternalResourceView) view).getUrl());
 
 		view = vr.resolveViewName("example2", Locale.getDefault());
-		assertThat(view).isInstanceOf(JstlView.class);
-		assertThat(((InternalResourceView) view).getUrl()).as("Correct URL").isEqualTo("/WEB-INF/example2.jsp");
+		assertEquals("Correct view class", JstlView.class, view.getClass());
+		assertEquals("Correct URL", "/WEB-INF/example2.jsp", ((InternalResourceView) view).getUrl());
 
 		view = vr.resolveViewName("redirect:myUrl", Locale.getDefault());
-		assertThat(view.getClass()).as("Correct view class").isEqualTo(RedirectView.class);
-		assertThat(((RedirectView) view).getUrl()).as("Correct URL").isEqualTo("myUrl");
+		assertEquals("Correct view class", RedirectView.class, view.getClass());
+		assertEquals("Correct URL", "myUrl", ((RedirectView) view).getUrl());
 
 		view = vr.resolveViewName("forward:myUrl", Locale.getDefault());
-		assertThat(view.getClass()).as("Correct view class").isEqualTo(InternalResourceView.class);
-		assertThat(((InternalResourceView) view).getUrl()).as("Correct URL").isEqualTo("myUrl");
+		assertEquals("Correct view class", InternalResourceView.class, view.getClass());
+		assertEquals("Correct URL", "myUrl", ((InternalResourceView) view).getUrl());
 	}
 
 	@Test
-	public void internalResourceViewResolverWithAttributes() throws Exception {
-		this.wac.refresh();
+	public void testInternalResourceViewResolverWithAttributes() throws Exception {
+		MockServletContext sc = new MockServletContext();
+		StaticWebApplicationContext wac = new StaticWebApplicationContext();
+		wac.setServletContext(sc);
+		wac.refresh();
 		InternalResourceViewResolver vr = new InternalResourceViewResolver();
 		Properties props = new Properties();
 		props.setProperty("key1", "value1");
 		vr.setAttributes(props);
-		Map<String, Object> map = new HashMap<>();
-		map.put("key2", 2);
+		Map map = new HashMap();
+		map.put("key2", new Integer(2));
 		vr.setAttributesMap(map);
-		vr.setApplicationContext(this.wac);
+		vr.setApplicationContext(wac);
 
 		View view = vr.resolveViewName("example1", Locale.getDefault());
-		assertThat(view).isInstanceOf(JstlView.class);
-		assertThat(((InternalResourceView) view).getUrl()).as("Correct URL").isEqualTo("example1");
-		Map<String, Object> attributes = ((InternalResourceView) view).getStaticAttributes();
-		assertThat(attributes.get("key1")).isEqualTo("value1");
-		assertThat(attributes.get("key2")).isEqualTo(2);
+		assertEquals("Correct view class", JstlView.class, view.getClass());
+		assertEquals("Correct URL", "example1", ((InternalResourceView) view).getUrl());
+		Map attributes = ((InternalResourceView) view).getStaticAttributes();
+		assertEquals("value1", attributes.get("key1"));
+		assertEquals(new Integer(2), attributes.get("key2"));
 
 		view = vr.resolveViewName("example2", Locale.getDefault());
-		assertThat(view).isInstanceOf(JstlView.class);
-		assertThat(((InternalResourceView) view).getUrl()).as("Correct URL").isEqualTo("example2");
+		assertEquals("Correct view class", JstlView.class, view.getClass());
+		assertEquals("Correct URL", "example2", ((InternalResourceView) view).getUrl());
 		attributes = ((InternalResourceView) view).getStaticAttributes();
-		assertThat(attributes.get("key1")).isEqualTo("value1");
-		assertThat(attributes.get("key2")).isEqualTo(2);
+		assertEquals("value1", attributes.get("key1"));
+		assertEquals(new Integer(2), attributes.get("key2"));
 
-		this.request.setAttribute(DispatcherServlet.WEB_APPLICATION_CONTEXT_ATTRIBUTE, this.wac);
-		this.request.setAttribute(DispatcherServlet.LOCALE_RESOLVER_ATTRIBUTE, new AcceptHeaderLocaleResolver());
-		Map<String, Object> model = new HashMap<>();
+		MockHttpServletRequest request = new MockHttpServletRequest(sc);
+		HttpServletResponse response = new MockHttpServletResponse();
+		request.setAttribute(DispatcherServlet.WEB_APPLICATION_CONTEXT_ATTRIBUTE, wac);
+		request.setAttribute(DispatcherServlet.LOCALE_RESOLVER_ATTRIBUTE, new AcceptHeaderLocaleResolver());
+		Map model = new HashMap();
 		TestBean tb = new TestBean();
 		model.put("tb", tb);
-		view.render(model, this.request, this.response);
+		view.render(model, request, response);
 
-		assertThat(tb.equals(this.request.getAttribute("tb"))).as("Correct tb attribute").isTrue();
-		assertThat(this.request.getAttribute("rc") == null).as("Correct rc attribute").isTrue();
-		assertThat(this.request.getAttribute("key1")).isEqualTo("value1");
-		assertThat(this.request.getAttribute("key2")).isEqualTo(2);
+		assertTrue("Correct tb attribute", tb.equals(request.getAttribute("tb")));
+		assertTrue("Correct rc attribute", request.getAttribute("rc") == null);
+		assertEquals("value1", request.getAttribute("key1"));
+		assertEquals(new Integer(2), request.getAttribute("key2"));
 	}
 
 	@Test
-	public void internalResourceViewResolverWithContextBeans() throws Exception {
-		this.wac.registerSingleton("myBean", TestBean.class);
-		this.wac.registerSingleton("myBean2", TestBean.class);
-		this.wac.refresh();
+	public void testInternalResourceViewResolverWithContextBeans() throws Exception {
+		MockServletContext sc = new MockServletContext();
+		final StaticWebApplicationContext wac = new StaticWebApplicationContext();
+		wac.registerSingleton("myBean", TestBean.class);
+		wac.registerSingleton("myBean2", TestBean.class);
+		wac.setServletContext(sc);
+		wac.refresh();
 		InternalResourceViewResolver vr = new InternalResourceViewResolver();
 		Properties props = new Properties();
 		props.setProperty("key1", "value1");
 		vr.setAttributes(props);
-		Map<String, Object> map = new HashMap<>();
-		map.put("key2", 2);
+		Map map = new HashMap();
+		map.put("key2", new Integer(2));
 		vr.setAttributesMap(map);
 		vr.setExposeContextBeansAsAttributes(true);
-		vr.setApplicationContext(this.wac);
+		vr.setApplicationContext(wac);
 
-		HttpServletRequest request = new MockHttpServletRequest(this.sc) {
+		MockHttpServletRequest request = new MockHttpServletRequest(sc) {
 			@Override
 			public RequestDispatcher getRequestDispatcher(String path) {
 				return new MockRequestDispatcher(path) {
 					@Override
 					public void forward(ServletRequest forwardRequest, ServletResponse forwardResponse) {
-						assertThat(forwardRequest.getAttribute("rc") == null).as("Correct rc attribute").isTrue();
-						assertThat(forwardRequest.getAttribute("key1")).isEqualTo("value1");
-						assertThat(forwardRequest.getAttribute("key2")).isEqualTo(2);
-						assertThat(forwardRequest.getAttribute("myBean")).isSameAs(wac.getBean("myBean"));
-						assertThat(forwardRequest.getAttribute("myBean2")).isSameAs(wac.getBean("myBean2"));
+						assertTrue("Correct rc attribute", forwardRequest.getAttribute("rc") == null);
+						assertEquals("value1", forwardRequest.getAttribute("key1"));
+						assertEquals(new Integer(2), forwardRequest.getAttribute("key2"));
+						assertSame(wac.getBean("myBean"), forwardRequest.getAttribute("myBean"));
+						assertSame(wac.getBean("myBean2"), forwardRequest.getAttribute("myBean2"));
 					}
 				};
 			}
 		};
-		request.setAttribute(DispatcherServlet.WEB_APPLICATION_CONTEXT_ATTRIBUTE, this.wac);
+		HttpServletResponse response = new MockHttpServletResponse();
+		request.setAttribute(DispatcherServlet.WEB_APPLICATION_CONTEXT_ATTRIBUTE, wac);
 		request.setAttribute(DispatcherServlet.LOCALE_RESOLVER_ATTRIBUTE, new AcceptHeaderLocaleResolver());
 		View view = vr.resolveViewName("example1", Locale.getDefault());
-		view.render(new HashMap<String, Object>(), request, this.response);
+		view.render(new HashMap(), request, response);
 	}
 
 	@Test
-	public void internalResourceViewResolverWithSpecificContextBeans() throws Exception {
-		this.wac.registerSingleton("myBean", TestBean.class);
-		this.wac.registerSingleton("myBean2", TestBean.class);
-		this.wac.refresh();
+	public void testInternalResourceViewResolverWithSpecificContextBeans() throws Exception {
+		MockServletContext sc = new MockServletContext();
+		final StaticWebApplicationContext wac = new StaticWebApplicationContext();
+		wac.registerSingleton("myBean", TestBean.class);
+		wac.registerSingleton("myBean2", TestBean.class);
+		wac.setServletContext(sc);
+		wac.refresh();
 		InternalResourceViewResolver vr = new InternalResourceViewResolver();
 		Properties props = new Properties();
 		props.setProperty("key1", "value1");
 		vr.setAttributes(props);
-		Map<String, Object> map = new HashMap<>();
-		map.put("key2", 2);
+		Map map = new HashMap();
+		map.put("key2", new Integer(2));
 		vr.setAttributesMap(map);
 		vr.setExposedContextBeanNames(new String[] {"myBean2"});
-		vr.setApplicationContext(this.wac);
+		vr.setApplicationContext(wac);
 
-		HttpServletRequest request = new MockHttpServletRequest(this.sc) {
+		MockHttpServletRequest request = new MockHttpServletRequest(sc) {
 			@Override
 			public RequestDispatcher getRequestDispatcher(String path) {
 				return new MockRequestDispatcher(path) {
 					@Override
 					public void forward(ServletRequest forwardRequest, ServletResponse forwardResponse) {
-						assertThat(forwardRequest.getAttribute("rc") == null).as("Correct rc attribute").isTrue();
-						assertThat(forwardRequest.getAttribute("key1")).isEqualTo("value1");
-						assertThat(forwardRequest.getAttribute("key2")).isEqualTo(2);
-						assertThat(forwardRequest.getAttribute("myBean")).isNull();
-						assertThat(forwardRequest.getAttribute("myBean2")).isSameAs(wac.getBean("myBean2"));
+						assertTrue("Correct rc attribute", forwardRequest.getAttribute("rc") == null);
+						assertEquals("value1", forwardRequest.getAttribute("key1"));
+						assertEquals(new Integer(2), forwardRequest.getAttribute("key2"));
+						assertNull(forwardRequest.getAttribute("myBean"));
+						assertSame(wac.getBean("myBean2"), forwardRequest.getAttribute("myBean2"));
 					}
 				};
 			}
 		};
-		request.setAttribute(DispatcherServlet.WEB_APPLICATION_CONTEXT_ATTRIBUTE, this.wac);
+		HttpServletResponse response = new MockHttpServletResponse();
+		request.setAttribute(DispatcherServlet.WEB_APPLICATION_CONTEXT_ATTRIBUTE, wac);
 		request.setAttribute(DispatcherServlet.LOCALE_RESOLVER_ATTRIBUTE, new AcceptHeaderLocaleResolver());
 		View view = vr.resolveViewName("example1", Locale.getDefault());
-		view.render(new HashMap<String, Object>(), request, this.response);
+		view.render(new HashMap(), request, response);
 	}
 
 	@Test
-	public void internalResourceViewResolverWithJstl() throws Exception {
+	public void testInternalResourceViewResolverWithJstl() throws Exception {
 		Locale locale = !Locale.GERMAN.equals(Locale.getDefault()) ? Locale.GERMAN : Locale.FRENCH;
 
-		this.wac.addMessage("code1", locale, "messageX");
-		this.wac.refresh();
+		MockServletContext sc = new MockServletContext();
+		StaticWebApplicationContext wac = new StaticWebApplicationContext();
+		wac.setServletContext(sc);
+		wac.addMessage("code1", locale, "messageX");
+		wac.refresh();
 		InternalResourceViewResolver vr = new InternalResourceViewResolver();
 		vr.setViewClass(JstlView.class);
-		vr.setApplicationContext(this.wac);
+		vr.setApplicationContext(wac);
 
 		View view = vr.resolveViewName("example1", Locale.getDefault());
-		assertThat(view).isInstanceOf(JstlView.class);
-		assertThat(((JstlView) view).getUrl()).as("Correct URL").isEqualTo("example1");
+		assertEquals("Correct view class", JstlView.class, view.getClass());
+		assertEquals("Correct URL", "example1", ((JstlView) view).getUrl());
 
 		view = vr.resolveViewName("example2", Locale.getDefault());
-		assertThat(view).isInstanceOf(JstlView.class);
-		assertThat(((JstlView) view).getUrl()).as("Correct URL").isEqualTo("example2");
+		assertEquals("Correct view class", JstlView.class, view.getClass());
+		assertEquals("Correct URL", "example2", ((JstlView) view).getUrl());
 
-		this.request.setAttribute(DispatcherServlet.WEB_APPLICATION_CONTEXT_ATTRIBUTE, this.wac);
-		this.request.setAttribute(DispatcherServlet.LOCALE_RESOLVER_ATTRIBUTE, new FixedLocaleResolver(locale));
-		Map<String, Object> model = new HashMap<>();
+		MockHttpServletRequest request = new MockHttpServletRequest(sc);
+		HttpServletResponse response = new MockHttpServletResponse();
+		request.setAttribute(DispatcherServlet.WEB_APPLICATION_CONTEXT_ATTRIBUTE, wac);
+		request.setAttribute(DispatcherServlet.LOCALE_RESOLVER_ATTRIBUTE, new FixedLocaleResolver(locale));
+		Map model = new HashMap();
 		TestBean tb = new TestBean();
 		model.put("tb", tb);
-		view.render(model, this.request, this.response);
+		view.render(model, request, response);
 
-		assertThat(tb.equals(this.request.getAttribute("tb"))).as("Correct tb attribute").isTrue();
-		assertThat(this.request.getAttribute("rc") == null).as("Correct rc attribute").isTrue();
+		assertTrue("Correct tb attribute", tb.equals(request.getAttribute("tb")));
+		assertTrue("Correct rc attribute", request.getAttribute("rc") == null);
 
-		assertThat(Config.get(this.request, Config.FMT_LOCALE)).isEqualTo(locale);
-		LocalizationContext lc = (LocalizationContext) Config.get(this.request, Config.FMT_LOCALIZATION_CONTEXT);
-		assertThat(lc.getResourceBundle().getString("code1")).isEqualTo("messageX");
+		assertEquals(locale, Config.get(request, Config.FMT_LOCALE));
+		LocalizationContext lc = (LocalizationContext) Config.get(request, Config.FMT_LOCALIZATION_CONTEXT);
+		assertEquals("messageX", lc.getResourceBundle().getString("code1"));
 	}
 
 	@Test
-	public void internalResourceViewResolverWithJstlAndContextParam() throws Exception {
+	public void testInternalResourceViewResolverWithJstlAndContextParam() throws Exception {
 		Locale locale = !Locale.GERMAN.equals(Locale.getDefault()) ? Locale.GERMAN : Locale.FRENCH;
 
-		this.sc.addInitParameter(Config.FMT_LOCALIZATION_CONTEXT, "org/springframework/web/context/WEB-INF/context-messages");
-		this.wac.addMessage("code1", locale, "messageX");
-		this.wac.refresh();
+		MockServletContext sc = new MockServletContext();
+		sc.addInitParameter(Config.FMT_LOCALIZATION_CONTEXT, "org/springframework/web/context/WEB-INF/context-messages");
+		StaticWebApplicationContext wac = new StaticWebApplicationContext();
+		wac.setServletContext(sc);
+		wac.addMessage("code1", locale, "messageX");
+		wac.refresh();
 		InternalResourceViewResolver vr = new InternalResourceViewResolver();
 		vr.setViewClass(JstlView.class);
-		vr.setApplicationContext(this.wac);
+		vr.setApplicationContext(wac);
 
 		View view = vr.resolveViewName("example1", Locale.getDefault());
-		assertThat(view).isInstanceOf(JstlView.class);
-		assertThat(((JstlView) view).getUrl()).as("Correct URL").isEqualTo("example1");
+		assertEquals("Correct view class", JstlView.class, view.getClass());
+		assertEquals("Correct URL", "example1", ((JstlView) view).getUrl());
 
 		view = vr.resolveViewName("example2", Locale.getDefault());
-		assertThat(view).isInstanceOf(JstlView.class);
-		assertThat(((JstlView) view).getUrl()).as("Correct URL").isEqualTo("example2");
+		assertEquals("Correct view class", JstlView.class, view.getClass());
+		assertEquals("Correct URL", "example2", ((JstlView) view).getUrl());
 
-		this.request.setAttribute(DispatcherServlet.WEB_APPLICATION_CONTEXT_ATTRIBUTE, this.wac);
-		this.request.setAttribute(DispatcherServlet.LOCALE_RESOLVER_ATTRIBUTE, new FixedLocaleResolver(locale));
-		Map<String, Object> model = new HashMap<>();
+		MockHttpServletRequest request = new MockHttpServletRequest(sc);
+		HttpServletResponse response = new MockHttpServletResponse();
+		request.setAttribute(DispatcherServlet.WEB_APPLICATION_CONTEXT_ATTRIBUTE, wac);
+		request.setAttribute(DispatcherServlet.LOCALE_RESOLVER_ATTRIBUTE, new FixedLocaleResolver(locale));
+		Map model = new HashMap();
 		TestBean tb = new TestBean();
 		model.put("tb", tb);
-		view.render(model, this.request, this.response);
+		view.render(model, request, response);
 
-		assertThat(tb.equals(this.request.getAttribute("tb"))).as("Correct tb attribute").isTrue();
-		assertThat(this.request.getAttribute("rc") == null).as("Correct rc attribute").isTrue();
+		assertTrue("Correct tb attribute", tb.equals(request.getAttribute("tb")));
+		assertTrue("Correct rc attribute", request.getAttribute("rc") == null);
 
-		assertThat(Config.get(this.request, Config.FMT_LOCALE)).isEqualTo(locale);
-		LocalizationContext lc = (LocalizationContext) Config.get(this.request, Config.FMT_LOCALIZATION_CONTEXT);
-		assertThat(lc.getResourceBundle().getString("code1")).isEqualTo("message1");
-		assertThat(lc.getResourceBundle().getString("code2")).isEqualTo("message2");
+		assertEquals(locale, Config.get(request, Config.FMT_LOCALE));
+		LocalizationContext lc = (LocalizationContext) Config.get(request, Config.FMT_LOCALIZATION_CONTEXT);
+		assertEquals("message1", lc.getResourceBundle().getString("code1"));
+		assertEquals("message2", lc.getResourceBundle().getString("code2"));
 	}
 
 	@Test
-	@SuppressWarnings("deprecation")
-	public void xmlViewResolver() throws Exception {
-		this.wac.registerSingleton("testBean", TestBean.class);
-		this.wac.refresh();
-		TestBean testBean = (TestBean) this.wac.getBean("testBean");
-		org.springframework.web.servlet.view.XmlViewResolver vr = new org.springframework.web.servlet.view.XmlViewResolver();
+	public void testXmlViewResolver() throws Exception {
+		StaticWebApplicationContext wac = new StaticWebApplicationContext();
+		wac.registerSingleton("testBean", TestBean.class);
+		wac.setServletContext(new MockServletContext());
+		wac.refresh();
+		TestBean testBean = (TestBean) wac.getBean("testBean");
+		XmlViewResolver vr = new XmlViewResolver();
 		vr.setLocation(new ClassPathResource("org/springframework/web/servlet/view/views.xml"));
-		vr.setApplicationContext(this.wac);
+		vr.setApplicationContext(wac);
 
 		View view1 = vr.resolveViewName("example1", Locale.getDefault());
-		assertThat(TestView.class.equals(view1.getClass())).as("Correct view class").isTrue();
-		assertThat("/example1.jsp".equals(((InternalResourceView) view1).getUrl())).as("Correct URL").isTrue();
+		assertTrue("Correct view class", TestView.class.equals(view1.getClass()));
+		assertTrue("Correct URL", "/example1.jsp".equals(((InternalResourceView) view1).getUrl()));
 
 		View view2 = vr.resolveViewName("example2", Locale.getDefault());
-		assertThat(JstlView.class.equals(view2.getClass())).as("Correct view class").isTrue();
-		assertThat("/example2new.jsp".equals(((InternalResourceView) view2).getUrl())).as("Correct URL").isTrue();
+		assertTrue("Correct view class", JstlView.class.equals(view2.getClass()));
+		assertTrue("Correct URL", "/example2new.jsp".equals(((InternalResourceView) view2).getUrl()));
 
-		Map<String, Object> model = new HashMap<>();
+		ServletContext sc = new MockServletContext();
+		Map model = new HashMap();
 		TestBean tb = new TestBean();
 		model.put("tb", tb);
 
-		this.request.setAttribute(DispatcherServlet.WEB_APPLICATION_CONTEXT_ATTRIBUTE, this.wac);
-		this.request.setAttribute(DispatcherServlet.LOCALE_RESOLVER_ATTRIBUTE, new AcceptHeaderLocaleResolver());
-		this.request.setAttribute(DispatcherServlet.THEME_RESOLVER_ATTRIBUTE, new FixedThemeResolver());
-		view1.render(model, this.request, this.response);
-		assertThat(tb.equals(this.request.getAttribute("tb"))).as("Correct tb attribute").isTrue();
-		assertThat("testvalue1".equals(this.request.getAttribute("test1"))).as("Correct test1 attribute").isTrue();
-		assertThat(testBean.equals(this.request.getAttribute("test2"))).as("Correct test2 attribute").isTrue();
+		HttpServletRequest request = new MockHttpServletRequest(sc);
+		HttpServletResponse response = new MockHttpServletResponse();
+		request.setAttribute(DispatcherServlet.WEB_APPLICATION_CONTEXT_ATTRIBUTE, wac);
+		request.setAttribute(DispatcherServlet.LOCALE_RESOLVER_ATTRIBUTE, new AcceptHeaderLocaleResolver());
+		request.setAttribute(DispatcherServlet.THEME_RESOLVER_ATTRIBUTE, new FixedThemeResolver());
+		view1.render(model, request, response);
+		assertTrue("Correct tb attribute", tb.equals(request.getAttribute("tb")));
+		assertTrue("Correct test1 attribute", "testvalue1".equals(request.getAttribute("test1")));
+		assertTrue("Correct test2 attribute", testBean.equals(request.getAttribute("test2")));
 
-		this.request.clearAttributes();
-		this.request.setAttribute(DispatcherServlet.WEB_APPLICATION_CONTEXT_ATTRIBUTE, this.wac);
-		this.request.setAttribute(DispatcherServlet.LOCALE_RESOLVER_ATTRIBUTE, new AcceptHeaderLocaleResolver());
-		this.request.setAttribute(DispatcherServlet.THEME_RESOLVER_ATTRIBUTE, new FixedThemeResolver());
-		view2.render(model, this.request, this.response);
-		assertThat(tb.equals(this.request.getAttribute("tb"))).as("Correct tb attribute").isTrue();
-		assertThat("testvalue1".equals(this.request.getAttribute("test1"))).as("Correct test1 attribute").isTrue();
-		assertThat("testvalue2".equals(this.request.getAttribute("test2"))).as("Correct test2 attribute").isTrue();
+		request = new MockHttpServletRequest(sc);
+		response = new MockHttpServletResponse();
+		request.setAttribute(DispatcherServlet.WEB_APPLICATION_CONTEXT_ATTRIBUTE, wac);
+		request.setAttribute(DispatcherServlet.LOCALE_RESOLVER_ATTRIBUTE, new AcceptHeaderLocaleResolver());
+		request.setAttribute(DispatcherServlet.THEME_RESOLVER_ATTRIBUTE, new FixedThemeResolver());
+		view2.render(model, request, response);
+		assertTrue("Correct tb attribute", tb.equals(request.getAttribute("tb")));
+		assertTrue("Correct test1 attribute", "testvalue1".equals(request.getAttribute("test1")));
+		assertTrue("Correct test2 attribute", "testvalue2".equals(request.getAttribute("test2")));
 	}
 
 	@Test
-	@SuppressWarnings("deprecation")
-	public void xmlViewResolverDefaultLocation() {
+	public void testXmlViewResolverDefaultLocation() {
 		StaticWebApplicationContext wac = new StaticWebApplicationContext() {
 			@Override
 			protected Resource getResourceByPath(String path) {
-				assertThat(org.springframework.web.servlet.view.XmlViewResolver.DEFAULT_LOCATION.equals(path)).as("Correct default location").isTrue();
+				assertTrue("Correct default location", XmlViewResolver.DEFAULT_LOCATION.equals(path));
 				return super.getResourceByPath(path);
 			}
 		};
-		wac.setServletContext(this.sc);
+		wac.setServletContext(new MockServletContext());
 		wac.refresh();
-		org.springframework.web.servlet.view.XmlViewResolver vr = new org.springframework.web.servlet.view.XmlViewResolver();
-		vr.setApplicationContext(wac);
-		assertThatExceptionOfType(BeanDefinitionStoreException.class).isThrownBy(vr::afterPropertiesSet);
+		XmlViewResolver vr = new XmlViewResolver();
+		try {
+			vr.setApplicationContext(wac);
+			vr.afterPropertiesSet();
+			fail("Should have thrown BeanDefinitionStoreException");
+		}
+		catch (BeanDefinitionStoreException ex) {
+			// expected
+		}
 	}
 
 	@Test
-	@SuppressWarnings("deprecation")
-	public void xmlViewResolverWithoutCache() throws Exception {
+	public void testXmlViewResolverWithoutCache() throws Exception {
 		StaticWebApplicationContext wac = new StaticWebApplicationContext() {
 			@Override
 			protected Resource getResourceByPath(String path) {
-				assertThat(org.springframework.web.servlet.view.XmlViewResolver.DEFAULT_LOCATION.equals(path)).as("Correct default location").isTrue();
+				assertTrue("Correct default location", XmlViewResolver.DEFAULT_LOCATION.equals(path));
 				return super.getResourceByPath(path);
 			}
 		};
-		wac.setServletContext(this.sc);
+		wac.setServletContext(new MockServletContext());
 		wac.refresh();
-		org.springframework.web.servlet.view.XmlViewResolver vr = new org.springframework.web.servlet.view.XmlViewResolver();
+		XmlViewResolver vr = new XmlViewResolver();
 		vr.setCache(false);
-		vr.setApplicationContext(wac);
-		assertThatExceptionOfType(BeanDefinitionStoreException.class).isThrownBy(() ->
-				vr.resolveViewName("example1", Locale.getDefault()));
+		try {
+			vr.setApplicationContext(wac);
+		}
+		catch (ApplicationContextException ex) {
+			fail("Should not have thrown ApplicationContextException: " + ex.getMessage());
+		}
+		try {
+			vr.resolveViewName("example1", Locale.getDefault());
+			fail("Should have thrown BeanDefinitionStoreException");
+		}
+		catch (BeanDefinitionStoreException ex) {
+			// expected
+		}
 	}
 
 	@Test
-	public void cacheRemoval() throws Exception {
-		this.wac.refresh();
+	public void testCacheRemoval() throws Exception {
+		StaticWebApplicationContext wac = new StaticWebApplicationContext();
+		wac.setServletContext(new MockServletContext());
+		wac.refresh();
 		InternalResourceViewResolver vr = new InternalResourceViewResolver();
 		vr.setViewClass(JstlView.class);
-		vr.setApplicationContext(this.wac);
+		vr.setApplicationContext(wac);
 
 		View view = vr.resolveViewName("example1", Locale.getDefault());
 		View cached = vr.resolveViewName("example1", Locale.getDefault());
-		assertThat(cached).isSameAs(view);
+		if (view != cached) {
+			fail("Caching doesn't work");
+		}
 
 		vr.removeFromCache("example1", Locale.getDefault());
 		cached = vr.resolveViewName("example1", Locale.getDefault());
-		// the chance of having the same reference (hashCode) twice is negligible.
-		assertThat(cached).as("removed from cache").isNotSameAs(view);
+		if (view == cached) {
+			// the chance of having the same reference (hashCode) twice if negligible).
+			fail("View wasn't removed from cache");
+		}
 	}
 
 	@Test
-	public void cacheUnresolved() throws Exception {
+	public void testCacheUnresolved() throws Exception {
 		final AtomicInteger count = new AtomicInteger();
 		AbstractCachingViewResolver viewResolver = new AbstractCachingViewResolver() {
 			@Override
-			protected View loadView(String viewName, Locale locale) {
+			protected View loadView(String viewName, Locale locale) throws Exception {
 				count.incrementAndGet();
 				return null;
 			}
@@ -506,7 +522,7 @@ public class ViewResolverTests {
 		viewResolver.resolveViewName("view", Locale.getDefault());
 		viewResolver.resolveViewName("view", Locale.getDefault());
 
-		assertThat(count.intValue()).isEqualTo(2);
+		assertEquals(2, count.intValue());
 
 		viewResolver.setCacheUnresolved(true);
 
@@ -516,60 +532,15 @@ public class ViewResolverTests {
 		viewResolver.resolveViewName("view", Locale.getDefault());
 		viewResolver.resolveViewName("view", Locale.getDefault());
 
-		assertThat(count.intValue()).isEqualTo(3);
-	}
-
-	@Test
-	public void cacheFilterEnabled() throws Exception {
-		AtomicInteger count = new AtomicInteger();
-
-		// filter is enabled by default
-		AbstractCachingViewResolver viewResolver = new AbstractCachingViewResolver() {
-			@Override
-			protected View loadView(String viewName, Locale locale) {
-				assertThat(viewName).isEqualTo("view");
-				assertThat(locale).isEqualTo(Locale.getDefault());
-				count.incrementAndGet();
-				return new TestView();
-			}
-		};
-
-		viewResolver.resolveViewName("view", Locale.getDefault());
-		viewResolver.resolveViewName("view", Locale.getDefault());
-
-		assertThat(count.intValue()).isEqualTo(1);
-	}
-
-	@Test
-	public void cacheFilterDisabled() throws Exception {
-		AtomicInteger count = new AtomicInteger();
-
-		AbstractCachingViewResolver viewResolver = new AbstractCachingViewResolver() {
-			@Override
-			protected View loadView(String viewName, Locale locale) {
-				count.incrementAndGet();
-				return new TestView();
-			}
-		};
-
-		viewResolver.setCacheFilter((view, viewName, locale) -> false);
-
-		viewResolver.resolveViewName("view", Locale.getDefault());
-		viewResolver.resolveViewName("view", Locale.getDefault());
-
-		assertThat(count.intValue()).isEqualTo(2);
+		assertEquals(3, count.intValue());
 	}
 
 
 	public static class TestView extends InternalResourceView {
 
-		public TestView() {
-			setRequestContextAttribute("testRequestContext");
-		}
-
 		public void setLocation(Resource location) {
 			if (!(location instanceof ServletContextResource)) {
-				throw new IllegalArgumentException("Expecting ServletContextResource, not " + location.getClass().getName());
+				throw new IllegalArgumentException("Expecting ClassPathResource, not " + location.getClass().getName());
 			}
 		}
 	}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,11 +17,8 @@
 package org.springframework.web.cors;
 
 import java.io.IOException;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
-import org.springframework.lang.Nullable;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * A strategy that takes a request and a {@link CorsConfiguration} and updates
@@ -35,7 +32,7 @@ import org.springframework.lang.Nullable;
  * @author Sebastien Deleuze
  * @author Rossen Stoyanchev
  * @since 4.2
- * @see <a href="https://www.w3.org/TR/cors/">CORS W3C recommendation</a>
+ * @see <a href="http://www.w3.org/TR/cors/">CORS W3C recommandation</a>
  * @see org.springframework.web.servlet.handler.AbstractHandlerMapping#setCorsProcessor
  */
 public interface CorsProcessor {
@@ -47,7 +44,7 @@ public interface CorsProcessor {
 	 * @param response the current response
 	 * @return {@code false} if the request is rejected, {@code true} otherwise
 	 */
-	boolean processRequest(@Nullable CorsConfiguration configuration, HttpServletRequest request,
+	boolean processRequest(CorsConfiguration configuration, HttpServletRequest request,
 			HttpServletResponse response) throws IOException;
 
 }

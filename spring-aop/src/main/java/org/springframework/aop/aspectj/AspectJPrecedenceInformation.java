@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2006 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -36,12 +36,12 @@ public interface AspectJPrecedenceInformation extends Ordered {
 	// its advice for aspects with non-singleton instantiation models.
 
 	/**
-	 * Return the name of the aspect (bean) in which the advice was declared.
+	 * The name of the aspect (bean) in which the advice was declared.
 	 */
 	String getAspectName();
 
 	/**
-	 * Return the declaration order of the advice member within the aspect.
+	 * The declaration order of the advice member within the aspect.
 	 */
 	int getDeclarationOrder();
 

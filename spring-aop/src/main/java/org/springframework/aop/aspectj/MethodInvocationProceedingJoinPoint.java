@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,7 +29,6 @@ import org.aspectj.runtime.internal.AroundClosure;
 import org.springframework.aop.ProxyMethodInvocation;
 import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -55,15 +54,12 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 
 	private final ProxyMethodInvocation methodInvocation;
 
-	@Nullable
 	private Object[] args;
 
-	/** Lazily initialized signature object. */
-	@Nullable
+	/** Lazily initialized signature object */
 	private Signature signature;
 
-	/** Lazily initialized source location object. */
-	@Nullable
+	/** Lazily initialized source location object */
 	private SourceLocation sourceLocation;
 
 
@@ -84,13 +80,11 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 	}
 
 	@Override
-	@Nullable
 	public Object proceed() throws Throwable {
 		return this.methodInvocation.invocableClone().proceed();
 	}
 
 	@Override
-	@Nullable
 	public Object proceed(Object[] arguments) throws Throwable {
 		Assert.notNull(arguments, "Argument array passed to proceed cannot be null");
 		if (arguments.length != this.methodInvocation.getArguments().length) {
@@ -114,7 +108,6 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 	 * Returns the Spring AOP target. May be {@code null} if there is no target.
 	 */
 	@Override
-	@Nullable
 	public Object getTarget() {
 		return this.methodInvocation.getThis();
 	}
@@ -180,7 +173,6 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 	 */
 	private class MethodSignatureImpl implements MethodSignature {
 
-		@Nullable
 		private volatile String[] parameterNames;
 
 		@Override
@@ -219,14 +211,11 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 		}
 
 		@Override
-		@Nullable
 		public String[] getParameterNames() {
-			String[] parameterNames = this.parameterNames;
-			if (parameterNames == null) {
-				parameterNames = parameterNameDiscoverer.getParameterNames(getMethod());
-				this.parameterNames = parameterNames;
+			if (this.parameterNames == null) {
+				this.parameterNames = parameterNameDiscoverer.getParameterNames(getMethod());
 			}
-			return parameterNames;
+			return this.parameterNames;
 		}
 
 		@Override
@@ -255,19 +244,19 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 			StringBuilder sb = new StringBuilder();
 			if (includeModifier) {
 				sb.append(Modifier.toString(getModifiers()));
-				sb.append(' ');
+				sb.append(" ");
 			}
 			if (includeReturnTypeAndArgs) {
 				appendType(sb, getReturnType(), useLongReturnAndArgumentTypeName);
-				sb.append(' ');
+				sb.append(" ");
 			}
 			appendType(sb, getDeclaringType(), useLongTypeName);
-			sb.append('.');
+			sb.append(".");
 			sb.append(getMethod().getName());
-			sb.append('(');
+			sb.append("(");
 			Class<?>[] parametersTypes = getParameterTypes();
 			appendTypes(sb, parametersTypes, includeReturnTypeAndArgs, useLongReturnAndArgumentTypeName);
-			sb.append(')');
+			sb.append(")");
 			return sb.toString();
 		}
 
@@ -278,7 +267,7 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 				for (int size = types.length, i = 0; i < size; i++) {
 					appendType(sb, types[i], useLongReturnAndArgumentTypeName);
 					if (i < size - 1) {
-						sb.append(',');
+						sb.append(",");
 					}
 				}
 			}

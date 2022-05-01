@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,22 +18,20 @@ package org.springframework.web.socket.client.standard;
 
 import java.util.Arrays;
 import java.util.List;
-
-import jakarta.websocket.ClientEndpointConfig;
-import jakarta.websocket.ClientEndpointConfig.Configurator;
-import jakarta.websocket.ContainerProvider;
-import jakarta.websocket.Decoder;
-import jakarta.websocket.Encoder;
-import jakarta.websocket.Endpoint;
-import jakarta.websocket.Extension;
-import jakarta.websocket.Session;
-import jakarta.websocket.WebSocketContainer;
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.ClientEndpointConfig.Configurator;
+import javax.websocket.ContainerProvider;
+import javax.websocket.Decoder;
+import javax.websocket.Encoder;
+import javax.websocket.Endpoint;
+import javax.websocket.Extension;
+import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.web.socket.client.ConnectionManagerSupport;
 import org.springframework.web.socket.handler.BeanCreatingHandlerProvider;
@@ -50,10 +48,8 @@ import org.springframework.web.socket.handler.BeanCreatingHandlerProvider;
  */
 public class EndpointConnectionManager extends ConnectionManagerSupport implements BeanFactoryAware {
 
-	@Nullable
 	private final Endpoint endpoint;
 
-	@Nullable
 	private final BeanCreatingHandlerProvider<Endpoint> endpointProvider;
 
 	private final ClientEndpointConfig.Builder configBuilder = ClientEndpointConfig.Builder.create();
@@ -62,22 +58,21 @@ public class EndpointConnectionManager extends ConnectionManagerSupport implemen
 
 	private TaskExecutor taskExecutor = new SimpleAsyncTaskExecutor("EndpointConnectionManager-");
 
-	@Nullable
 	private volatile Session session;
 
 
 	public EndpointConnectionManager(Endpoint endpoint, String uriTemplate, Object... uriVariables) {
 		super(uriTemplate, uriVariables);
 		Assert.notNull(endpoint, "endpoint must not be null");
-		this.endpoint = endpoint;
 		this.endpointProvider = null;
+		this.endpoint = endpoint;
 	}
 
 	public EndpointConnectionManager(Class<? extends Endpoint> endpointClass, String uriTemplate, Object... uriVars) {
 		super(uriTemplate, uriVars);
 		Assert.notNull(endpointClass, "endpointClass must not be null");
+		this.endpointProvider = new BeanCreatingHandlerProvider<Endpoint>(endpointClass);
 		this.endpoint = null;
-		this.endpointProvider = new BeanCreatingHandlerProvider<>(endpointClass);
 	}
 
 
@@ -135,22 +130,21 @@ public class EndpointConnectionManager extends ConnectionManagerSupport implemen
 
 	@Override
 	protected void openConnection() {
-		this.taskExecutor.execute(() -> {
-			try {
-				if (logger.isInfoEnabled()) {
-					logger.info("Connecting to WebSocket at " + getUri());
+		this.taskExecutor.execute(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					if (logger.isInfoEnabled()) {
+						logger.info("Connecting to WebSocket at " + getUri());
+					}
+					Endpoint endpointToUse = (endpoint != null) ? endpoint : endpointProvider.getHandler();
+					ClientEndpointConfig endpointConfig = configBuilder.build();
+					session = getWebSocketContainer().connectToServer(endpointToUse, endpointConfig, getUri());
+					logger.info("Successfully connected to WebSocket");
 				}
-				Endpoint endpointToUse = this.endpoint;
-				if (endpointToUse == null) {
-					Assert.state(this.endpointProvider != null, "No endpoint set");
-					endpointToUse = this.endpointProvider.getHandler();
+				catch (Throwable ex) {
+					logger.error("Failed to connect to WebSocket", ex);
 				}
-				ClientEndpointConfig endpointConfig = this.configBuilder.build();
-				this.session = getWebSocketContainer().connectToServer(endpointToUse, endpointConfig, getUri());
-				logger.info("Successfully connected to WebSocket");
-			}
-			catch (Throwable ex) {
-				logger.error("Failed to connect to WebSocket", ex);
 			}
 		});
 	}
@@ -158,9 +152,8 @@ public class EndpointConnectionManager extends ConnectionManagerSupport implemen
 	@Override
 	protected void closeConnection() throws Exception {
 		try {
-			Session session = this.session;
-			if (session != null && session.isOpen()) {
-				session.close();
+			if (isConnected()) {
+				this.session.close();
 			}
 		}
 		finally {
@@ -170,8 +163,7 @@ public class EndpointConnectionManager extends ConnectionManagerSupport implemen
 
 	@Override
 	protected boolean isConnected() {
-		Session session = this.session;
-		return (session != null && session.isOpen());
+		return (this.session != null && this.session.isOpen());
 	}
 
 }

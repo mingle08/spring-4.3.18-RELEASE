@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,8 +15,6 @@
  */
 
 package org.springframework.web.context.request;
-
-import org.springframework.lang.Nullable;
 
 /**
  * Extension of the {@link WebRequest} interface, exposing the
@@ -32,15 +30,18 @@ public interface NativeWebRequest extends WebRequest {
 
 	/**
 	 * Return the underlying native request object.
-	 * @see jakarta.servlet.http.HttpServletRequest
+	 * @see javax.servlet.http.HttpServletRequest
+	 * @see javax.portlet.ActionRequest
+	 * @see javax.portlet.RenderRequest
 	 */
 	Object getNativeRequest();
 
 	/**
 	 * Return the underlying native response object, if any.
-	 * @see jakarta.servlet.http.HttpServletResponse
+	 * @see javax.servlet.http.HttpServletResponse
+	 * @see javax.portlet.ActionResponse
+	 * @see javax.portlet.RenderResponse
 	 */
-	@Nullable
 	Object getNativeResponse();
 
 	/**
@@ -48,19 +49,21 @@ public interface NativeWebRequest extends WebRequest {
 	 * @param requiredType the desired type of request object
 	 * @return the matching request object, or {@code null} if none
 	 * of that type is available
-	 * @see jakarta.servlet.http.HttpServletRequest
+	 * @see javax.servlet.http.HttpServletRequest
+	 * @see javax.portlet.ActionRequest
+	 * @see javax.portlet.RenderRequest
 	 */
-	@Nullable
-	<T> T getNativeRequest(@Nullable Class<T> requiredType);
+	<T> T getNativeRequest(Class<T> requiredType);
 
 	/**
 	 * Return the underlying native response object, if available.
 	 * @param requiredType the desired type of response object
 	 * @return the matching response object, or {@code null} if none
 	 * of that type is available
-	 * @see jakarta.servlet.http.HttpServletResponse
+	 * @see javax.servlet.http.HttpServletResponse
+	 * @see javax.portlet.ActionResponse
+	 * @see javax.portlet.RenderResponse
 	 */
-	@Nullable
-	<T> T getNativeResponse(@Nullable Class<T> requiredType);
+	<T> T getNativeResponse(Class<T> requiredType);
 
 }

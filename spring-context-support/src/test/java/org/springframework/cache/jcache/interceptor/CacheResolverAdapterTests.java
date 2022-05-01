@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,35 +19,38 @@ package org.springframework.cache.jcache.interceptor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Collection;
-
 import javax.cache.annotation.CacheInvocationContext;
 import javax.cache.annotation.CacheMethodDetails;
 import javax.cache.annotation.CacheResolver;
 import javax.cache.annotation.CacheResult;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.springframework.cache.Cache;
 import org.springframework.cache.jcache.AbstractJCacheTests;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Stephane Nicoll
  */
 public class CacheResolverAdapterTests extends AbstractJCacheTests {
 
+	@Rule
+	public final ExpectedException thrown = ExpectedException.none();
+
+
 	@Test
 	public void resolveSimpleCache() throws Exception {
 		DefaultCacheInvocationContext<?> dummyContext = createDummyContext();
 		CacheResolverAdapter adapter = new CacheResolverAdapter(getCacheResolver(dummyContext, "testCache"));
 		Collection<? extends Cache> caches = adapter.resolveCaches(dummyContext);
-		assertThat(caches).isNotNull();
-		assertThat(caches.size()).isEqualTo(1);
-		assertThat(caches.iterator().next().getName()).isEqualTo("testCache");
+		assertNotNull(caches);
+		assertEquals(1, caches.size());
+		assertEquals("testCache", caches.iterator().next().getName());
 	}
 
 	@Test
@@ -55,11 +58,10 @@ public class CacheResolverAdapterTests extends AbstractJCacheTests {
 		DefaultCacheInvocationContext<?> dummyContext = createDummyContext();
 		CacheResolverAdapter adapter = new CacheResolverAdapter(getCacheResolver(dummyContext, null));
 
-		assertThatIllegalStateException().isThrownBy(() ->
-				adapter.resolveCaches(dummyContext));
+		thrown.expect(IllegalStateException.class);
+		adapter.resolveCaches(dummyContext);
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected CacheResolver getCacheResolver(CacheInvocationContext<? extends Annotation> context, String cacheName) {
 		CacheResolver cacheResolver = mock(CacheResolver.class);
 		javax.cache.Cache cache;

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,9 +22,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.core.SpringProperties;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
 
 /**
  * Base class for {@link org.springframework.jdbc.core.JdbcTemplate} and
@@ -35,26 +32,16 @@ import org.springframework.util.Assert;
  * See {@link org.springframework.jdbc.core.JdbcTemplate}.
  *
  * @author Juergen Hoeller
- * @author Sebastien Deleuze
  * @since 28.11.2003
  * @see org.springframework.jdbc.core.JdbcTemplate
  */
 public abstract class JdbcAccessor implements InitializingBean {
 
-	/**
-	 * Boolean flag controlled by a {@code spring.xml.ignore} system property that instructs Spring to
-	 * ignore XML, i.e. to not initialize the XML-related infrastructure.
-	 * <p>The default is "false".
-	 */
-	private static final boolean shouldIgnoreXml = SpringProperties.getFlag("spring.xml.ignore");
-
-	/** Logger available to subclasses. */
+	/** Logger available to subclasses */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	@Nullable
 	private DataSource dataSource;
 
-	@Nullable
 	private volatile SQLExceptionTranslator exceptionTranslator;
 
 	private boolean lazyInit = true;
@@ -63,42 +50,27 @@ public abstract class JdbcAccessor implements InitializingBean {
 	/**
 	 * Set the JDBC DataSource to obtain connections from.
 	 */
-	public void setDataSource(@Nullable DataSource dataSource) {
+	public void setDataSource(DataSource dataSource) {
 		this.dataSource = dataSource;
 	}
 
 	/**
 	 * Return the DataSource used by this template.
 	 */
-	@Nullable
 	public DataSource getDataSource() {
 		return this.dataSource;
 	}
 
 	/**
-	 * Obtain the DataSource for actual use.
-	 * @return the DataSource (never {@code null})
-	 * @throws IllegalStateException in case of no DataSource set
-	 * @since 5.0
-	 */
-	protected DataSource obtainDataSource() {
-		DataSource dataSource = getDataSource();
-		Assert.state(dataSource != null, "No DataSource set");
-		return dataSource;
-	}
-
-	/**
 	 * Specify the database product name for the DataSource that this accessor uses.
-	 * This allows to initialize an SQLErrorCodeSQLExceptionTranslator without
+	 * This allows to initialize a SQLErrorCodeSQLExceptionTranslator without
 	 * obtaining a Connection from the DataSource to get the meta-data.
 	 * @param dbName the database product name that identifies the error codes entry
 	 * @see SQLErrorCodeSQLExceptionTranslator#setDatabaseProductName
 	 * @see java.sql.DatabaseMetaData#getDatabaseProductName()
 	 */
 	public void setDatabaseProductName(String dbName) {
-		if (!shouldIgnoreXml) {
-			this.exceptionTranslator = new SQLErrorCodeSQLExceptionTranslator(dbName);
-		}
+		this.exceptionTranslator = new SQLErrorCodeSQLExceptionTranslator(dbName);
 	}
 
 	/**
@@ -129,10 +101,7 @@ public abstract class JdbcAccessor implements InitializingBean {
 			exceptionTranslator = this.exceptionTranslator;
 			if (exceptionTranslator == null) {
 				DataSource dataSource = getDataSource();
-				if (shouldIgnoreXml) {
-					exceptionTranslator = new SQLExceptionSubclassTranslator();
-				}
-				else if (dataSource != null) {
+				if (dataSource != null) {
 					exceptionTranslator = new SQLErrorCodeSQLExceptionTranslator(dataSource);
 				}
 				else {
@@ -146,7 +115,7 @@ public abstract class JdbcAccessor implements InitializingBean {
 
 	/**
 	 * Set whether to lazily initialize the SQLExceptionTranslator for this accessor,
-	 * on first encounter of an SQLException. Default is "true"; can be switched to
+	 * on first encounter of a SQLException. Default is "true"; can be switched to
 	 * "false" for initialization on startup.
 	 * <p>Early initialization just applies if {@code afterPropertiesSet()} is called.
 	 * @see #getExceptionTranslator()

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,7 @@ package org.springframework.core;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.springframework.lang.Nullable;
+import org.springframework.lang.UsesJava7;
 import org.springframework.util.FileCopyUtils;
 
 /**
@@ -34,20 +34,22 @@ import org.springframework.util.FileCopyUtils;
  * @author Juergen Hoeller
  * @since 2.0.1
  */
+@UsesJava7
 public class OverridingClassLoader extends DecoratingClassLoader {
 
-	/** Packages that are excluded by default. */
+	/** Packages that are excluded by default */
 	public static final String[] DEFAULT_EXCLUDED_PACKAGES = new String[]
 			{"java.", "javax.", "sun.", "oracle.", "javassist.", "org.aspectj.", "net.sf.cglib."};
 
 	private static final String CLASS_FILE_SUFFIX = ".class";
 
 	static {
-		ClassLoader.registerAsParallelCapable();
+		if (parallelCapableClassLoaderAvailable) {
+			ClassLoader.registerAsParallelCapable();
+		}
 	}
 
 
-	@Nullable
 	private final ClassLoader overrideDelegate;
 
 
@@ -55,7 +57,7 @@ public class OverridingClassLoader extends DecoratingClassLoader {
 	 * Create a new OverridingClassLoader for the given ClassLoader.
 	 * @param parent the ClassLoader to build an overriding ClassLoader for
 	 */
-	public OverridingClassLoader(@Nullable ClassLoader parent) {
+	public OverridingClassLoader(ClassLoader parent) {
 		this(parent, null);
 	}
 
@@ -65,7 +67,7 @@ public class OverridingClassLoader extends DecoratingClassLoader {
 	 * @param overrideDelegate the ClassLoader to delegate to for overriding
 	 * @since 4.3
 	 */
-	public OverridingClassLoader(@Nullable ClassLoader parent, @Nullable ClassLoader overrideDelegate) {
+	public OverridingClassLoader(ClassLoader parent, ClassLoader overrideDelegate) {
 		super(parent);
 		this.overrideDelegate = overrideDelegate;
 		for (String packageName : DEFAULT_EXCLUDED_PACKAGES) {
@@ -115,7 +117,6 @@ public class OverridingClassLoader extends DecoratingClassLoader {
 	 * @return the Class object, or {@code null} if no class defined for that name
 	 * @throws ClassNotFoundException if the class for the given name couldn't be loaded
 	 */
-	@Nullable
 	protected Class<?> loadClassForOverriding(String name) throws ClassNotFoundException {
 		Class<?> result = findLoadedClass(name);
 		if (result == null) {
@@ -137,7 +138,6 @@ public class OverridingClassLoader extends DecoratingClassLoader {
 	 * or {@code null} if no class defined for that name
 	 * @throws ClassNotFoundException if the class for the given name couldn't be loaded
 	 */
-	@Nullable
 	protected byte[] loadBytesForClass(String name) throws ClassNotFoundException {
 		InputStream is = openStreamForClass(name);
 		if (is == null) {
@@ -161,7 +161,6 @@ public class OverridingClassLoader extends DecoratingClassLoader {
 	 * @param name the name of the class
 	 * @return the InputStream containing the byte code for the specified class
 	 */
-	@Nullable
 	protected InputStream openStreamForClass(String name) {
 		String internalName = name.replace('.', '/') + CLASS_FILE_SUFFIX;
 		return getParent().getResourceAsStream(internalName);

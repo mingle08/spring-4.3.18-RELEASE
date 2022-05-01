@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,10 +19,10 @@ package org.springframework.test.context.jdbc;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import javax.sql.DataSource;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -31,10 +31,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Integration tests for {@link Sql @Sql} that verify support for multiple
@@ -45,10 +46,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 4.1
  * @see MultipleDataSourcesAndTransactionManagersTransactionalSqlScriptsTests
  */
-@SpringJUnitConfig
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration
 @DirtiesContext
 @SqlConfig(dataSource = "dataSource1", transactionManager = "txMgr1")
-class MultipleDataSourcesAndTransactionManagersSqlScriptsTests {
+public class MultipleDataSourcesAndTransactionManagersSqlScriptsTests {
 
 	@Autowired
 	private DataSource dataSource1;
@@ -59,13 +61,13 @@ class MultipleDataSourcesAndTransactionManagersSqlScriptsTests {
 
 	@Test
 	@Sql("data-add-dogbert.sql")
-	void database1() {
+	public void database1() {
 		assertUsers(new JdbcTemplate(dataSource1), "Dilbert", "Dogbert");
 	}
 
 	@Test
 	@Sql(scripts = "data-add-catbert.sql", config = @SqlConfig(dataSource = "dataSource2", transactionManager = "txMgr2"))
-	void database2() {
+	public void database2() {
 		assertUsers(new JdbcTemplate(dataSource2), "Dilbert", "Catbert");
 	}
 
@@ -74,7 +76,7 @@ class MultipleDataSourcesAndTransactionManagersSqlScriptsTests {
 		Collections.sort(expected);
 		List<String> actual = jdbcTemplate.queryForList("select name from user", String.class);
 		Collections.sort(actual);
-		assertThat(actual).as("Users in database;").isEqualTo(expected);
+		assertEquals("Users in database;", expected, actual);
 	}
 
 
@@ -82,17 +84,17 @@ class MultipleDataSourcesAndTransactionManagersSqlScriptsTests {
 	static class Config {
 
 		@Bean
-		PlatformTransactionManager txMgr1() {
+		public PlatformTransactionManager txMgr1() {
 			return new DataSourceTransactionManager(dataSource1());
 		}
 
 		@Bean
-		PlatformTransactionManager txMgr2() {
+		public PlatformTransactionManager txMgr2() {
 			return new DataSourceTransactionManager(dataSource2());
 		}
 
 		@Bean
-		DataSource dataSource1() {
+		public DataSource dataSource1() {
 			return new EmbeddedDatabaseBuilder()//
 			.setName("database1")//
 			.addScript("classpath:/org/springframework/test/context/jdbc/schema.sql")//
@@ -101,7 +103,7 @@ class MultipleDataSourcesAndTransactionManagersSqlScriptsTests {
 		}
 
 		@Bean
-		DataSource dataSource2() {
+		public DataSource dataSource2() {
 			return new EmbeddedDatabaseBuilder()//
 			.setName("database2")//
 			.addScript("classpath:/org/springframework/test/context/jdbc/schema.sql")//

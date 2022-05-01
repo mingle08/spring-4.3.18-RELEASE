@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,13 +16,13 @@
 
 package org.springframework.web.socket.client.standard;
 
-import jakarta.websocket.ContainerProvider;
-import jakarta.websocket.WebSocketContainer;
+import javax.websocket.ContainerProvider;
+import javax.websocket.WebSocketContainer;
 
 import org.springframework.beans.factory.FactoryBean;
 
 /**
- * A FactoryBean for creating and configuring a {@link jakarta.websocket.WebSocketContainer}
+ * A FactoryBean for creating and configuring a {@link javax.websocket.WebSocketContainer}
  * through Spring XML configuration. In Java configuration, ignore this class and use
  * {@code ContainerProvider.getWebSocketContainer()} instead.
  *

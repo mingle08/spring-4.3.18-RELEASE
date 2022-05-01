@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,9 +19,7 @@ package org.springframework.messaging.simp;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.IdTimestampMessageHeaderInitializer;
 import org.springframework.messaging.support.MessageHeaderAccessor;
@@ -85,17 +83,11 @@ public class SimpMessageHeaderAccessor extends NativeMessageHeaderAccessor {
 	public static final String IGNORE_ERROR = "simpIgnoreError";
 
 
-	@Nullable
-	private Consumer<Principal> userCallback;
-
-
 	/**
 	 * A constructor for creating new message headers.
 	 * This constructor is protected. See factory methods in this and sub-classes.
 	 */
-	protected SimpMessageHeaderAccessor(SimpMessageType messageType,
-			@Nullable Map<String, List<String>> externalSourceHeaders) {
-
+	protected SimpMessageHeaderAccessor(SimpMessageType messageType, Map<String, List<String>> externalSourceHeaders) {
 		super(externalSourceHeaders);
 		Assert.notNull(messageType, "MessageType must not be null");
 		setHeader(MESSAGE_TYPE_HEADER, messageType);
@@ -123,37 +115,34 @@ public class SimpMessageHeaderAccessor extends NativeMessageHeaderAccessor {
 		}
 	}
 
-	@Nullable
 	public SimpMessageType getMessageType() {
 		return (SimpMessageType) getHeader(MESSAGE_TYPE_HEADER);
 	}
 
-	public void setDestination(@Nullable String destination) {
+	public void setDestination(String destination) {
+		Assert.notNull(destination, "Destination must not be null");
 		setHeader(DESTINATION_HEADER, destination);
 	}
 
-	@Nullable
 	public String getDestination() {
 		return (String) getHeader(DESTINATION_HEADER);
 	}
 
-	public void setSubscriptionId(@Nullable String subscriptionId) {
+	public void setSubscriptionId(String subscriptionId) {
 		setHeader(SUBSCRIPTION_ID_HEADER, subscriptionId);
 	}
 
-	@Nullable
 	public String getSubscriptionId() {
 		return (String) getHeader(SUBSCRIPTION_ID_HEADER);
 	}
 
-	public void setSessionId(@Nullable String sessionId) {
+	public void setSessionId(String sessionId) {
 		setHeader(SESSION_ID_HEADER, sessionId);
 	}
 
 	/**
-	 * Return the id of the current session.
+	 * @return the id of the current session
 	 */
-	@Nullable
 	public String getSessionId() {
 		return (String) getHeader(SESSION_ID_HEADER);
 	}
@@ -161,7 +150,7 @@ public class SimpMessageHeaderAccessor extends NativeMessageHeaderAccessor {
 	/**
 	 * A static alternative for access to the session attributes header.
 	 */
-	public void setSessionAttributes(@Nullable Map<String, Object> attributes) {
+	public void setSessionAttributes(Map<String, Object> attributes) {
 		setHeader(SESSION_ATTRIBUTES, attributes);
 	}
 
@@ -169,36 +158,19 @@ public class SimpMessageHeaderAccessor extends NativeMessageHeaderAccessor {
 	 * Return the attributes associated with the current session.
 	 */
 	@SuppressWarnings("unchecked")
-	@Nullable
 	public Map<String, Object> getSessionAttributes() {
 		return (Map<String, Object>) getHeader(SESSION_ATTRIBUTES);
 	}
 
-	public void setUser(@Nullable Principal principal) {
+	public void setUser(Principal principal) {
 		setHeader(USER_HEADER, principal);
-		if (this.userCallback != null) {
-			this.userCallback.accept(principal);
-		}
 	}
 
 	/**
 	 * Return the user associated with the current session.
 	 */
-	@Nullable
 	public Principal getUser() {
 		return (Principal) getHeader(USER_HEADER);
-	}
-
-	/**
-	 * Provide a callback to be invoked if and when {@link #setUser(Principal)}
-	 * is called. This is used internally on the inbound channel to detect
-	 * token-based authentications through an interceptor.
-	 * @param callback the callback to invoke
-	 * @since 5.1.9
-	 */
-	public void setUserChangeCallback(Consumer<Principal> callback) {
-		Assert.notNull(callback, "'callback' is required");
-		this.userCallback = this.userCallback != null ? this.userCallback.andThen(callback) : callback;
 	}
 
 	@Override
@@ -208,7 +180,7 @@ public class SimpMessageHeaderAccessor extends NativeMessageHeaderAccessor {
 		}
 		StringBuilder sb = getBaseLogMessage();
 		if (!CollectionUtils.isEmpty(getSessionAttributes())) {
-			sb.append(" attributes[").append(getSessionAttributes().size()).append(']');
+			sb.append(" attributes[").append(getSessionAttributes().size()).append("]");
 		}
 		sb.append(getShortPayloadLogMessage(payload));
 		return sb.toString();
@@ -216,7 +188,7 @@ public class SimpMessageHeaderAccessor extends NativeMessageHeaderAccessor {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public String getDetailedLogMessage(@Nullable Object payload) {
+	public String getDetailedLogMessage(Object payload) {
 		if (getMessageType() == null) {
 			return super.getDetailedLogMessage(payload);
 		}
@@ -277,38 +249,31 @@ public class SimpMessageHeaderAccessor extends NativeMessageHeaderAccessor {
 		return new SimpMessageHeaderAccessor(message);
 	}
 
-	@Nullable
 	public static SimpMessageType getMessageType(Map<String, Object> headers) {
 		return (SimpMessageType) headers.get(MESSAGE_TYPE_HEADER);
 	}
 
-	@Nullable
 	public static String getDestination(Map<String, Object> headers) {
 		return (String) headers.get(DESTINATION_HEADER);
 	}
 
-	@Nullable
 	public static String getSubscriptionId(Map<String, Object> headers) {
 		return (String) headers.get(SUBSCRIPTION_ID_HEADER);
 	}
 
-	@Nullable
 	public static String getSessionId(Map<String, Object> headers) {
 		return (String) headers.get(SESSION_ID_HEADER);
 	}
 
 	@SuppressWarnings("unchecked")
-	@Nullable
 	public static Map<String, Object> getSessionAttributes(Map<String, Object> headers) {
 		return (Map<String, Object>) headers.get(SESSION_ATTRIBUTES);
 	}
 
-	@Nullable
 	public static Principal getUser(Map<String, Object> headers) {
 		return (Principal) headers.get(USER_HEADER);
 	}
 
-	@Nullable
 	public static long[] getHeartbeat(Map<String, Object> headers) {
 		return (long[]) headers.get(HEART_BEAT_HEADER);
 	}

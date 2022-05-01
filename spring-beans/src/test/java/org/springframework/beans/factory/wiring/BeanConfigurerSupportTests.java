@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,18 +16,15 @@
 
 package org.springframework.beans.factory.wiring;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.beans.testfixture.beans.TestBean;
+import org.springframework.tests.sample.beans.TestBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.BDDMockito.*;
 
 /**
  * @author Rick Evans
@@ -36,10 +33,9 @@ import static org.mockito.Mockito.verify;
  */
 public class BeanConfigurerSupportTests {
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void supplyIncompatibleBeanFactoryImplementation() throws Exception {
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				new StubBeanConfigurerSupport().setBeanFactory(mock(BeanFactory.class)));
+		new StubBeanConfigurerSupport().setBeanFactory(mock(BeanFactory.class));
 	}
 
 	@Test
@@ -53,7 +49,7 @@ public class BeanConfigurerSupportTests {
 		configurer.setBeanFactory(new DefaultListableBeanFactory());
 		configurer.configureBean(beanInstance);
 		verify(resolver).resolveWiringInfo(beanInstance);
-		assertThat(beanInstance.getName()).isNull();
+		assertNull(beanInstance.getName());
 	}
 
 	@Test
@@ -61,7 +57,7 @@ public class BeanConfigurerSupportTests {
 		TestBean beanInstance = new TestBean();
 		BeanConfigurerSupport configurer = new StubBeanConfigurerSupport();
 		configurer.configureBean(beanInstance);
-		assertThat(beanInstance.getName()).isNull();
+		assertNull(beanInstance.getName());
 	}
 
 	@Test
@@ -77,7 +73,7 @@ public class BeanConfigurerSupportTests {
 		configurer.setBeanFactory(factory);
 		configurer.afterPropertiesSet();
 		configurer.configureBean(beanInstance);
-		assertThat(beanInstance.getName()).as("Bean is evidently not being configured (for some reason)").isEqualTo("Harriet Wheeler");
+		assertEquals("Bean is evidently not being configured (for some reason)", "Harriet Wheeler", beanInstance.getName());
 	}
 
 	@Test
@@ -97,7 +93,7 @@ public class BeanConfigurerSupportTests {
 		configurer.setBeanFactory(factory);
 		configurer.setBeanWiringInfoResolver(resolver);
 		configurer.configureBean(beanInstance);
-		assertThat(beanInstance.getSpouse().getName()).as("Bean is evidently not being configured (for some reason)").isEqualTo("David Gavurin");
+		assertEquals("Bean is evidently not being configured (for some reason)", "David Gavurin", beanInstance.getSpouse().getName());
 	}
 
 	@Test
@@ -117,7 +113,7 @@ public class BeanConfigurerSupportTests {
 		configurer.setBeanFactory(factory);
 		configurer.setBeanWiringInfoResolver(resolver);
 		configurer.configureBean(beanInstance);
-		assertThat(beanInstance.getSpouse().getName()).as("Bean is evidently not being configured (for some reason)").isEqualTo("David Gavurin");
+		assertEquals("Bean is evidently not being configured (for some reason)", "David Gavurin", beanInstance.getSpouse().getName());
 	}
 
 

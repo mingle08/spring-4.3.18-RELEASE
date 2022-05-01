@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,9 @@ package org.springframework.messaging.converter;
 
 import java.util.Locale;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.springframework.core.convert.ConversionException;
 import org.springframework.core.convert.ConversionService;
@@ -26,8 +28,8 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 /**
  *
@@ -35,26 +37,29 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  */
 public class GenericMessageConverterTests {
 
+	@Rule
+	public final ExpectedException thrown = ExpectedException.none();
+
 	private final ConversionService conversionService = new DefaultConversionService();
 	private final GenericMessageConverter converter = new GenericMessageConverter(conversionService);
 
 	@Test
 	public void fromMessageWithConversion() {
 		Message<String> content = MessageBuilder.withPayload("33").build();
-		assertThat(converter.fromMessage(content, Integer.class)).isEqualTo(33);
+		assertEquals(33, converter.fromMessage(content, Integer.class));
 	}
 
 	@Test
 	public void fromMessageNoConverter() {
 		Message<Integer> content = MessageBuilder.withPayload(1234).build();
-		assertThat(converter.fromMessage(content, Locale.class)).as("No converter from integer to locale").isNull();
+		assertNull("No converter from integer to locale", converter.fromMessage(content, Locale.class));
 	}
 
 	@Test
 	public void fromMessageWithFailedConversion() {
 		Message<String> content = MessageBuilder.withPayload("test not a number").build();
-		assertThatExceptionOfType(MessageConversionException.class).isThrownBy(() ->
-				converter.fromMessage(content, Integer.class))
-			.withCauseInstanceOf(ConversionException.class);
+		thrown.expect(MessageConversionException.class);
+		thrown.expectCause(isA(ConversionException.class));
+		converter.fromMessage(content, Integer.class);
 	}
 }

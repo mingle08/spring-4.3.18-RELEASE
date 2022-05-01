@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,11 +16,9 @@
 
 package org.springframework.transaction;
 
-import org.springframework.lang.Nullable;
-
 /**
- * This is the central interface in Spring's imperative transaction infrastructure.
- * Applications can use this directly, but it is not primarily meant as an API:
+ * This is the central interface in Spring's transaction infrastructure.
+ * Applications can use this directly, but it is not primarily meant as API:
  * Typically, applications will work with either TransactionTemplate or
  * declarative transaction demarcation through AOP.
  *
@@ -41,9 +39,9 @@ import org.springframework.lang.Nullable;
  * @since 16.05.2003
  * @see org.springframework.transaction.support.TransactionTemplate
  * @see org.springframework.transaction.interceptor.TransactionInterceptor
- * @see org.springframework.transaction.ReactiveTransactionManager
+ * @see org.springframework.transaction.interceptor.TransactionProxyFactoryBean
  */
-public interface PlatformTransactionManager extends TransactionManager {
+public interface PlatformTransactionManager {
 
 	/**
 	 * Return a currently active transaction or create a new one, according to
@@ -56,7 +54,7 @@ public interface PlatformTransactionManager extends TransactionManager {
 	 * <p>An exception to the above rule is the read-only flag, which should be
 	 * ignored if no explicit read-only mode is supported. Essentially, the
 	 * read-only flag is just a hint for potential optimization.
-	 * @param definition the TransactionDefinition instance (can be {@code null} for defaults),
+	 * @param definition TransactionDefinition instance (can be {@code null} for defaults),
 	 * describing propagation behavior, isolation level, timeout etc.
 	 * @return transaction status object representing the new or current transaction
 	 * @throws TransactionException in case of lookup, creation, or system errors
@@ -68,8 +66,7 @@ public interface PlatformTransactionManager extends TransactionManager {
 	 * @see TransactionDefinition#getTimeout
 	 * @see TransactionDefinition#isReadOnly
 	 */
-	TransactionStatus getTransaction(@Nullable TransactionDefinition definition)
-			throws TransactionException;
+	TransactionStatus getTransaction(TransactionDefinition definition) throws TransactionException;
 
 	/**
 	 * Commit the given transaction, with regard to its status. If the transaction

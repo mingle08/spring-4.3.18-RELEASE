@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,16 +16,11 @@
 
 package org.springframework.web.jsf.el;
 
-import java.beans.FeatureDescriptor;
-import java.util.Iterator;
+import javax.el.ELContext;
+import javax.faces.context.FacesContext;
 
-import jakarta.el.ELContext;
-import jakarta.el.ELException;
-import jakarta.el.ELResolver;
-import jakarta.el.PropertyNotWritableException;
-import jakarta.faces.context.FacesContext;
-
-import org.springframework.lang.Nullable;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.access.el.SpringBeanELResolver;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.jsf.FacesContextUtils;
 
@@ -36,108 +31,51 @@ import org.springframework.web.jsf.FacesContextUtils;
  * <p>Configure this resolver in your {@code faces-config.xml} file as follows:
  *
  * <pre class="code">
- * &lt;application&gt;
+ * &lt;application>
  *   ...
- *   &lt;el-resolver&gt;org.springframework.web.jsf.el.SpringBeanFacesELResolver&lt;/el-resolver&gt;
- * &lt;/application&gt;</pre>
+ *   &lt;el-resolver>org.springframework.web.jsf.el.SpringBeanFacesELResolver&lt;/el-resolver>
+ * &lt;/application></pre>
  *
  * All your JSF expressions can then implicitly refer to the names of
  * Spring-managed service layer beans, for example in property values of
  * JSF-managed beans:
  *
  * <pre class="code">
- * &lt;managed-bean&gt;
- *   &lt;managed-bean-name&gt;myJsfManagedBean&lt;/managed-bean-name&gt;
- *   &lt;managed-bean-class&gt;example.MyJsfManagedBean&lt;/managed-bean-class&gt;
- *   &lt;managed-bean-scope&gt;session&lt;/managed-bean-scope&gt;
- *   &lt;managed-property&gt;
- *     &lt;property-name&gt;mySpringManagedBusinessObject&lt;/property-name&gt;
- *     &lt;value&gt;#{mySpringManagedBusinessObject}&lt;/value&gt;
- *   &lt;/managed-property&gt;
- * &lt;/managed-bean&gt;</pre>
+ * &lt;managed-bean>
+ *   &lt;managed-bean-name>myJsfManagedBean&lt;/managed-bean-name>
+ *   &lt;managed-bean-class>example.MyJsfManagedBean&lt;/managed-bean-class>
+ *   &lt;managed-bean-scope>session&lt;/managed-bean-scope>
+ *   &lt;managed-property>
+ *     &lt;property-name>mySpringManagedBusinessObject&lt;/property-name>
+ *     &lt;value>#{mySpringManagedBusinessObject}&lt;/value>
+ *   &lt;/managed-property>
+ * &lt;/managed-bean></pre>
  *
  * with "mySpringManagedBusinessObject" defined as Spring bean in
  * applicationContext.xml:
  *
  * <pre class="code">
- * &lt;bean id="mySpringManagedBusinessObject" class="example.MySpringManagedBusinessObject"&gt;
+ * &lt;bean id="mySpringManagedBusinessObject" class="example.MySpringManagedBusinessObject">
  *   ...
- * &lt;/bean&gt;</pre>
+ * &lt;/bean></pre>
  *
  * @author Juergen Hoeller
  * @since 2.5
  * @see WebApplicationContextFacesELResolver
  * @see org.springframework.web.jsf.FacesContextUtils#getRequiredWebApplicationContext
  */
-public class SpringBeanFacesELResolver extends ELResolver {
+public class SpringBeanFacesELResolver extends SpringBeanELResolver {
 
+	/**
+	 * This implementation delegates to {@link #getWebApplicationContext}.
+	 * Can be overridden to provide an arbitrary BeanFactory reference to resolve
+	 * against; usually, this will be a full Spring ApplicationContext.
+	 * @param elContext the current JSF ELContext
+	 * @return the Spring BeanFactory (never {@code null})
+	 */
 	@Override
-	@Nullable
-	public Object getValue(ELContext elContext, @Nullable Object base, Object property) throws ELException {
-		if (base == null) {
-			String beanName = property.toString();
-			WebApplicationContext wac = getWebApplicationContext(elContext);
-			if (wac.containsBean(beanName)) {
-				elContext.setPropertyResolved(true);
-				return wac.getBean(beanName);
-			}
-		}
-		return null;
-	}
-
-	@Override
-	@Nullable
-	public Class<?> getType(ELContext elContext, @Nullable Object base, Object property) throws ELException {
-		if (base == null) {
-			String beanName = property.toString();
-			WebApplicationContext wac = getWebApplicationContext(elContext);
-			if (wac.containsBean(beanName)) {
-				elContext.setPropertyResolved(true);
-				return wac.getType(beanName);
-			}
-		}
-		return null;
-	}
-
-	@Override
-	public void setValue(ELContext elContext, @Nullable Object base, Object property, Object value) throws ELException {
-		if (base == null) {
-			String beanName = property.toString();
-			WebApplicationContext wac = getWebApplicationContext(elContext);
-			if (wac.containsBean(beanName)) {
-				if (value == wac.getBean(beanName)) {
-					// Setting the bean reference to the same value is alright - can simply be ignored...
-					elContext.setPropertyResolved(true);
-				}
-				else {
-					throw new PropertyNotWritableException(
-							"Variable '" + beanName + "' refers to a Spring bean which by definition is not writable");
-				}
-			}
-		}
-	}
-
-	@Override
-	public boolean isReadOnly(ELContext elContext, @Nullable Object base, Object property) throws ELException {
-		if (base == null) {
-			String beanName = property.toString();
-			WebApplicationContext wac = getWebApplicationContext(elContext);
-			if (wac.containsBean(beanName)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	@Override
-	@Nullable
-	public Iterator<FeatureDescriptor> getFeatureDescriptors(ELContext elContext, @Nullable Object base) {
-		return null;
-	}
-
-	@Override
-	public Class<?> getCommonPropertyType(ELContext elContext, @Nullable Object base) {
-		return Object.class;
+	protected BeanFactory getBeanFactory(ELContext elContext) {
+		return getWebApplicationContext(elContext);
 	}
 
 	/**

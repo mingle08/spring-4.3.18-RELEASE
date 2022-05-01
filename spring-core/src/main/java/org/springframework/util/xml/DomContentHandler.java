@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,51 +27,55 @@ import org.w3c.dom.Text;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.Locator;
+import org.xml.sax.SAXException;
+
+import org.springframework.util.Assert;
 
 /**
  * SAX {@code ContentHandler} that transforms callback calls to DOM {@code Node}s.
  *
  * @author Arjen Poutsma
- * @since 3.0
  * @see org.w3c.dom.Node
+ * @since 3.0
  */
 class DomContentHandler implements ContentHandler {
 
 	private final Document document;
 
-	private final List<Element> elements = new ArrayList<>();
+	private final List<Element> elements = new ArrayList<Element>();
 
 	private final Node node;
 
-
 	/**
-	 * Create a new instance of the {@code DomContentHandler} with the given node.
+	 * Creates a new instance of the {@code DomContentHandler} with the given node.
+	 *
 	 * @param node the node to publish events to
 	 */
 	DomContentHandler(Node node) {
+		Assert.notNull(node, "node must not be null");
 		this.node = node;
 		if (node instanceof Document) {
-			this.document = (Document) node;
+			document = (Document) node;
 		}
 		else {
-			this.document = node.getOwnerDocument();
+			document = node.getOwnerDocument();
 		}
+		Assert.notNull(document, "document must not be null");
 	}
 
-
 	private Node getParent() {
-		if (!this.elements.isEmpty()) {
-			return this.elements.get(this.elements.size() - 1);
+		if (!elements.isEmpty()) {
+			return elements.get(elements.size() - 1);
 		}
 		else {
-			return this.node;
+			return node;
 		}
 	}
 
 	@Override
-	public void startElement(String uri, String localName, String qName, Attributes attributes) {
+	public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
 		Node parent = getParent();
-		Element element = this.document.createElementNS(uri, qName);
+		Element element = document.createElementNS(uri, qName);
 		for (int i = 0; i < attributes.getLength(); i++) {
 			String attrUri = attributes.getURI(i);
 			String attrQname = attributes.getQName(i);
@@ -81,16 +85,16 @@ class DomContentHandler implements ContentHandler {
 			}
 		}
 		element = (Element) parent.appendChild(element);
-		this.elements.add(element);
+		elements.add(element);
 	}
 
 	@Override
-	public void endElement(String uri, String localName, String qName) {
-		this.elements.remove(this.elements.size() - 1);
+	public void endElement(String uri, String localName, String qName) throws SAXException {
+		elements.remove(elements.size() - 1);
 	}
 
 	@Override
-	public void characters(char[] ch, int start, int length) {
+	public void characters(char[] ch, int start, int length) throws SAXException {
 		String data = new String(ch, start, length);
 		Node parent = getParent();
 		Node lastChild = parent.getLastChild();
@@ -98,47 +102,47 @@ class DomContentHandler implements ContentHandler {
 			((Text) lastChild).appendData(data);
 		}
 		else {
-			Text text = this.document.createTextNode(data);
+			Text text = document.createTextNode(data);
 			parent.appendChild(text);
 		}
 	}
 
 	@Override
-	public void processingInstruction(String target, String data) {
+	public void processingInstruction(String target, String data) throws SAXException {
 		Node parent = getParent();
-		ProcessingInstruction pi = this.document.createProcessingInstruction(target, data);
+		ProcessingInstruction pi = document.createProcessingInstruction(target, data);
 		parent.appendChild(pi);
 	}
 
-
-	// Unsupported
+	/*
+	 * Unsupported
+	 */
 
 	@Override
 	public void setDocumentLocator(Locator locator) {
 	}
 
 	@Override
-	public void startDocument() {
+	public void startDocument() throws SAXException {
 	}
 
 	@Override
-	public void endDocument() {
+	public void endDocument() throws SAXException {
 	}
 
 	@Override
-	public void startPrefixMapping(String prefix, String uri) {
+	public void startPrefixMapping(String prefix, String uri) throws SAXException {
 	}
 
 	@Override
-	public void endPrefixMapping(String prefix) {
+	public void endPrefixMapping(String prefix) throws SAXException {
 	}
 
 	@Override
-	public void ignorableWhitespace(char[] ch, int start, int length) {
+	public void ignorableWhitespace(char[] ch, int start, int length) throws SAXException {
 	}
 
 	@Override
-	public void skippedEntity(String name) {
+	public void skippedEntity(String name) throws SAXException {
 	}
-
 }

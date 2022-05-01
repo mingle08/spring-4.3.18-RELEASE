@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,6 @@
 
 package org.springframework.messaging.converter;
 
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.util.InvalidMimeTypeException;
 import org.springframework.util.MimeType;
@@ -27,7 +26,6 @@ import org.springframework.util.MimeType;
  * @author Rossen Stoyanchev
  * @since 4.0
  */
-@FunctionalInterface
 public interface ContentTypeResolver {
 
 	/**
@@ -37,7 +35,6 @@ public interface ContentTypeResolver {
 	 * @throws InvalidMimeTypeException if the content type is a String that cannot be parsed
 	 * @throws IllegalArgumentException if there is a content type but its type is unknown
 	 */
-	@Nullable
-	MimeType resolve(@Nullable MessageHeaders headers) throws InvalidMimeTypeException;
+	MimeType resolve(MessageHeaders headers) throws InvalidMimeTypeException;
 
 }

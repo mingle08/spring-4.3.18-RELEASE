@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,11 @@
 
 package org.springframework.jms.core;
 
-import jakarta.jms.Destination;
-import jakarta.jms.Message;
-import jakarta.jms.Queue;
+import javax.jms.Destination;
+import javax.jms.Message;
+import javax.jms.Queue;
 
 import org.springframework.jms.JmsException;
-import org.springframework.lang.Nullable;
 
 /**
  * Specifies a basic set of JMS operations.
@@ -41,10 +40,10 @@ import org.springframework.lang.Nullable;
  * @author Stephane Nicoll
  * @since 1.1
  * @see JmsTemplate
- * @see jakarta.jms.Destination
- * @see jakarta.jms.Session
- * @see jakarta.jms.MessageProducer
- * @see jakarta.jms.MessageConsumer
+ * @see javax.jms.Destination
+ * @see javax.jms.Session
+ * @see javax.jms.MessageProducer
+ * @see javax.jms.MessageConsumer
  */
 public interface JmsOperations {
 
@@ -54,7 +53,6 @@ public interface JmsOperations {
 	 * @return the result object from working with the session
 	 * @throws JmsException if there is any problem
 	 */
-	@Nullable
 	<T> T execute(SessionCallback<T> action) throws JmsException;
 
 	/**
@@ -65,7 +63,6 @@ public interface JmsOperations {
 	 * @return the result object from working with the session
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	<T> T execute(ProducerCallback<T> action) throws JmsException;
 
 	/**
@@ -76,7 +73,6 @@ public interface JmsOperations {
 	 * @return the result object from working with the session
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	<T> T execute(Destination destination, ProducerCallback<T> action) throws JmsException;
 
 	/**
@@ -88,7 +84,6 @@ public interface JmsOperations {
 	 * @return the result object from working with the session
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	<T> T execute(String destinationName, ProducerCallback<T> action) throws JmsException;
 
 
@@ -207,7 +202,6 @@ public interface JmsOperations {
 	 * @return the message received by the consumer, or {@code null} if the timeout expires
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	Message receive() throws JmsException;
 
 	/**
@@ -219,7 +213,6 @@ public interface JmsOperations {
 	 * @return the message received by the consumer, or {@code null} if the timeout expires
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	Message receive(Destination destination) throws JmsException;
 
 	/**
@@ -232,7 +225,6 @@ public interface JmsOperations {
 	 * @return the message received by the consumer, or {@code null} if the timeout expires
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	Message receive(String destinationName) throws JmsException;
 
 	/**
@@ -246,7 +238,6 @@ public interface JmsOperations {
 	 * @return the message received by the consumer, or {@code null} if the timeout expires
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	Message receiveSelected(String messageSelector) throws JmsException;
 
 	/**
@@ -260,7 +251,6 @@ public interface JmsOperations {
 	 * @return the message received by the consumer, or {@code null} if the timeout expires
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	Message receiveSelected(Destination destination, String messageSelector) throws JmsException;
 
 	/**
@@ -275,7 +265,6 @@ public interface JmsOperations {
 	 * @return the message received by the consumer, or {@code null} if the timeout expires
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	Message receiveSelected(String destinationName, String messageSelector) throws JmsException;
 
 
@@ -293,7 +282,6 @@ public interface JmsOperations {
 	 * @return the message produced for the consumer or {@code null} if the timeout expires.
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	Object receiveAndConvert() throws JmsException;
 
 	/**
@@ -306,7 +294,6 @@ public interface JmsOperations {
 	 * @return the message produced for the consumer or {@code null} if the timeout expires.
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	Object receiveAndConvert(Destination destination) throws JmsException;
 
 	/**
@@ -320,7 +307,6 @@ public interface JmsOperations {
 	 * @return the message produced for the consumer or {@code null} if the timeout expires.
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	Object receiveAndConvert(String destinationName) throws JmsException;
 
 	/**
@@ -335,7 +321,6 @@ public interface JmsOperations {
 	 * @return the message produced for the consumer or {@code null} if the timeout expires.
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	Object receiveSelectedAndConvert(String messageSelector) throws JmsException;
 
 	/**
@@ -350,7 +335,6 @@ public interface JmsOperations {
 	 * @return the message produced for the consumer or {@code null} if the timeout expires.
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	Object receiveSelectedAndConvert(Destination destination, String messageSelector) throws JmsException;
 
 	/**
@@ -366,7 +350,6 @@ public interface JmsOperations {
 	 * @return the message produced for the consumer or {@code null} if the timeout expires.
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	Object receiveSelectedAndConvert(String destinationName, String messageSelector) throws JmsException;
 
 
@@ -386,7 +369,6 @@ public interface JmsOperations {
 	 * @throws JmsException checked JMSException converted to unchecked
 	 * @since 4.1
 	 */
-	@Nullable
 	Message sendAndReceive(MessageCreator messageCreator) throws JmsException;
 
 	/**
@@ -401,7 +383,6 @@ public interface JmsOperations {
 	 * @throws JmsException checked JMSException converted to unchecked
 	 * @since 4.1
 	 */
-	@Nullable
 	Message sendAndReceive(Destination destination, MessageCreator messageCreator) throws JmsException;
 
 	/**
@@ -417,7 +398,6 @@ public interface JmsOperations {
 	 * @throws JmsException checked JMSException converted to unchecked
 	 * @since 4.1
 	 */
-	@Nullable
 	Message sendAndReceive(String destinationName, MessageCreator messageCreator) throws JmsException;
 
 
@@ -432,7 +412,6 @@ public interface JmsOperations {
 	 * @return the result object from working with the session
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	<T> T browse(BrowserCallback<T> action) throws JmsException;
 
 	/**
@@ -443,7 +422,6 @@ public interface JmsOperations {
 	 * @return the result object from working with the session
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	<T> T browse(Queue queue, BrowserCallback<T> action) throws JmsException;
 
 	/**
@@ -455,7 +433,6 @@ public interface JmsOperations {
 	 * @return the result object from working with the session
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	<T> T browse(String queueName, BrowserCallback<T> action) throws JmsException;
 
 	/**
@@ -467,7 +444,6 @@ public interface JmsOperations {
 	 * @return the result object from working with the session
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	<T> T browseSelected(String messageSelector, BrowserCallback<T> action) throws JmsException;
 
 	/**
@@ -480,7 +456,6 @@ public interface JmsOperations {
 	 * @return the result object from working with the session
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	<T> T browseSelected(Queue queue, String messageSelector, BrowserCallback<T> action) throws JmsException;
 
 	/**
@@ -494,7 +469,6 @@ public interface JmsOperations {
 	 * @return the result object from working with the session
 	 * @throws JmsException checked JMSException converted to unchecked
 	 */
-	@Nullable
 	<T> T browseSelected(String queueName, String messageSelector, BrowserCallback<T> action) throws JmsException;
 
 }

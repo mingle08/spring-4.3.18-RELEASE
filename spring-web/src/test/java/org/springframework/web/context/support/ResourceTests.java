@@ -1,29 +1,13 @@
-/*
- * Copyright 2002-2019 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.springframework.web.context.support;
 
 import java.io.IOException;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.core.io.Resource;
-import org.springframework.web.testfixture.servlet.MockServletContext;
+import org.springframework.mock.web.test.MockServletContext;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Chris Beams
@@ -36,7 +20,7 @@ public class ResourceTests {
 		MockServletContext sc = new MockServletContext();
 		Resource resource = new ServletContextResource(sc, "org/springframework/core/io/Resource.class");
 		doTestResource(resource);
-		assertThat(new ServletContextResource(sc, "org/springframework/core/../core/io/./Resource.class")).isEqualTo(resource);
+		assertEquals(resource, new ServletContextResource(sc, "org/springframework/core/../core/io/./Resource.class"));
 	}
 
 	@Test
@@ -44,21 +28,21 @@ public class ResourceTests {
 		MockServletContext sc = new MockServletContext();
 		Resource resource = new ServletContextResource(sc, "dir/");
 		Resource relative = resource.createRelative("subdir");
-		assertThat(relative).isEqualTo(new ServletContextResource(sc, "dir/subdir"));
+		assertEquals(new ServletContextResource(sc, "dir/subdir"), relative);
 	}
 
 	private void doTestResource(Resource resource) throws IOException {
-		assertThat(resource.getFilename()).isEqualTo("Resource.class");
-		assertThat(resource.getURL().getFile().endsWith("Resource.class")).isTrue();
+		assertEquals("Resource.class", resource.getFilename());
+		assertTrue(resource.getURL().getFile().endsWith("Resource.class"));
 
 		Resource relative1 = resource.createRelative("ClassPathResource.class");
-		assertThat(relative1.getFilename()).isEqualTo("ClassPathResource.class");
-		assertThat(relative1.getURL().getFile().endsWith("ClassPathResource.class")).isTrue();
-		assertThat(relative1.exists()).isTrue();
+		assertEquals("ClassPathResource.class", relative1.getFilename());
+		assertTrue(relative1.getURL().getFile().endsWith("ClassPathResource.class"));
+		assertTrue(relative1.exists());
 
 		Resource relative2 = resource.createRelative("support/ResourcePatternResolver.class");
-		assertThat(relative2.getFilename()).isEqualTo("ResourcePatternResolver.class");
-		assertThat(relative2.getURL().getFile().endsWith("ResourcePatternResolver.class")).isTrue();
-		assertThat(relative2.exists()).isTrue();
+		assertEquals("ResourcePatternResolver.class", relative2.getFilename());
+		assertTrue(relative2.getURL().getFile().endsWith("ResourcePatternResolver.class"));
+		assertTrue(relative2.exists());
 	}
 }

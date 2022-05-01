@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.messaging.MessageHandler;
@@ -36,10 +35,9 @@ import org.springframework.messaging.SubscribableChannel;
  */
 public class ExecutorSubscribableChannel extends AbstractSubscribableChannel {
 
-	@Nullable
 	private final Executor executor;
 
-	private final List<ExecutorChannelInterceptor> executorInterceptors = new ArrayList<>(4);
+	private final List<ExecutorChannelInterceptor> executorInterceptors = new ArrayList<ExecutorChannelInterceptor>(4);
 
 
 	/**
@@ -56,12 +54,11 @@ public class ExecutorSubscribableChannel extends AbstractSubscribableChannel {
 	 * @param executor the executor used to send the message,
 	 * or {@code null} to execute in the callers thread.
 	 */
-	public ExecutorSubscribableChannel(@Nullable Executor executor) {
+	public ExecutorSubscribableChannel(Executor executor) {
 		this.executor = executor;
 	}
 
 
-	@Nullable
 	public Executor getExecutor() {
 		return this.executor;
 	}
@@ -70,22 +67,16 @@ public class ExecutorSubscribableChannel extends AbstractSubscribableChannel {
 	public void setInterceptors(List<ChannelInterceptor> interceptors) {
 		super.setInterceptors(interceptors);
 		this.executorInterceptors.clear();
-		interceptors.forEach(this::updateExecutorInterceptorsFor);
+		for (ChannelInterceptor interceptor : interceptors) {
+			if (interceptor instanceof ExecutorChannelInterceptor) {
+				this.executorInterceptors.add((ExecutorChannelInterceptor) interceptor);
+			}
+		}
 	}
 
 	@Override
 	public void addInterceptor(ChannelInterceptor interceptor) {
 		super.addInterceptor(interceptor);
-		updateExecutorInterceptorsFor(interceptor);
-	}
-
-	@Override
-	public void addInterceptor(int index, ChannelInterceptor interceptor) {
-		super.addInterceptor(index, interceptor);
-		updateExecutorInterceptorsFor(interceptor);
-	}
-
-	private void updateExecutorInterceptorsFor(ChannelInterceptor interceptor) {
 		if (interceptor instanceof ExecutorChannelInterceptor) {
 			this.executorInterceptors.add((ExecutorChannelInterceptor) interceptor);
 		}
@@ -160,7 +151,6 @@ public class ExecutorSubscribableChannel extends AbstractSubscribableChannel {
 			}
 		}
 
-		@Nullable
 		private Message<?> applyBeforeHandle(Message<?> message) {
 			Message<?> messageToUse = message;
 			for (ExecutorChannelInterceptor interceptor : executorInterceptors) {
@@ -178,7 +168,7 @@ public class ExecutorSubscribableChannel extends AbstractSubscribableChannel {
 			return messageToUse;
 		}
 
-		private void triggerAfterMessageHandled(Message<?> message, @Nullable Exception ex) {
+		private void triggerAfterMessageHandled(Message<?> message, Exception ex) {
 			for (int i = this.interceptorIndex; i >= 0; i--) {
 				ExecutorChannelInterceptor interceptor = executorInterceptors.get(i);
 				try {

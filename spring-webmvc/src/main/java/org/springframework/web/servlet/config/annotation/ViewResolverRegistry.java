@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,7 +25,6 @@ import org.springframework.beans.factory.BeanFactoryUtils;
 import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.Ordered;
-import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.accept.ContentNegotiationManager;
@@ -40,6 +39,8 @@ import org.springframework.web.servlet.view.groovy.GroovyMarkupConfigurer;
 import org.springframework.web.servlet.view.groovy.GroovyMarkupViewResolver;
 import org.springframework.web.servlet.view.script.ScriptTemplateConfigurer;
 import org.springframework.web.servlet.view.script.ScriptTemplateViewResolver;
+import org.springframework.web.servlet.view.tiles3.TilesConfigurer;
+import org.springframework.web.servlet.view.tiles3.TilesViewResolver;
 
 /**
  * Assist with the configuration of a chain of
@@ -52,18 +53,14 @@ import org.springframework.web.servlet.view.script.ScriptTemplateViewResolver;
  */
 public class ViewResolverRegistry {
 
-	@Nullable
-	private final ContentNegotiationManager contentNegotiationManager;
+	private ContentNegotiationManager contentNegotiationManager;
 
-	@Nullable
-	private final ApplicationContext applicationContext;
+	private ApplicationContext applicationContext;
 
-	@Nullable
 	private ContentNegotiatingViewResolver contentNegotiatingResolver;
 
-	private final List<ViewResolver> viewResolvers = new ArrayList<>(4);
+	private final List<ViewResolver> viewResolvers = new ArrayList<ViewResolver>(4);
 
-	@Nullable
 	private Integer order;
 
 
@@ -71,11 +68,13 @@ public class ViewResolverRegistry {
 	 * Class constructor with {@link ContentNegotiationManager} and {@link ApplicationContext}.
 	 * @since 4.3.12
 	 */
-	public ViewResolverRegistry(
-			ContentNegotiationManager contentNegotiationManager, @Nullable ApplicationContext context) {
-
+	public ViewResolverRegistry(ContentNegotiationManager contentNegotiationManager, ApplicationContext context) {
 		this.contentNegotiationManager = contentNegotiationManager;
 		this.applicationContext = context;
+	}
+
+	@Deprecated
+	public ViewResolverRegistry() {
 	}
 
 
@@ -107,31 +106,29 @@ public class ViewResolverRegistry {
 	 * @see ContentNegotiatingViewResolver#setDefaultViews
 	 */
 	public void enableContentNegotiation(boolean useNotAcceptableStatus, View... defaultViews) {
-		ContentNegotiatingViewResolver vr = initContentNegotiatingViewResolver(defaultViews);
-		vr.setUseNotAcceptableStatusCode(useNotAcceptableStatus);
+		initContentNegotiatingViewResolver(defaultViews);
+		this.contentNegotiatingResolver.setUseNotAcceptableStatusCode(useNotAcceptableStatus);
 	}
 
-	private ContentNegotiatingViewResolver initContentNegotiatingViewResolver(View[] defaultViews) {
+	private void initContentNegotiatingViewResolver(View[] defaultViews) {
 		// ContentNegotiatingResolver in the registry: elevate its precedence!
 		this.order = (this.order != null ? this.order : Ordered.HIGHEST_PRECEDENCE);
 
 		if (this.contentNegotiatingResolver != null) {
-			if (!ObjectUtils.isEmpty(defaultViews) &&
-					!CollectionUtils.isEmpty(this.contentNegotiatingResolver.getDefaultViews())) {
-				List<View> views = new ArrayList<>(this.contentNegotiatingResolver.getDefaultViews());
-				views.addAll(Arrays.asList(defaultViews));
-				this.contentNegotiatingResolver.setDefaultViews(views);
+			if (!ObjectUtils.isEmpty(defaultViews)) {
+				if (!CollectionUtils.isEmpty(this.contentNegotiatingResolver.getDefaultViews())) {
+					List<View> views = new ArrayList<View>(this.contentNegotiatingResolver.getDefaultViews());
+					views.addAll(Arrays.asList(defaultViews));
+					this.contentNegotiatingResolver.setDefaultViews(views);
+				}
 			}
 		}
 		else {
 			this.contentNegotiatingResolver = new ContentNegotiatingViewResolver();
 			this.contentNegotiatingResolver.setDefaultViews(Arrays.asList(defaultViews));
 			this.contentNegotiatingResolver.setViewResolvers(this.viewResolvers);
-			if (this.contentNegotiationManager != null) {
-				this.contentNegotiatingResolver.setContentNegotiationManager(this.contentNegotiationManager);
-			}
+			this.contentNegotiatingResolver.setContentNegotiationManager(this.contentNegotiationManager);
 		}
-		return this.contentNegotiatingResolver;
 	}
 
 	/**
@@ -164,6 +161,22 @@ public class ViewResolverRegistry {
 	}
 
 	/**
+	 * Register Tiles 3.x view resolver.
+	 * <p><strong>Note</strong> that you must also configure Tiles by adding a
+	 * {@link org.springframework.web.servlet.view.tiles3.TilesConfigurer} bean.
+	 */
+	public UrlBasedViewResolverRegistration tiles() {
+		if (!checkBeanOfType(TilesConfigurer.class)) {
+			throw new BeanInitializationException("In addition to a Tiles view resolver " +
+					"there must also be a single TilesConfigurer bean in this web application context " +
+					"(or its parent).");
+		}
+		TilesRegistration registration = new TilesRegistration();
+		this.viewResolvers.add(registration.getViewResolver());
+		return registration;
+	}
+
+	/**
 	 * Register a FreeMarker view resolver with an empty default view name
 	 * prefix and a default suffix of ".ftl".
 	 * <p><strong>Note</strong> that you must also configure FreeMarker by adding a
@@ -177,6 +190,26 @@ public class ViewResolverRegistry {
 					"This bean may be given any name.");
 		}
 		FreeMarkerRegistration registration = new FreeMarkerRegistration();
+		this.viewResolvers.add(registration.getViewResolver());
+		return registration;
+	}
+
+	/**
+	 * Register Velocity view resolver with an empty default view name
+	 * prefix and a default suffix of ".vm".
+	 * <p><strong>Note</strong> that you must also configure Velocity by adding a
+	 * {@link org.springframework.web.servlet.view.velocity.VelocityConfigurer} bean.
+	 * @deprecated as of Spring 4.3, in favor of FreeMarker
+	 */
+	@Deprecated
+	public UrlBasedViewResolverRegistration velocity() {
+		if (!checkBeanOfType(org.springframework.web.servlet.view.velocity.VelocityConfigurer.class)) {
+			throw new BeanInitializationException("In addition to a Velocity view resolver " +
+					"there must also be a single VelocityConfig bean in this web application context " +
+					"(or its parent): VelocityConfigurer is the usual implementation. " +
+					"This bean may be given any name.");
+		}
+		VelocityRegistration registration = new VelocityRegistration();
 		this.viewResolvers.add(registration.getViewResolver());
 		return registration;
 	}
@@ -254,22 +287,56 @@ public class ViewResolverRegistry {
 	}
 
 
-	private boolean checkBeanOfType(Class<?> beanType) {
-		return (this.applicationContext == null ||
-				!ObjectUtils.isEmpty(BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
-						this.applicationContext, beanType, false, false)));
-	}
-
 	protected int getOrder() {
 		return (this.order != null ? this.order : Ordered.LOWEST_PRECEDENCE);
 	}
 
 	protected List<ViewResolver> getViewResolvers() {
 		if (this.contentNegotiatingResolver != null) {
-			return Collections.singletonList(this.contentNegotiatingResolver);
+			return Collections.<ViewResolver>singletonList(this.contentNegotiatingResolver);
 		}
 		else {
 			return this.viewResolvers;
+		}
+	}
+
+	private boolean checkBeanOfType(Class<?> beanType) {
+		return (this.applicationContext == null ||
+				!ObjectUtils.isEmpty(BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
+						this.applicationContext, beanType, false, false)));
+	}
+
+	@Deprecated
+	protected boolean hasBeanOfType(Class<?> beanType) {
+		return !ObjectUtils.isEmpty(BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
+				this.applicationContext, beanType, false, false));
+	}
+
+	@Deprecated
+	protected void setContentNegotiationManager(ContentNegotiationManager contentNegotiationManager) {
+		this.contentNegotiationManager = contentNegotiationManager;
+	}
+
+	@Deprecated
+	protected void setApplicationContext(ApplicationContext applicationContext) {
+		this.applicationContext = applicationContext;
+	}
+
+
+	private static class TilesRegistration extends UrlBasedViewResolverRegistration {
+
+		public TilesRegistration() {
+			super(new TilesViewResolver());
+		}
+	}
+
+
+	private static class VelocityRegistration extends UrlBasedViewResolverRegistration {
+
+		@SuppressWarnings("deprecation")
+		public VelocityRegistration() {
+			super(new org.springframework.web.servlet.view.velocity.VelocityViewResolver());
+			getViewResolver().setSuffix(".vm");
 		}
 	}
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,6 @@ import java.util.Properties;
 
 import org.springframework.beans.BeanMetadataElement;
 import org.springframework.beans.Mergeable;
-import org.springframework.lang.Nullable;
 
 /**
  * Tag class which represents a Spring-managed {@link Properties} instance
@@ -33,7 +32,6 @@ import org.springframework.lang.Nullable;
 @SuppressWarnings("serial")
 public class ManagedProperties extends Properties implements Mergeable, BeanMetadataElement {
 
-	@Nullable
 	private Object source;
 
 	private boolean mergeEnabled;
@@ -43,12 +41,11 @@ public class ManagedProperties extends Properties implements Mergeable, BeanMeta
 	 * Set the configuration source {@code Object} for this metadata element.
 	 * <p>The exact type of the object will depend on the configuration mechanism used.
 	 */
-	public void setSource(@Nullable Object source) {
+	public void setSource(Object source) {
 		this.source = source;
 	}
 
 	@Override
-	@Nullable
 	public Object getSource() {
 		return this.source;
 	}
@@ -68,7 +65,7 @@ public class ManagedProperties extends Properties implements Mergeable, BeanMeta
 
 
 	@Override
-	public Object merge(@Nullable Object parent) {
+	public Object merge(Object parent) {
 		if (!this.mergeEnabled) {
 			throw new IllegalStateException("Not allowed to merge when the 'mergeEnabled' property is set to 'false'");
 		}

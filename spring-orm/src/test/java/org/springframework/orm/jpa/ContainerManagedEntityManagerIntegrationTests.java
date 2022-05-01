@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,101 +18,104 @@ package org.springframework.orm.jpa;
 
 import java.lang.reflect.Proxy;
 import java.util.List;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceException;
+import javax.persistence.Query;
+import javax.persistence.TransactionRequiredException;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceException;
-import jakarta.persistence.Query;
-import jakarta.persistence.TransactionRequiredException;
-import org.junit.jupiter.api.Test;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.support.PersistenceExceptionTranslator;
 import org.springframework.orm.jpa.domain.Person;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration tests using in-memory database for container-managed JPA
  *
  * @author Rod Johnson
- * @author Juergen Hoeller
  * @since 2.0
  */
+@SuppressWarnings("deprecation")
 public class ContainerManagedEntityManagerIntegrationTests extends AbstractEntityManagerFactoryIntegrationTests {
 
-	@Autowired
-	private AbstractEntityManagerFactoryBean entityManagerFactoryBean;
-
-
-	@Test
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
 	public void testExceptionTranslationWithDialectFoundOnIntroducedEntityManagerInfo() throws Exception {
 		doTestExceptionTranslationWithDialectFound(((EntityManagerFactoryInfo) entityManagerFactory).getJpaDialect());
 	}
 
-	@Test
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
 	public void testExceptionTranslationWithDialectFoundOnEntityManagerFactoryBean() throws Exception {
-		assertThat(entityManagerFactoryBean.getJpaDialect()).as("Dialect must have been set").isNotNull();
-		doTestExceptionTranslationWithDialectFound(entityManagerFactoryBean);
+		AbstractEntityManagerFactoryBean aefb =
+				(AbstractEntityManagerFactoryBean) applicationContext.getBean("&entityManagerFactory");
+		assertNotNull("Dialect must have been set", aefb.getJpaDialect());
+		doTestExceptionTranslationWithDialectFound(aefb);
 	}
 
 	protected void doTestExceptionTranslationWithDialectFound(PersistenceExceptionTranslator pet) throws Exception {
 		RuntimeException in1 = new RuntimeException("in1");
 		PersistenceException in2 = new PersistenceException();
-		assertThat(pet.translateExceptionIfPossible(in1)).as("No translation here").isNull();
+		assertNull("No translation here", pet.translateExceptionIfPossible(in1));
 		DataAccessException dex = pet.translateExceptionIfPossible(in2);
-		assertThat(dex).isNotNull();
-		assertThat(dex.getCause()).isSameAs(in2);
+		assertNotNull(dex);
+		assertSame(in2, dex.getCause());
 	}
 
-	@Test
 	@SuppressWarnings("unchecked")
 	public void testEntityManagerProxyIsProxy() {
 		EntityManager em = createContainerManagedEntityManager();
-		assertThat(Proxy.isProxyClass(em.getClass())).isTrue();
+		assertTrue(Proxy.isProxyClass(em.getClass()));
 		Query q = em.createQuery("select p from Person as p");
 		List<Person> people = q.getResultList();
-		assertThat(people.isEmpty()).isTrue();
+		assertTrue(people.isEmpty());
 
-		assertThat(em.isOpen()).as("Should be open to start with").isTrue();
-		assertThatIllegalStateException().as("Close should not work on container managed EM").isThrownBy(
-				em::close);
-		assertThat(em.isOpen()).isTrue();
+		assertTrue("Should be open to start with", em.isOpen());
+		try {
+			em.close();
+			fail("Close should not work on container managed EM");
+		}
+		catch (IllegalStateException ex) {
+			// Ok
+		}
+		assertTrue(em.isOpen());
 	}
 
 	// This would be legal, at least if not actually _starting_ a tx
-	@Test
 	public void testEntityManagerProxyRejectsProgrammaticTxManagement() {
-		assertThatIllegalStateException().isThrownBy(
-				createContainerManagedEntityManager()::getTransaction);
+		try {
+			createContainerManagedEntityManager().getTransaction();
+			fail("Should have thrown an IllegalStateException");
+		}
+		catch (IllegalStateException e) {
+			/* expected */
+		}
 	}
 
 	/*
 	 * See comments in spec on EntityManager.joinTransaction().
 	 * We take the view that this is a valid no op.
 	 */
-	@Test
 	public void testContainerEntityManagerProxyAllowsJoinTransactionInTransaction() {
 		createContainerManagedEntityManager().joinTransaction();
 	}
 
-	@Test
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
 	public void testContainerEntityManagerProxyRejectsJoinTransactionWithoutTransaction() {
-		endTransaction();
-		assertThatExceptionOfType(TransactionRequiredException.class).isThrownBy(
-				createContainerManagedEntityManager()::joinTransaction);
+		try {
+			createContainerManagedEntityManager().joinTransaction();
+			fail("Should have thrown a TransactionRequiredException");
+		}
+		catch (TransactionRequiredException e) {
+			/* expected */
+		}
 	}
 
-	@Test
 	public void testInstantiateAndSave() {
 		EntityManager em = createContainerManagedEntityManager();
 		doInstantiateAndSave(em);
 	}
 
-	protected void doInstantiateAndSave(EntityManager em) {
-		assertThat(countRowsInTable(em, "person")).as("Should be no people from previous transactions").isEqualTo(0);
+	public void doInstantiateAndSave(EntityManager em) {
+		assertEquals("Should be no people from previous transactions", 0, countRowsInTable(em, "person"));
 		Person p = new Person();
 
 		p.setFirstName("Tony");
@@ -120,10 +123,9 @@ public class ContainerManagedEntityManagerIntegrationTests extends AbstractEntit
 		em.persist(p);
 
 		em.flush();
-		assertThat(countRowsInTable(em, "person")).as("1 row must have been inserted").isEqualTo(1);
+		assertEquals("1 row must have been inserted", 1, countRowsInTable(em, "person"));
 	}
 
-	@Test
 	public void testReuseInNewTransaction() {
 		EntityManager em = createContainerManagedEntityManager();
 		doInstantiateAndSave(em);
@@ -133,33 +135,31 @@ public class ContainerManagedEntityManagerIntegrationTests extends AbstractEntit
 
 		startNewTransaction();
 		// Call any method: should cause automatic tx invocation
-		assertThat(em.contains(new Person())).isFalse();
+		assertFalse(em.contains(new Person()));
 		//assertTrue(em.getTransaction().isActive());
 
 		doInstantiateAndSave(em);
 		setComplete();
 		endTransaction();	// Should rollback
-		assertThat(countRowsInTable(em, "person")).as("Tx must have committed back").isEqualTo(1);
+		assertEquals("Tx must have committed back", 1, countRowsInTable(em, "person"));
 
 		// Now clean up the database
 		deleteFromTables("person");
 	}
 
-	@Test
 	public void testRollbackOccurs() {
 		EntityManager em = createContainerManagedEntityManager();
 		doInstantiateAndSave(em);
 		endTransaction();	// Should rollback
-		assertThat(countRowsInTable(em, "person")).as("Tx must have been rolled back").isEqualTo(0);
+		assertEquals("Tx must have been rolled back", 0, countRowsInTable(em, "person"));
 	}
 
-	@Test
 	public void testCommitOccurs() {
 		EntityManager em = createContainerManagedEntityManager();
 		doInstantiateAndSave(em);
 		setComplete();
 		endTransaction();	// Should rollback
-		assertThat(countRowsInTable(em, "person")).as("Tx must have committed back").isEqualTo(1);
+		assertEquals("Tx must have committed back", 1, countRowsInTable(em, "person"));
 
 		// Now clean up the database
 		deleteFromTables("person");

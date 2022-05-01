@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,6 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -32,19 +31,19 @@ import javax.xml.transform.stream.StreamSource;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
-import org.junit.jupiter.api.Test;
-import org.xml.sax.SAXException;
+
+import org.junit.Test;
 
 import org.springframework.context.support.StaticApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.web.testfixture.servlet.MockHttpServletRequest;
-import org.springframework.web.testfixture.servlet.MockHttpServletResponse;
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.mock.web.test.MockHttpServletResponse;
 
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonMap;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import org.xml.sax.SAXException;
+
+import static java.util.Collections.*;
+import static org.junit.Assert.*;
 
 /**
  * @author Rob Harrop
@@ -60,18 +59,16 @@ public class XsltViewTests {
 	private final MockHttpServletResponse response = new MockHttpServletResponse();
 
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void withNoSource() throws Exception {
 		final XsltView view = getXsltView(HTML_OUTPUT);
-		assertThatIllegalArgumentException().isThrownBy(() ->
-				view.render(emptyMap(), request, response));
+		view.render(emptyMap(), request, response);
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void withoutUrl() throws Exception {
 		final XsltView view = new XsltView();
-		assertThatIllegalArgumentException().isThrownBy(
-				view::afterPropertiesSet);
+		view.afterPropertiesSet();
 	}
 
 	@Test
@@ -126,8 +123,8 @@ public class XsltViewTests {
 
 		Source source = new StreamSource(getProductDataResource().getInputStream());
 		view.render(singletonMap("someKey", source), this.request, this.response);
-		assertThat(this.response.getContentType().startsWith("text/html")).isTrue();
-		assertThat(this.response.getCharacterEncoding()).isEqualTo("UTF-8");
+		assertTrue(this.response.getContentType().startsWith("text/html"));
+		assertEquals("UTF-8", this.response.getCharacterEncoding());
 	}
 
 	@Test
@@ -136,7 +133,7 @@ public class XsltViewTests {
 		model.put("someKey", getProductDataResource());
 		model.put("title", "Product List");
 		doTestWithModel(model);
-		assertThat(this.response.getContentAsString().contains("Product List")).isTrue();
+		assertTrue(this.response.getContentAsString().indexOf("Product List") > -1);
 	}
 
 	@Test
@@ -151,7 +148,7 @@ public class XsltViewTests {
 
 		view.render(model, this.request, this.response);
 		assertHtmlOutput(this.response.getContentAsString());
-		assertThat(this.response.getContentAsString().contains("Product List")).isTrue();
+		assertTrue(this.response.getContentAsString().indexOf("Product List") > -1);
 
 	}
 
@@ -185,13 +182,13 @@ public class XsltViewTests {
 	}
 
 	private void assertRowElement(Element elem, String id, String name, String price) {
-		Element idElem = elem.elements().get(0);
-		Element nameElem = elem.elements().get(1);
-		Element priceElem = elem.elements().get(2);
+		Element idElem = (Element) elem.elements().get(0);
+		Element nameElem = (Element) elem.elements().get(1);
+		Element priceElem = (Element) elem.elements().get(2);
 
-		assertThat(idElem.getText()).as("ID incorrect.").isEqualTo(id);
-		assertThat(nameElem.getText()).as("Name incorrect.").isEqualTo(name);
-		assertThat(priceElem.getText()).as("Price incorrect.").isEqualTo(price);
+		assertEquals("ID incorrect.", id, idElem.getText());
+		assertEquals("Name incorrect.", name, nameElem.getText());
+		assertEquals("Price incorrect.", price, priceElem.getText());
 	}
 
 	private XsltView getXsltView(String templatePath) {

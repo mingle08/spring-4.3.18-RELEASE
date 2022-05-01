@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +16,37 @@
 
 package org.springframework.web.socket.client.jetty;
 
+import java.net.URI;
+import java.util.Arrays;
+
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.SocketUtils;
+import org.springframework.web.socket.WebSocketHandler;
+import org.springframework.web.socket.WebSocketHttpHeaders;
+import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.adapter.jetty.JettyWebSocketHandlerAdapter;
+import org.springframework.web.socket.adapter.jetty.JettyWebSocketSession;
+import org.springframework.web.socket.handler.TextWebSocketHandler;
+
+import static org.junit.Assert.*;
+
 /**
  * Tests for {@link JettyWebSocketClient}.
- *
  * @author Rossen Stoyanchev
  */
 public class JettyWebSocketClientTests {
 
-	/* TODO: complete upgrade to Jetty 11
 	private JettyWebSocketClient client;
 
 	private TestJettyWebSocketServer server;
@@ -33,19 +56,21 @@ public class JettyWebSocketClientTests {
 	private WebSocketSession wsSession;
 
 
-	@BeforeEach
+	@Before
 	public void setup() throws Exception {
 
-		this.server = new TestJettyWebSocketServer(new TextWebSocketHandler());
+		int port = SocketUtils.findAvailableTcpPort();
+
+		this.server = new TestJettyWebSocketServer(port, new TextWebSocketHandler());
 		this.server.start();
 
 		this.client = new JettyWebSocketClient();
 		this.client.start();
 
-		this.wsUrl = "ws://localhost:" + this.server.getPort() + "/test";
+		this.wsUrl = "ws://localhost:" + port + "/test";
 	}
 
-	@AfterEach
+	@After
 	public void teardown() throws Exception {
 		this.wsSession.close();
 		this.client.stop();
@@ -61,8 +86,8 @@ public class JettyWebSocketClientTests {
 
 		this.wsSession = this.client.doHandshake(new TextWebSocketHandler(), headers, new URI(this.wsUrl)).get();
 
-		assertThat(this.wsSession.getUri().toString()).isEqualTo(this.wsUrl);
-		assertThat(this.wsSession.getAcceptedProtocol()).isEqualTo("echo");
+		assertEquals(this.wsUrl, this.wsSession.getUri().toString());
+		assertEquals("echo", this.wsSession.getAcceptedProtocol());
 	}
 
 	@Test
@@ -74,8 +99,8 @@ public class JettyWebSocketClientTests {
 		this.client.setTaskExecutor(new SimpleAsyncTaskExecutor());
 		this.wsSession = this.client.doHandshake(new TextWebSocketHandler(), headers, new URI(this.wsUrl)).get();
 
-		assertThat(this.wsSession.getUri().toString()).isEqualTo(this.wsUrl);
-		assertThat(this.wsSession.getAcceptedProtocol()).isEqualTo("echo");
+		assertEquals(this.wsUrl, this.wsSession.getUri().toString());
+		assertEquals("echo", this.wsSession.getAcceptedProtocol());
 	}
 
 
@@ -84,19 +109,19 @@ public class JettyWebSocketClientTests {
 		private final Server server;
 
 
-		public TestJettyWebSocketServer(final WebSocketHandler webSocketHandler) {
+		public TestJettyWebSocketServer(int port, final WebSocketHandler webSocketHandler) {
 
 			this.server = new Server();
 			ServerConnector connector = new ServerConnector(this.server);
-			connector.setPort(0);
+			connector.setPort(port);
 
 			this.server.addConnector(connector);
-			this.server.setHandler(new WebSocketUpgradeHandler() {
+			this.server.setHandler(new org.eclipse.jetty.websocket.server.WebSocketHandler() {
 				@Override
-				public void configure(JettyWebSocketServletFactory factory) {
-					factory.setCreator(new JettyWebSocketCreator() {
+				public void configure(WebSocketServletFactory factory) {
+					factory.setCreator(new WebSocketCreator() {
 						@Override
-						public Object createWebSocket(JettyServerUpgradeRequest req, JettyServerUpgradeResponse resp) {
+						public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp) {
 							if (!CollectionUtils.isEmpty(req.getSubProtocols())) {
 								resp.setAcceptedSubProtocol(req.getSubProtocols().get(0));
 							}
@@ -115,11 +140,6 @@ public class JettyWebSocketClientTests {
 		public void stop() throws Exception {
 			this.server.stop();
 		}
-
-		public int getPort() {
-			return ((ServerConnector) this.server.getConnectors()[0]).getLocalPort();
-		}
 	}
-	*/
 
 }

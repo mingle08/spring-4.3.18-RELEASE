@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,16 +16,19 @@
 
 package org.springframework.web.context;
 
-import jakarta.servlet.ServletContextEvent;
-import jakarta.servlet.ServletContextListener;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 
 /**
  * Bootstrap listener to start up and shut down Spring's root {@link WebApplicationContext}.
  * Simply delegates to {@link ContextLoader} as well as to {@link ContextCleanupListener}.
  *
+ * <p>This listener should be registered after {@link org.springframework.web.util.Log4jConfigListener}
+ * in {@code web.xml}, if the latter is used.
+ *
  * <p>As of Spring 3.1, {@code ContextLoaderListener} supports injecting the root web
  * application context via the {@link #ContextLoaderListener(WebApplicationContext)}
- * constructor, allowing for programmatic configuration in Servlet initializers.
+ * constructor, allowing for programmatic configuration in Servlet 3.0+ environments.
  * See {@link org.springframework.web.WebApplicationInitializer} for usage examples.
  *
  * @author Juergen Hoeller
@@ -33,6 +36,7 @@ import jakarta.servlet.ServletContextListener;
  * @since 17.02.2003
  * @see #setContextInitializers
  * @see org.springframework.web.WebApplicationInitializer
+ * @see org.springframework.web.util.Log4jConfigListener
  */
 public class ContextLoaderListener extends ContextLoader implements ServletContextListener {
 
@@ -58,8 +62,9 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 
 	/**
 	 * Create a new {@code ContextLoaderListener} with the given application context. This
-	 * constructor is useful in Servlet initializers where instance-based registration of
-	 * listeners is possible through the {@link jakarta.servlet.ServletContext#addListener} API.
+	 * constructor is useful in Servlet 3.0+ environments where instance-based
+	 * registration of listeners is possible through the {@link javax.servlet.ServletContext#addListener}
+	 * API.
 	 * <p>The context may or may not yet be {@linkplain
 	 * org.springframework.context.ConfigurableApplicationContext#refresh() refreshed}. If it
 	 * (a) is an implementation of {@link ConfigurableWebApplicationContext} and
@@ -71,7 +76,7 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 	 * <li>{@code ServletContext} and {@code ServletConfig} objects will be delegated to
 	 * the application context</li>
 	 * <li>{@link #customizeContext} will be called</li>
-	 * <li>Any {@link org.springframework.context.ApplicationContextInitializer ApplicationContextInitializer org.springframework.context.ApplicationContextInitializer ApplicationContextInitializers}
+	 * <li>Any {@link org.springframework.context.ApplicationContextInitializer ApplicationContextInitializer}s
 	 * specified through the "contextInitializerClasses" init-param will be applied.</li>
 	 * <li>{@link org.springframework.context.ConfigurableApplicationContext#refresh refresh()} will be called</li>
 	 * </ul>

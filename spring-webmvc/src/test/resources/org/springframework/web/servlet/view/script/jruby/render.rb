@@ -3,7 +3,7 @@ require 'ostruct'
 require 'java'
 
 # Renders an ERB template against a hashmap of variables.
-def render(template, variables, renderingContext)
+def render(template, variables, url)
   context = OpenStruct.new(variables).instance_eval do
     variables.each do |k, v|
       instance_variable_set(k, v) if k[0] == '@'

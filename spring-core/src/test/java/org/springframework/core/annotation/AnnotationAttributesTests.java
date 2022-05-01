@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,12 +21,14 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.springframework.core.annotation.AnnotationUtilsTests.ImplicitAliasesContextConfig;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@link AnnotationAttributes}.
@@ -36,13 +38,16 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  * @author Juergen Hoeller
  * @since 3.1.1
  */
-class AnnotationAttributesTests {
+public class AnnotationAttributesTests {
 
 	private AnnotationAttributes attributes = new AnnotationAttributes();
 
+	@Rule
+	public final ExpectedException exception = ExpectedException.none();
+
 
 	@Test
-	void typeSafeAttributeAccess() {
+	public void typeSafeAttributeAccess() {
 		AnnotationAttributes nestedAttributes = new AnnotationAttributes();
 		nestedAttributes.put("value", 10);
 		nestedAttributes.put("name", "algernon");
@@ -58,39 +63,29 @@ class AnnotationAttributesTests {
 		attributes.put("anno", nestedAttributes);
 		attributes.put("annoArray", new AnnotationAttributes[] {nestedAttributes});
 
-		assertThat(attributes.getString("name")).isEqualTo("dave");
-		assertThat(attributes.getStringArray("names")).isEqualTo(new String[] {"dave", "frank", "hal"});
-		assertThat(attributes.getBoolean("bool1")).isTrue();
-		assertThat(attributes.getBoolean("bool2")).isFalse();
-		assertThat(attributes.<Color>getEnum("color")).isEqualTo(Color.RED);
-		assertThat(attributes.getClass("class").equals(Integer.class)).isTrue();
-		assertThat(attributes.getClassArray("classes")).isEqualTo(new Class<?>[] {Number.class, Short.class, Integer.class});
-		assertThat(attributes.<Integer>getNumber("number")).isEqualTo(42);
-		assertThat(attributes.getAnnotation("anno").<Integer>getNumber("value")).isEqualTo(10);
-		assertThat(attributes.getAnnotationArray("annoArray")[0].getString("name")).isEqualTo("algernon");
+		assertThat(attributes.getString("name"), equalTo("dave"));
+		assertThat(attributes.getStringArray("names"), equalTo(new String[] {"dave", "frank", "hal"}));
+		assertThat(attributes.getBoolean("bool1"), equalTo(true));
+		assertThat(attributes.getBoolean("bool2"), equalTo(false));
+		assertThat(attributes.<Color>getEnum("color"), equalTo(Color.RED));
+		assertTrue(attributes.getClass("class").equals(Integer.class));
+		assertThat(attributes.getClassArray("classes"), equalTo(new Class<?>[] {Number.class, Short.class, Integer.class}));
+		assertThat(attributes.<Integer>getNumber("number"), equalTo(42));
+		assertThat(attributes.getAnnotation("anno").<Integer>getNumber("value"), equalTo(10));
+		assertThat(attributes.getAnnotationArray("annoArray")[0].getString("name"), equalTo("algernon"));
 
 	}
 
 	@Test
-	void unresolvableClassWithClassNotFoundException() throws Exception {
+	public void unresolvableClass() throws Exception {
 		attributes.put("unresolvableClass", new ClassNotFoundException("myclass"));
-		assertThatIllegalArgumentException()
-			.isThrownBy(() -> attributes.getClass("unresolvableClass"))
-			.withMessageContaining("myclass")
-			.withCauseInstanceOf(ClassNotFoundException.class);
+		exception.expect(IllegalArgumentException.class);
+		exception.expectMessage(containsString("myclass"));
+		attributes.getClass("unresolvableClass");
 	}
 
 	@Test
-	void unresolvableClassWithLinkageError() throws Exception {
-		attributes.put("unresolvableClass", new LinkageError("myclass"));
-		assertThatIllegalArgumentException()
-			.isThrownBy(() -> attributes.getClass("unresolvableClass"))
-			.withMessageContaining("myclass")
-			.withCauseInstanceOf(LinkageError.class);
-	}
-
-	@Test
-	void singleElementToSingleElementArrayConversionSupport() throws Exception {
+	public void singleElementToSingleElementArrayConversionSupport() throws Exception {
 		Filter filter = FilteredClass.class.getAnnotation(Filter.class);
 
 		AnnotationAttributes nestedAttributes = new AnnotationAttributes();
@@ -103,80 +98,80 @@ class AnnotationAttributesTests {
 		attributes.put("filters", filter);
 
 		// Get back arrays of single elements
-		assertThat(attributes.getStringArray("names")).isEqualTo(new String[] {"Dogbert"});
-		assertThat(attributes.getClassArray("classes")).isEqualTo(new Class<?>[] {Number.class});
+		assertThat(attributes.getStringArray("names"), equalTo(new String[] {"Dogbert"}));
+		assertThat(attributes.getClassArray("classes"), equalTo(new Class<?>[] {Number.class}));
 
 		AnnotationAttributes[] array = attributes.getAnnotationArray("nestedAttributes");
-		assertThat(array).isNotNull();
-		assertThat(array.length).isEqualTo(1);
-		assertThat(array[0].getString("name")).isEqualTo("Dilbert");
+		assertNotNull(array);
+		assertThat(array.length, is(1));
+		assertThat(array[0].getString("name"), equalTo("Dilbert"));
 
 		Filter[] filters = attributes.getAnnotationArray("filters", Filter.class);
-		assertThat(filters).isNotNull();
-		assertThat(filters.length).isEqualTo(1);
-		assertThat(filters[0].pattern()).isEqualTo("foo");
+		assertNotNull(filters);
+		assertThat(filters.length, is(1));
+		assertThat(filters[0].pattern(), equalTo("foo"));
 	}
 
 	@Test
-	void nestedAnnotations() throws Exception {
+	public void nestedAnnotations() throws Exception {
 		Filter filter = FilteredClass.class.getAnnotation(Filter.class);
 
 		attributes.put("filter", filter);
 		attributes.put("filters", new Filter[] {filter, filter});
 
 		Filter retrievedFilter = attributes.getAnnotation("filter", Filter.class);
-		assertThat(retrievedFilter).isEqualTo(filter);
-		assertThat(retrievedFilter.pattern()).isEqualTo("foo");
+		assertThat(retrievedFilter, equalTo(filter));
+		assertThat(retrievedFilter.pattern(), equalTo("foo"));
 
 		Filter[] retrievedFilters = attributes.getAnnotationArray("filters", Filter.class);
-		assertThat(retrievedFilters).isNotNull();
-		assertThat(retrievedFilters.length).isEqualTo(2);
-		assertThat(retrievedFilters[1].pattern()).isEqualTo("foo");
+		assertNotNull(retrievedFilters);
+		assertEquals(2, retrievedFilters.length);
+		assertThat(retrievedFilters[1].pattern(), equalTo("foo"));
 	}
 
 	@Test
-	void getEnumWithNullAttributeName() {
-		assertThatIllegalArgumentException()
-			.isThrownBy(() -> attributes.getEnum(null))
-			.withMessageContaining("must not be null or empty");
+	public void getEnumWithNullAttributeName() {
+		exception.expect(IllegalArgumentException.class);
+		exception.expectMessage("must not be null or empty");
+		attributes.getEnum(null);
 	}
 
 	@Test
-	void getEnumWithEmptyAttributeName() {
-		assertThatIllegalArgumentException()
-			.isThrownBy(() -> attributes.getEnum(""))
-			.withMessageContaining("must not be null or empty");
+	public void getEnumWithEmptyAttributeName() {
+		exception.expect(IllegalArgumentException.class);
+		exception.expectMessage("must not be null or empty");
+		attributes.getEnum("");
 	}
 
 	@Test
-	void getEnumWithUnknownAttributeName() {
-		assertThatIllegalArgumentException()
-			.isThrownBy(() -> attributes.getEnum("bogus"))
-			.withMessageContaining("Attribute 'bogus' not found");
+	public void getEnumWithUnknownAttributeName() {
+		exception.expect(IllegalArgumentException.class);
+		exception.expectMessage("Attribute 'bogus' not found");
+		attributes.getEnum("bogus");
 	}
 
 	@Test
-	void getEnumWithTypeMismatch() {
+	public void getEnumWithTypeMismatch() {
 		attributes.put("color", "RED");
-		assertThatIllegalArgumentException()
-			.isThrownBy(() -> attributes.getEnum("color"))
-			.withMessageContaining("Attribute 'color' is of type String, but Enum was expected");
+		exception.expect(IllegalArgumentException.class);
+		exception.expectMessage(containsString("Attribute 'color' is of type [String], but [Enum] was expected"));
+		attributes.getEnum("color");
 	}
 
 	@Test
-	void getAliasedStringWithImplicitAliases() {
+	public void getAliasedStringWithImplicitAliases() {
 		String value = "metaverse";
 		List<String> aliases = Arrays.asList("value", "location1", "location2", "location3", "xmlFile", "groovyScript");
 
 		attributes = new AnnotationAttributes(ImplicitAliasesContextConfig.class);
 		attributes.put("value", value);
 		AnnotationUtils.postProcessAnnotationAttributes(null, attributes, false);
-		aliases.stream().forEach(alias -> assertThat(attributes.getString(alias)).isEqualTo(value));
+		aliases.stream().forEach(alias -> assertEquals(value, attributes.getString(alias)));
 
 		attributes = new AnnotationAttributes(ImplicitAliasesContextConfig.class);
 		attributes.put("location1", value);
 		AnnotationUtils.postProcessAnnotationAttributes(null, attributes, false);
-		aliases.stream().forEach(alias -> assertThat(attributes.getString(alias)).isEqualTo(value));
+		aliases.stream().forEach(alias -> assertEquals(value, attributes.getString(alias)));
 
 		attributes = new AnnotationAttributes(ImplicitAliasesContextConfig.class);
 		attributes.put("value", value);
@@ -184,46 +179,46 @@ class AnnotationAttributesTests {
 		attributes.put("xmlFile", value);
 		attributes.put("groovyScript", value);
 		AnnotationUtils.postProcessAnnotationAttributes(null, attributes, false);
-		aliases.stream().forEach(alias -> assertThat(attributes.getString(alias)).isEqualTo(value));
+		aliases.stream().forEach(alias -> assertEquals(value, attributes.getString(alias)));
 	}
 
 	@Test
-	void getAliasedStringArrayWithImplicitAliases() {
+	public void getAliasedStringArrayWithImplicitAliases() {
 		String[] value = new String[] {"test.xml"};
 		List<String> aliases = Arrays.asList("value", "location1", "location2", "location3", "xmlFile", "groovyScript");
 
 		attributes = new AnnotationAttributes(ImplicitAliasesContextConfig.class);
 		attributes.put("location1", value);
 		AnnotationUtils.postProcessAnnotationAttributes(null, attributes, false);
-		aliases.stream().forEach(alias -> assertThat(attributes.getStringArray(alias)).isEqualTo(value));
+		aliases.stream().forEach(alias -> assertArrayEquals(value, attributes.getStringArray(alias)));
 
 		attributes = new AnnotationAttributes(ImplicitAliasesContextConfig.class);
 		attributes.put("value", value);
 		AnnotationUtils.postProcessAnnotationAttributes(null, attributes, false);
-		aliases.stream().forEach(alias -> assertThat(attributes.getStringArray(alias)).isEqualTo(value));
+		aliases.stream().forEach(alias -> assertArrayEquals(value, attributes.getStringArray(alias)));
 
 		attributes = new AnnotationAttributes(ImplicitAliasesContextConfig.class);
 		attributes.put("location1", value);
 		attributes.put("value", value);
 		AnnotationUtils.postProcessAnnotationAttributes(null, attributes, false);
-		aliases.stream().forEach(alias -> assertThat(attributes.getStringArray(alias)).isEqualTo(value));
+		aliases.stream().forEach(alias -> assertArrayEquals(value, attributes.getStringArray(alias)));
 
 		attributes = new AnnotationAttributes(ImplicitAliasesContextConfig.class);
 		attributes.put("location1", value);
 		AnnotationUtils.registerDefaultValues(attributes);
 		AnnotationUtils.postProcessAnnotationAttributes(null, attributes, false);
-		aliases.stream().forEach(alias -> assertThat(attributes.getStringArray(alias)).isEqualTo(value));
+		aliases.stream().forEach(alias -> assertArrayEquals(value, attributes.getStringArray(alias)));
 
 		attributes = new AnnotationAttributes(ImplicitAliasesContextConfig.class);
 		attributes.put("value", value);
 		AnnotationUtils.registerDefaultValues(attributes);
 		AnnotationUtils.postProcessAnnotationAttributes(null, attributes, false);
-		aliases.stream().forEach(alias -> assertThat(attributes.getStringArray(alias)).isEqualTo(value));
+		aliases.stream().forEach(alias -> assertArrayEquals(value, attributes.getStringArray(alias)));
 
 		attributes = new AnnotationAttributes(ImplicitAliasesContextConfig.class);
 		AnnotationUtils.registerDefaultValues(attributes);
 		AnnotationUtils.postProcessAnnotationAttributes(null, attributes, false);
-		aliases.stream().forEach(alias -> assertThat(attributes.getStringArray(alias)).isEqualTo(new String[] {""}));
+		aliases.stream().forEach(alias -> assertArrayEquals(new String[] {""}, attributes.getStringArray(alias)));
 	}
 
 

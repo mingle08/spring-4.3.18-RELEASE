@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,6 @@ import java.util.List;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.TypeConverter;
 import org.springframework.core.ResolvableType;
-import org.springframework.lang.Nullable;
 
 /**
  * Simple factory for shared List instances. Allows for central setup
@@ -35,11 +34,9 @@ import org.springframework.lang.Nullable;
  */
 public class ListFactoryBean extends AbstractFactoryBean<List<Object>> {
 
-	@Nullable
 	private List<?> sourceList;
 
 	@SuppressWarnings("rawtypes")
-	@Nullable
 	private Class<? extends List> targetListClass;
 
 
@@ -57,7 +54,7 @@ public class ListFactoryBean extends AbstractFactoryBean<List<Object>> {
 	 * @see java.util.ArrayList
 	 */
 	@SuppressWarnings("rawtypes")
-	public void setTargetListClass(@Nullable Class<? extends List> targetListClass) {
+	public void setTargetListClass(Class<? extends List> targetListClass) {
 		if (targetListClass == null) {
 			throw new IllegalArgumentException("'targetListClass' must not be null");
 		}
@@ -85,7 +82,7 @@ public class ListFactoryBean extends AbstractFactoryBean<List<Object>> {
 			result = BeanUtils.instantiateClass(this.targetListClass);
 		}
 		else {
-			result = new ArrayList<>(this.sourceList.size());
+			result = new ArrayList<Object>(this.sourceList.size());
 		}
 		Class<?> valueType = null;
 		if (this.targetListClass != null) {

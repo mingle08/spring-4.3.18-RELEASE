@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,11 +21,11 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Map;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.messaging.simp.SimpMessageType;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Juergen Hoeller
@@ -65,35 +65,35 @@ public class StompCommandTests {
 			if (simp == null) {
 				simp = SimpMessageType.OTHER;
 			}
-			assertThat(stompCommand.getMessageType()).isSameAs(simp);
+			assertSame(simp, stompCommand.getMessageType());
 		}
 	}
 
 	@Test
 	public void requiresDestination() throws Exception {
 		for (StompCommand stompCommand : StompCommand.values()) {
-			assertThat(stompCommand.requiresDestination()).isEqualTo(destinationRequired.contains(stompCommand));
+			assertEquals(destinationRequired.contains(stompCommand), stompCommand.requiresDestination());
 		}
 	}
 
 	@Test
 	public void requiresSubscriptionId() throws Exception {
 		for (StompCommand stompCommand : StompCommand.values()) {
-			assertThat(stompCommand.requiresSubscriptionId()).isEqualTo(subscriptionIdRequired.contains(stompCommand));
+			assertEquals(subscriptionIdRequired.contains(stompCommand), stompCommand.requiresSubscriptionId());
 		}
 	}
 
 	@Test
 	public void requiresContentLength() throws Exception {
 		for (StompCommand stompCommand : StompCommand.values()) {
-			assertThat(stompCommand.requiresContentLength()).isEqualTo(contentLengthRequired.contains(stompCommand));
+			assertEquals(contentLengthRequired.contains(stompCommand), stompCommand.requiresContentLength());
 		}
 	}
 
 	@Test
 	public void isBodyAllowed() throws Exception {
 		for (StompCommand stompCommand : StompCommand.values()) {
-			assertThat(stompCommand.isBodyAllowed()).isEqualTo(bodyAllowed.contains(stompCommand));
+			assertEquals(bodyAllowed.contains(stompCommand), stompCommand.isBodyAllowed());
 		}
 	}
 

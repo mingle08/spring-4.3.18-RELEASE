@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,9 +16,7 @@
 
 package org.springframework.web.socket.sockjs.transport.handler;
 
-import java.util.Collections;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import org.springframework.messaging.SubscribableChannel;
 import org.springframework.scheduling.TaskScheduler;
@@ -28,8 +26,8 @@ import org.springframework.web.socket.messaging.StompSubProtocolHandler;
 import org.springframework.web.socket.messaging.SubProtocolWebSocketHandler;
 import org.springframework.web.socket.sockjs.transport.session.WebSocketServerSockJsSession;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for {@link SockJsWebSocketHandler}.
@@ -50,7 +48,7 @@ public class SockJsWebSocketHandlerTests {
 		WebSocketServerSockJsSession session = new WebSocketServerSockJsSession("1", service, handler, null);
 		SockJsWebSocketHandler sockJsHandler = new SockJsWebSocketHandler(service, handler, session);
 
-		assertThat(sockJsHandler.getSubProtocols()).isEqualTo(stompHandler.getSupportedProtocols());
+		assertEquals(stompHandler.getSupportedProtocols(), sockJsHandler.getSubProtocols());
 	}
 
 	@Test
@@ -61,7 +59,7 @@ public class SockJsWebSocketHandlerTests {
 		WebSocketServerSockJsSession session = new WebSocketServerSockJsSession("1", service, handler, null);
 		SockJsWebSocketHandler sockJsHandler = new SockJsWebSocketHandler(service, handler, session);
 
-		assertThat(sockJsHandler.getSubProtocols()).isEqualTo(Collections.emptyList());
+		assertNull(sockJsHandler.getSubProtocols());
 	}
 
 }

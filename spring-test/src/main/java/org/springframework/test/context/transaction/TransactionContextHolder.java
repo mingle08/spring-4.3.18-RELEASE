@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@
 package org.springframework.test.context.transaction;
 
 import org.springframework.core.NamedInheritableThreadLocal;
-import org.springframework.lang.Nullable;
 
 /**
  * {@link InheritableThreadLocal}-based holder for the current {@link TransactionContext}.
@@ -25,26 +24,20 @@ import org.springframework.lang.Nullable;
  * @author Sam Brannen
  * @since 4.1
  */
-final class TransactionContextHolder {
+class TransactionContextHolder {
 
 	private static final ThreadLocal<TransactionContext> currentTransactionContext =
-			new NamedInheritableThreadLocal<>("Test Transaction Context");
-
-
-	private TransactionContextHolder() {
-	}
+			new NamedInheritableThreadLocal<TransactionContext>("Test Transaction Context");
 
 
 	static void setCurrentTransactionContext(TransactionContext transactionContext) {
 		currentTransactionContext.set(transactionContext);
 	}
 
-	@Nullable
 	static TransactionContext getCurrentTransactionContext() {
 		return currentTransactionContext.get();
 	}
 
-	@Nullable
 	static TransactionContext removeCurrentTransactionContext() {
 		TransactionContext transactionContext = currentTransactionContext.get();
 		currentTransactionContext.remove();

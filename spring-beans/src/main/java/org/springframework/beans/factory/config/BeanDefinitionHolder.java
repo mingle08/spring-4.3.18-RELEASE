@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.beans.factory.config;
 
 import org.springframework.beans.BeanMetadataElement;
 import org.springframework.beans.factory.BeanFactoryUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
@@ -43,7 +42,6 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 
 	private final String beanName;
 
-	@Nullable
 	private final String[] aliases;
 
 
@@ -62,7 +60,7 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 	 * @param beanName the name of the bean, as specified for the bean definition
 	 * @param aliases alias names for the bean, or {@code null} if none
 	 */
-	public BeanDefinitionHolder(BeanDefinition beanDefinition, String beanName, @Nullable String[] aliases) {
+	public BeanDefinitionHolder(BeanDefinition beanDefinition, String beanName, String[] aliases) {
 		Assert.notNull(beanDefinition, "BeanDefinition must not be null");
 		Assert.notNull(beanName, "Bean name must not be null");
 		this.beanDefinition = beanDefinition;
@@ -103,7 +101,6 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 	 * Return the alias names for the bean, as specified directly for the bean definition.
 	 * @return the array of alias names, or {@code null} if none
 	 */
-	@Nullable
 	public String[] getAliases() {
 		return this.aliases;
 	}
@@ -113,7 +110,6 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 	 * @see BeanDefinition#getSource()
 	 */
 	@Override
-	@Nullable
 	public Object getSource() {
 		return this.beanDefinition.getSource();
 	}
@@ -122,7 +118,7 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 	 * Determine whether the given candidate name matches the bean name
 	 * or the aliases stored in this bean definition.
 	 */
-	public boolean matchesName(@Nullable String candidateName) {
+	public boolean matchesName(String candidateName) {
 		return (candidateName != null && (candidateName.equals(this.beanName) ||
 				candidateName.equals(BeanFactoryUtils.transformedBeanName(this.beanName)) ||
 				ObjectUtils.containsElement(this.aliases, candidateName)));
@@ -135,10 +131,12 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 	 * @see #getAliases()
 	 */
 	public String getShortDescription() {
-		if (this.aliases == null) {
-			return "Bean definition with name '" + this.beanName + "'";
+		StringBuilder sb = new StringBuilder();
+		sb.append("Bean definition with name '").append(this.beanName).append("'");
+		if (this.aliases != null) {
+			sb.append(" and aliases [").append(StringUtils.arrayToCommaDelimitedString(this.aliases)).append("]");
 		}
-		return "Bean definition with name '" + this.beanName + "' and aliases [" + StringUtils.arrayToCommaDelimitedString(this.aliases) + ']';
+		return sb.toString();
 	}
 
 	/**
@@ -148,7 +146,9 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 	 * @see #getBeanDefinition()
 	 */
 	public String getLongDescription() {
-		return getShortDescription() + ": " + this.beanDefinition;
+		StringBuilder sb = new StringBuilder(getShortDescription());
+		sb.append(": ").append(this.beanDefinition);
+		return sb.toString();
 	}
 
 	/**
@@ -164,13 +164,14 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}
-		if (!(other instanceof BeanDefinitionHolder otherHolder)) {
+		if (!(other instanceof BeanDefinitionHolder)) {
 			return false;
 		}
+		BeanDefinitionHolder otherHolder = (BeanDefinitionHolder) other;
 		return this.beanDefinition.equals(otherHolder.beanDefinition) &&
 				this.beanName.equals(otherHolder.beanName) &&
 				ObjectUtils.nullSafeEquals(this.aliases, otherHolder.aliases);

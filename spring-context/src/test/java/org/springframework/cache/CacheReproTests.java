@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,14 +21,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
-import org.springframework.beans.testfixture.beans.TestBean;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
-import org.springframework.cache.annotation.CachingConfigurer;
+import org.springframework.cache.annotation.CachingConfigurerSupport;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.concurrent.ConcurrentMapCache;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
@@ -39,12 +41,10 @@ import org.springframework.cache.support.SimpleCacheManager;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.lang.Nullable;
+import org.springframework.tests.sample.beans.TestBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Tests to reproduce raised caching issues.
@@ -53,10 +53,14 @@ import static org.mockito.Mockito.verify;
  * @author Juergen Hoeller
  * @author Stephane Nicoll
  */
-class CacheReproTests {
+public class CacheReproTests {
+
+	@Rule
+	public final ExpectedException thrown = ExpectedException.none();
+
 
 	@Test
-	void spr11124MultipleAnnotations() {
+	public void spr11124MultipleAnnotations() throws Exception {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Spr11124Config.class);
 		Spr11124Service bean = context.getBean(Spr11124Service.class);
 		bean.single(2);
@@ -67,16 +71,16 @@ class CacheReproTests {
 	}
 
 	@Test
-	void spr11249PrimitiveVarargs() {
+	public void spr11249PrimitiveVarargs() throws Exception {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Spr11249Config.class);
 		Spr11249Service bean = context.getBean(Spr11249Service.class);
 		Object result = bean.doSomething("op", 2, 3);
-		assertThat(bean.doSomething("op", 2, 3)).isSameAs(result);
+		assertSame(result, bean.doSomething("op", 2, 3));
 		context.close();
 	}
 
 	@Test
-	void spr11592GetSimple() {
+	public void spr11592GetSimple() {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Spr11592Config.class);
 		Spr11592Service bean = context.getBean(Spr11592Service.class);
 		Cache cache = context.getBean("cache", Cache.class);
@@ -86,14 +90,14 @@ class CacheReproTests {
 		verify(cache, times(1)).get(key);  // first call: cache miss
 
 		Object cachedResult = bean.getSimple("1");
-		assertThat(cachedResult).isSameAs(result);
+		assertSame(result, cachedResult);
 		verify(cache, times(2)).get(key);  // second call: cache hit
 
 		context.close();
 	}
 
 	@Test
-	void spr11592GetNeverCache() {
+	public void spr11592GetNeverCache() {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Spr11592Config.class);
 		Spr11592Service bean = context.getBean(Spr11592Service.class);
 		Cache cache = context.getBean("cache", Cache.class);
@@ -103,94 +107,89 @@ class CacheReproTests {
 		verify(cache, times(0)).get(key);  // no cache hit at all, caching disabled
 
 		Object cachedResult = bean.getNeverCache("1");
-		assertThat(cachedResult).isNotSameAs(result);
+		assertNotSame(result, cachedResult);
 		verify(cache, times(0)).get(key);  // caching disabled
 
 		context.close();
 	}
 
 	@Test
-	void spr13081ConfigNoCacheNameIsRequired() {
+	public void spr13081ConfigNoCacheNameIsRequired() {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Spr13081Config.class);
 		MyCacheResolver cacheResolver = context.getBean(MyCacheResolver.class);
 		Spr13081Service bean = context.getBean(Spr13081Service.class);
 
-		assertThat(cacheResolver.getCache("foo").get("foo")).isNull();
+		assertNull(cacheResolver.getCache("foo").get("foo"));
 		Object result = bean.getSimple("foo");  // cache name = id
-		assertThat(cacheResolver.getCache("foo").get("foo").get()).isEqualTo(result);
-		context.close();
+		assertEquals(result, cacheResolver.getCache("foo").get("foo").get());
 	}
 
 	@Test
-	void spr13081ConfigFailIfCacheResolverReturnsNullCacheName() {
+	public void spr13081ConfigFailIfCacheResolverReturnsNullCacheName() {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Spr13081Config.class);
 		Spr13081Service bean = context.getBean(Spr13081Service.class);
 
-		assertThatIllegalStateException().isThrownBy(() -> bean.getSimple(null))
-			.withMessageContaining(MyCacheResolver.class.getName());
-		context.close();
+		this.thrown.expect(IllegalStateException.class);
+		this.thrown.expectMessage(MyCacheResolver.class.getName());
+		bean.getSimple(null);
 	}
 
 	@Test
-	void spr14230AdaptsToOptional() {
+	public void spr14230AdaptsToOptional() {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Spr14230Config.class);
 		Spr14230Service bean = context.getBean(Spr14230Service.class);
 		Cache cache = context.getBean(CacheManager.class).getCache("itemCache");
 
 		TestBean tb = new TestBean("tb1");
 		bean.insertItem(tb);
-		assertThat(bean.findById("tb1").get()).isSameAs(tb);
-		assertThat(cache.get("tb1").get()).isSameAs(tb);
+		assertSame(tb, bean.findById("tb1").get());
+		assertSame(tb, cache.get("tb1").get());
 
 		cache.clear();
 		TestBean tb2 = bean.findById("tb1").get();
-		assertThat(tb2).isNotSameAs(tb);
-		assertThat(cache.get("tb1").get()).isSameAs(tb2);
-		context.close();
+		assertNotSame(tb, tb2);
+		assertSame(tb2, cache.get("tb1").get());
 	}
 
 	@Test
-	void spr14853AdaptsToOptionalWithSync() {
+	public void spr14853AdaptsToOptionalWithSync() {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Spr14853Config.class);
 		Spr14853Service bean = context.getBean(Spr14853Service.class);
 		Cache cache = context.getBean(CacheManager.class).getCache("itemCache");
 
 		TestBean tb = new TestBean("tb1");
 		bean.insertItem(tb);
-		assertThat(bean.findById("tb1").get()).isSameAs(tb);
-		assertThat(cache.get("tb1").get()).isSameAs(tb);
+		assertSame(tb, bean.findById("tb1").get());
+		assertSame(tb, cache.get("tb1").get());
 
 		cache.clear();
 		TestBean tb2 = bean.findById("tb1").get();
-		assertThat(tb2).isNotSameAs(tb);
-		assertThat(cache.get("tb1").get()).isSameAs(tb2);
-		context.close();
+		assertNotSame(tb, tb2);
+		assertSame(tb2, cache.get("tb1").get());
 	}
 
 	@Test
-	void spr15271FindsOnInterfaceWithInterfaceProxy() {
+	public void spr15271FindsOnInterfaceWithInterfaceProxy() {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Spr15271ConfigA.class);
 		Spr15271Interface bean = context.getBean(Spr15271Interface.class);
 		Cache cache = context.getBean(CacheManager.class).getCache("itemCache");
 
 		TestBean tb = new TestBean("tb1");
 		bean.insertItem(tb);
-		assertThat(bean.findById("tb1").get()).isSameAs(tb);
-		assertThat(cache.get("tb1").get()).isSameAs(tb);
-		context.close();
+		assertSame(tb, bean.findById("tb1").get());
+		assertSame(tb, cache.get("tb1").get());
 	}
 
-	@Test
-	void spr15271FindsOnInterfaceWithCglibProxy() {
+	@Test @Ignore  // TODO
+	public void spr15271FindsOnInterfaceWithCglibProxy() {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Spr15271ConfigB.class);
 		Spr15271Interface bean = context.getBean(Spr15271Interface.class);
 		Cache cache = context.getBean(CacheManager.class).getCache("itemCache");
 
 		TestBean tb = new TestBean("tb1");
 		bean.insertItem(tb);
-		assertThat(bean.findById("tb1").get()).isSameAs(tb);
-		assertThat(cache.get("tb1").get()).isSameAs(tb);
-		context.close();
+		assertSame(tb, bean.findById("tb1").get());
+		assertSame(tb, cache.get("tb1").get());
 	}
 
 
@@ -226,7 +225,7 @@ class CacheReproTests {
 		@Cacheable("smallCache")
 		public List<String> single(int id) {
 			if (this.multipleCount > 0) {
-				throw new AssertionError("Called too many times");
+				fail("Called too many times");
 			}
 			this.multipleCount++;
 			return Collections.emptyList();
@@ -238,7 +237,7 @@ class CacheReproTests {
 				@Cacheable(cacheNames = "smallCache", unless = "#result.size() > 3")})
 		public List<String> multiple(int id) {
 			if (this.multipleCount > 0) {
-				throw new AssertionError("Called too many times");
+				fail("Called too many times");
 			}
 			this.multipleCount++;
 			return Collections.emptyList();
@@ -311,7 +310,7 @@ class CacheReproTests {
 
 	@Configuration
 	@EnableCaching
-	public static class Spr13081Config implements CachingConfigurer {
+	public static class Spr13081Config extends CachingConfigurerSupport {
 
 		@Bean
 		@Override
@@ -333,7 +332,6 @@ class CacheReproTests {
 		}
 
 		@Override
-		@Nullable
 		protected Collection<String> getCacheNames(CacheOperationInvocationContext<?> context) {
 			String cacheName = (String) context.getArgs()[0];
 			if (cacheName != null) {
@@ -398,6 +396,7 @@ class CacheReproTests {
 		public TestBean insertItem(TestBean item) {
 			return item;
 		}
+
 	}
 
 

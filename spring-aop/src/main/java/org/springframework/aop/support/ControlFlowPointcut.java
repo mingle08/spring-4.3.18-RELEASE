@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,12 +18,10 @@ package org.springframework.aop.support;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.aop.ClassFilter;
 import org.springframework.aop.MethodMatcher;
 import org.springframework.aop.Pointcut;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
@@ -35,17 +33,15 @@ import org.springframework.util.ObjectUtils;
  * @author Rod Johnson
  * @author Rob Harrop
  * @author Juergen Hoeller
- * @author Sam Brannen
  */
 @SuppressWarnings("serial")
 public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher, Serializable {
 
-	private final Class<?> clazz;
+	private Class<?> clazz;
 
-	@Nullable
-	private final String methodName;
+	private String methodName;
 
-	private final AtomicInteger evaluations = new AtomicInteger();
+	private volatile int evaluations;
 
 
 	/**
@@ -63,7 +59,7 @@ public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher
 	 * @param clazz the clazz
 	 * @param methodName the name of the method (may be {@code null})
 	 */
-	public ControlFlowPointcut(Class<?> clazz, @Nullable String methodName) {
+	public ControlFlowPointcut(Class<?> clazz, String methodName) {
 		Assert.notNull(clazz, "Class must not be null");
 		this.clazz = clazz;
 		this.methodName = methodName;
@@ -79,7 +75,8 @@ public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher
 	}
 
 	/**
-	 * Subclasses can override this if it's possible to filter out some candidate classes.
+	 * Subclasses can override this if it's possible to filter out
+	 * some candidate classes.
 	 */
 	@Override
 	public boolean matches(Method method, Class<?> targetClass) {
@@ -93,7 +90,7 @@ public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher
 
 	@Override
 	public boolean matches(Method method, Class<?> targetClass, Object... args) {
-		this.evaluations.incrementAndGet();
+		this.evaluations++;
 
 		for (StackTraceElement element : new Throwable().getStackTrace()) {
 			if (element.getClassName().equals(this.clazz.getName()) &&
@@ -108,7 +105,7 @@ public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher
 	 * It's useful to know how many times we've fired, for optimization.
 	 */
 	public int getEvaluations() {
-		return this.evaluations.get();
+		return this.evaluations;
 	}
 
 
@@ -124,14 +121,15 @@ public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher
 
 
 	@Override
-	public boolean equals(@Nullable Object other) {
+	public boolean equals(Object other) {
 		if (this == other) {
 			return true;
 		}
-		if (!(other instanceof ControlFlowPointcut that)) {
+		if (!(other instanceof ControlFlowPointcut)) {
 			return false;
 		}
-		return (this.clazz.equals(that.clazz)) && ObjectUtils.nullSafeEquals(this.methodName, that.methodName);
+		ControlFlowPointcut that = (ControlFlowPointcut) other;
+		return (this.clazz.equals(that.clazz)) && ObjectUtils.nullSafeEquals(that.methodName, this.methodName);
 	}
 
 	@Override
@@ -141,11 +139,6 @@ public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher
 			code = 37 * code + this.methodName.hashCode();
 		}
 		return code;
-	}
-
-	@Override
-	public String toString() {
-		return getClass().getName() + ": class = " + this.clazz.getName() + "; methodName = " + this.methodName;
 	}
 
 }

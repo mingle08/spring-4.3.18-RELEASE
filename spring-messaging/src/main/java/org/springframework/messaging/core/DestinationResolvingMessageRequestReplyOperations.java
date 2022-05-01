@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.messaging.core;
 
 import java.util.Map;
 
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessagingException;
 
@@ -29,7 +28,6 @@ import org.springframework.messaging.MessagingException;
  * @author Mark Fisher
  * @author Rossen Stoyanchev
  * @since 4.0
- * @param <D> the destination type
  * @see DestinationResolver
  */
 public interface DestinationResolvingMessageRequestReplyOperations<D> extends MessageRequestReplyOperations<D> {
@@ -38,11 +36,10 @@ public interface DestinationResolvingMessageRequestReplyOperations<D> extends Me
 	 * Resolve the given destination name to a destination and send the given message,
 	 * receive a reply and return it.
 	 * @param destinationName the name of the target destination
-	 * @param requestMessage the message to send
+	 * @param requestMessage the mesage to send
 	 * @return the received message, possibly {@code null} if the message could not
 	 * be received, for example due to a timeout
 	 */
-	@Nullable
 	Message<?> sendAndReceive(String destinationName, Message<?> requestMessage) throws MessagingException;
 
 	/**
@@ -57,7 +54,6 @@ public interface DestinationResolvingMessageRequestReplyOperations<D> extends Me
 	 * @return the converted payload of the reply message, possibly {@code null} if
 	 * the message could not be received, for example due to a timeout
 	 */
-	@Nullable
 	<T> T convertSendAndReceive(String destinationName, Object request, Class<T> targetClass)
 			throws MessagingException;
 
@@ -74,9 +70,8 @@ public interface DestinationResolvingMessageRequestReplyOperations<D> extends Me
 	 * @return the converted payload of the reply message, possibly {@code null} if
 	 * the message could not be received, for example due to a timeout
 	 */
-	@Nullable
-	<T> T convertSendAndReceive(String destinationName, Object request,
-			@Nullable Map<String, Object> headers, Class<T> targetClass) throws MessagingException;
+	<T> T convertSendAndReceive(String destinationName, Object request, Map<String, Object> headers,
+			Class<T> targetClass) throws MessagingException;
 
 	/**
 	 * Resolve the given destination name, convert the payload request Object
@@ -92,9 +87,8 @@ public interface DestinationResolvingMessageRequestReplyOperations<D> extends Me
 	 * @return the converted payload of the reply message, possibly {@code null} if
 	 * the message could not be received, for example due to a timeout
 	 */
-	@Nullable
-	<T> T convertSendAndReceive(String destinationName, Object request, Class<T> targetClass,
-			@Nullable MessagePostProcessor requestPostProcessor) throws MessagingException;
+	<T> T convertSendAndReceive(String destinationName, Object request,
+			Class<T> targetClass, MessagePostProcessor requestPostProcessor) throws MessagingException;
 
 	/**
 	 * Resolve the given destination name, convert the payload request Object
@@ -111,8 +105,7 @@ public interface DestinationResolvingMessageRequestReplyOperations<D> extends Me
 	 * @return the converted payload of the reply message, possibly {@code null} if
 	 * the message could not be received, for example due to a timeout
 	 */
-	@Nullable
-	<T> T convertSendAndReceive(String destinationName, Object request, @Nullable Map<String, Object> headers,
-			Class<T> targetClass, @Nullable MessagePostProcessor requestPostProcessor) throws MessagingException;
+	<T> T convertSendAndReceive(String destinationName, Object request, Map<String, Object> headers,
+			Class<T> targetClass, MessagePostProcessor requestPostProcessor) throws MessagingException;
 
 }

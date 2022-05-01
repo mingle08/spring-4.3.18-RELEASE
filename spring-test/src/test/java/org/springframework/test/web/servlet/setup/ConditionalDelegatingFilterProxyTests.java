@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,24 +16,23 @@
 
 package org.springframework.test.web.servlet.setup;
 
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockFilterConfig;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-
-
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
 
 /**
  * @author Rob Winch
@@ -51,7 +50,7 @@ public class ConditionalDelegatingFilterProxyTests {
 	private PatternMappingFilterProxy filter;
 
 
-	@BeforeEach
+	@Before
 	public void setup() {
 		request = new MockHttpServletRequest();
 		request.setContextPath("/context");
@@ -66,14 +65,14 @@ public class ConditionalDelegatingFilterProxyTests {
 		FilterConfig config = new MockFilterConfig();
 		filter = new PatternMappingFilterProxy(delegate, "/");
 		filter.init(config);
-		assertThat(delegate.filterConfig).isEqualTo(config);
+		assertThat(delegate.filterConfig, is(config));
 	}
 
 	@Test
 	public void destroy() throws Exception {
 		filter = new PatternMappingFilterProxy(delegate, "/");
 		filter.destroy();
-		assertThat(delegate.destroy).isTrue();
+		assertThat(delegate.destroy, is(true));
 	}
 
 	@Test
@@ -235,12 +234,12 @@ public class ConditionalDelegatingFilterProxyTests {
 		filter = new PatternMappingFilterProxy(delegate, pattern);
 		filter.doFilter(request, response, filterChain);
 
-		assertThat(delegate.request).isNull();
-		assertThat(delegate.response).isNull();
-		assertThat(delegate.chain).isNull();
+		assertThat(delegate.request, equalTo((ServletRequest) null));
+		assertThat(delegate.response, equalTo((ServletResponse) null));
+		assertThat(delegate.chain, equalTo((FilterChain) null));
 
-		assertThat(filterChain.getRequest()).isEqualTo(request);
-		assertThat(filterChain.getResponse()).isEqualTo(response);
+		assertThat(filterChain.getRequest(), equalTo((ServletRequest) request));
+		assertThat(filterChain.getResponse(), equalTo((ServletResponse) response));
 		filterChain = new MockFilterChain();
 	}
 
@@ -249,9 +248,9 @@ public class ConditionalDelegatingFilterProxyTests {
 		filter = new PatternMappingFilterProxy(delegate, pattern);
 		filter.doFilter(request, response, filterChain);
 
-		assertThat(delegate.request).isEqualTo(request);
-		assertThat(delegate.response).isEqualTo(response);
-		assertThat(delegate.chain).isEqualTo(filterChain);
+		assertThat(delegate.request, equalTo((ServletRequest) request));
+		assertThat(delegate.response, equalTo((ServletResponse) response));
+		assertThat(delegate.chain, equalTo((FilterChain) filterChain));
 		delegate = new MockFilter();
 	}
 

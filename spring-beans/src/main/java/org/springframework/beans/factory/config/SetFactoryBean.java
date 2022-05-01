@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,6 @@ import java.util.Set;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.TypeConverter;
 import org.springframework.core.ResolvableType;
-import org.springframework.lang.Nullable;
 
 /**
  * Simple factory for shared Set instances. Allows for central setup
@@ -35,11 +34,9 @@ import org.springframework.lang.Nullable;
  */
 public class SetFactoryBean extends AbstractFactoryBean<Set<Object>> {
 
-	@Nullable
 	private Set<?> sourceSet;
 
 	@SuppressWarnings("rawtypes")
-	@Nullable
 	private Class<? extends Set> targetSetClass;
 
 
@@ -57,7 +54,7 @@ public class SetFactoryBean extends AbstractFactoryBean<Set<Object>> {
 	 * @see java.util.LinkedHashSet
 	 */
 	@SuppressWarnings("rawtypes")
-	public void setTargetSetClass(@Nullable Class<? extends Set> targetSetClass) {
+	public void setTargetSetClass(Class<? extends Set> targetSetClass) {
 		if (targetSetClass == null) {
 			throw new IllegalArgumentException("'targetSetClass' must not be null");
 		}
@@ -85,7 +82,7 @@ public class SetFactoryBean extends AbstractFactoryBean<Set<Object>> {
 			result = BeanUtils.instantiateClass(this.targetSetClass);
 		}
 		else {
-			result = new LinkedHashSet<>(this.sourceSet.size());
+			result = new LinkedHashSet<Object>(this.sourceSet.size());
 		}
 		Class<?> valueType = null;
 		if (this.targetSetClass != null) {

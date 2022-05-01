@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,49 +16,42 @@
 
 package org.springframework.aop.aspectj;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Ramnivas Laddad
  * @author Chris Beams
  */
-class DeclareParentsDelegateRefTests {
+public class DeclareParentsDelegateRefTests {
 
-	private ClassPathXmlApplicationContext ctx;
+	protected NoMethodsBean noMethodsBean;
 
-	private NoMethodsBean noMethodsBean;
-
-	private Counter counter;
+	protected Counter counter;
 
 
-	@BeforeEach
-	void setup() {
-		this.ctx = new ClassPathXmlApplicationContext(getClass().getSimpleName() + ".xml", getClass());
+	@Before
+	public void setUp() {
+		ClassPathXmlApplicationContext ctx =
+			new ClassPathXmlApplicationContext(getClass().getSimpleName() + ".xml", getClass());
 		noMethodsBean = (NoMethodsBean) ctx.getBean("noMethodsBean");
 		counter = (Counter) ctx.getBean("counter");
-	}
-
-	@AfterEach
-	void tearDown() {
-		this.ctx.close();
-	}
-
-
-	@Test
-	void introductionWasMade() {
-		assertThat(noMethodsBean).as("Introduction must have been made").isInstanceOf(ICounter.class);
+		counter.reset();
 	}
 
 	@Test
-	void introductionDelegation() {
+	public void testIntroductionWasMade() {
+		assertTrue("Introduction must have been made", noMethodsBean instanceof ICounter);
+	}
+
+	@Test
+	public void testIntroductionDelegation() {
 		((ICounter)noMethodsBean).increment();
-		assertThat(counter.getCount()).as("Delegate's counter should be updated").isEqualTo(1);
+		assertEquals("Delegate's counter should be updated", 1, counter.getCount());
 	}
 
 }

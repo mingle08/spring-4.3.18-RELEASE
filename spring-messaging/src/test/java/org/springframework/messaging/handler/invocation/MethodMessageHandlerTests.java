@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,16 +20,19 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.hamcrest.Matchers;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.springframework.context.support.StaticApplicationContext;
+import org.springframework.core.MethodIntrospector;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.converter.SimpleMessageConverter;
 import org.springframework.messaging.handler.DestinationPatternsMessageCondition;
@@ -37,11 +40,10 @@ import org.springframework.messaging.handler.HandlerMethod;
 import org.springframework.messaging.handler.annotation.support.MessageMethodArgumentResolver;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.AntPathMatcher;
-import org.springframework.util.Assert;
 import org.springframework.util.PathMatcher;
+import org.springframework.util.ReflectionUtils.MethodFilter;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.junit.Assert.*;
 
 /**
  * Test fixture for
@@ -59,7 +61,7 @@ public class MethodMessageHandlerTests {
 	private TestController testController;
 
 
-	@BeforeEach
+	@Before
 	public void setup() {
 
 		List<String> destinationPrefixes = Arrays.asList("/test");
@@ -73,10 +75,9 @@ public class MethodMessageHandlerTests {
 		this.messageHandler.registerHandler(this.testController);
 	}
 
-	@Test
+	@Test(expected=IllegalStateException.class)
 	public void duplicateMapping() {
-		assertThatIllegalStateException().isThrownBy(() ->
-				this.messageHandler.registerHandler(new DuplicateMappingsController()));
+		this.messageHandler.registerHandler(new DuplicateMappingsController());
 	}
 
 	@Test
@@ -84,23 +85,23 @@ public class MethodMessageHandlerTests {
 
 		Map<String, HandlerMethod> handlerMethods = this.messageHandler.getHandlerMethods();
 
-		assertThat(handlerMethods).isNotNull();
-		assertThat(handlerMethods).hasSize(3);
+		assertNotNull(handlerMethods);
+		assertThat(handlerMethods.keySet(), Matchers.hasSize(3));
 	}
 
 	@Test
-	public void patternMatch() throws Exception {
+	public void antPatchMatchWildcard() throws Exception {
 
 		Method method = this.testController.getClass().getMethod("handlerPathMatchWildcard");
 		this.messageHandler.registerHandlerMethod(this.testController, method, "/handlerPathMatch*");
 
 		this.messageHandler.handleMessage(toDestination("/test/handlerPathMatchFoo"));
 
-		assertThat(this.testController.method).isEqualTo("pathMatchWildcard");
+		assertEquals("pathMatchWildcard", this.testController.method);
 	}
 
 	@Test
-	public void bestMatch() throws Exception {
+	public void bestMatchWildcard() throws Exception {
 
 		Method method = this.testController.getClass().getMethod("bestMatch");
 		this.messageHandler.registerHandlerMethod(this.testController, method, "/bestmatch/{foo}/path");
@@ -110,7 +111,7 @@ public class MethodMessageHandlerTests {
 
 		this.messageHandler.handleMessage(toDestination("/test/bestmatch/bar/path"));
 
-		assertThat(this.testController.method).isEqualTo("bestMatch");
+		assertEquals("bestMatch", this.testController.method);
 	}
 
 	@Test
@@ -118,17 +119,17 @@ public class MethodMessageHandlerTests {
 
 		this.messageHandler.handleMessage(toDestination("/test/handlerArgumentResolver"));
 
-		assertThat(this.testController.method).isEqualTo("handlerArgumentResolver");
-		assertThat(this.testController.arguments.get("message")).isNotNull();
+		assertEquals("handlerArgumentResolver", this.testController.method);
+		assertNotNull(this.testController.arguments.get("message"));
 	}
 
 	@Test
-	public void handleException() {
+	public void exceptionHandled() {
 
 		this.messageHandler.handleMessage(toDestination("/test/handlerThrowsExc"));
 
-		assertThat(this.testController.method).isEqualTo("illegalStateException");
-		assertThat(this.testController.arguments.get("exception")).isNotNull();
+		assertEquals("illegalStateException", this.testController.method);
+		assertNotNull(this.testController.arguments.get("exception"));
 	}
 
 	private Message<?> toDestination(String destination) {
@@ -141,7 +142,7 @@ public class MethodMessageHandlerTests {
 
 		public String method;
 
-		private Map<String, Object> arguments = new LinkedHashMap<>();
+		private Map<String, Object> arguments = new LinkedHashMap<String, Object>();
 
 		public void handlerPathMatchWildcard() {
 			this.method = "pathMatchWildcard";
@@ -165,7 +166,7 @@ public class MethodMessageHandlerTests {
 			this.method = "secondBestMatch";
 		}
 
-		public void handleIllegalStateException(IllegalStateException exception) {
+		public void illegalStateException(IllegalStateException exception) {
 			this.method = "illegalStateException";
 			this.arguments.put("exception", exception);
 		}
@@ -185,19 +186,17 @@ public class MethodMessageHandlerTests {
 
 		private PathMatcher pathMatcher = new AntPathMatcher();
 
-
 		public void registerHandler(Object handler) {
 			super.detectHandlerMethods(handler);
 		}
 
-		@Override
 		public void registerHandlerMethod(Object handler, Method method, String mapping) {
 			super.registerHandlerMethod(handler, method, mapping);
 		}
 
 		@Override
 		protected List<? extends HandlerMethodArgumentResolver> initArgumentResolvers() {
-			List<HandlerMethodArgumentResolver> resolvers = new ArrayList<>();
+			List<HandlerMethodArgumentResolver> resolvers = new ArrayList<HandlerMethodArgumentResolver>();
 			resolvers.add(new MessageMethodArgumentResolver(new SimpleMessageConverter()));
 			resolvers.addAll(getCustomArgumentResolvers());
 			return resolvers;
@@ -205,7 +204,8 @@ public class MethodMessageHandlerTests {
 
 		@Override
 		protected List<? extends HandlerMethodReturnValueHandler> initReturnValueHandlers() {
-			List<HandlerMethodReturnValueHandler> handlers = new ArrayList<>(getCustomReturnValueHandlers());
+			List<HandlerMethodReturnValueHandler> handlers = new ArrayList<HandlerMethodReturnValueHandler>();
+			handlers.addAll(getCustomReturnValueHandlers());
 			return handlers;
 		}
 
@@ -225,7 +225,7 @@ public class MethodMessageHandlerTests {
 
 		@Override
 		protected Set<String> getDirectLookupDestinations(String mapping) {
-			Set<String> result = new LinkedHashSet<>();
+			Set<String> result = new LinkedHashSet<String>();
 			if (!this.pathMatcher.isPattern(mapping)) {
 				result.add(mapping);
 			}
@@ -239,24 +239,55 @@ public class MethodMessageHandlerTests {
 
 		@Override
 		protected String getMatchingMapping(String mapping, Message<?> message) {
+
 			String destination = getLookupDestination(getDestination(message));
-			Assert.notNull(destination, "No destination");
-			return mapping.equals(destination) || this.pathMatcher.match(mapping, destination) ? mapping : null;
+			if (mapping.equals(destination) || this.pathMatcher.match(mapping, destination)) {
+				return mapping;
+			}
+			return null;
 		}
 
 		@Override
 		protected Comparator<String> getMappingComparator(final Message<?> message) {
-			return (info1, info2) -> {
-				DestinationPatternsMessageCondition cond1 = new DestinationPatternsMessageCondition(info1);
-				DestinationPatternsMessageCondition cond2 = new DestinationPatternsMessageCondition(info2);
-				return cond1.compareTo(cond2, message);
+			return new Comparator<String>() {
+				@Override
+				public int compare(String info1, String info2) {
+					DestinationPatternsMessageCondition cond1 = new DestinationPatternsMessageCondition(info1);
+					DestinationPatternsMessageCondition cond2 = new DestinationPatternsMessageCondition(info2);
+					return cond1.compareTo(cond2, message);
+				}
 			};
 		}
 
 		@Override
 		protected AbstractExceptionHandlerMethodResolver createExceptionHandlerMethodResolverFor(Class<?> beanType) {
-			return new TestExceptionResolver(beanType);
+			return new TestExceptionHandlerMethodResolver(beanType);
 		}
+	}
+
+
+	private static class TestExceptionHandlerMethodResolver extends AbstractExceptionHandlerMethodResolver {
+
+		public TestExceptionHandlerMethodResolver(Class<?> handlerType) {
+			super(initExceptionMappings(handlerType));
+		}
+
+		private static Map<Class<? extends Throwable>, Method> initExceptionMappings(Class<?> handlerType) {
+			Map<Class<? extends Throwable>, Method> result = new HashMap<Class<? extends Throwable>, Method>();
+			for (Method method : MethodIntrospector.selectMethods(handlerType, EXCEPTION_HANDLER_METHOD_FILTER)) {
+				for (Class<? extends Throwable> exception : getExceptionsFromMethodSignature(method)) {
+					result.put(exception, method);
+				}
+			}
+			return result;
+		}
+
+		public final static MethodFilter EXCEPTION_HANDLER_METHOD_FILTER = new MethodFilter() {
+			@Override
+			public boolean matches(Method method) {
+				return method.getName().contains("Exception");
+			}
+		};
 	}
 
 }

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,7 +33,7 @@ import org.springframework.core.annotation.AliasFor;
  *
  * <p>For use cases that require adding or removing session attributes consider
  * injecting {@code org.springframework.web.context.request.WebRequest} or
- * {@code jakarta.servlet.http.HttpSession} into the controller method.
+ * {@code javax.servlet.http.HttpSession} into the controller method.
  *
  * <p>For temporary storage of model attributes in the session as part of the
  * workflow for a controller, consider using {@link SessionAttributes} instead.
