@@ -333,6 +333,7 @@ class BeanDefinitionValueResolver {
 
 	/**
 	 * Resolve a reference to another bean in the factory.
+	 * 创建依赖bean
 	 */
 	private Object resolveReference(Object argName, RuntimeBeanReference ref) {
 		try {
@@ -348,6 +349,9 @@ class BeanDefinitionValueResolver {
 				return this.beanFactory.getParentBeanFactory().getBean(refName);
 			}
 			else {
+				/**
+				 * populateBean时发现有依赖bean，则在此处创建依赖bean
+				 */
 				Object bean = this.beanFactory.getBean(refName);
 				this.beanFactory.registerDependentBean(refName, this.beanName);
 				return bean;

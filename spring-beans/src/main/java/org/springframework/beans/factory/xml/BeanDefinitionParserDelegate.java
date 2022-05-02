@@ -946,6 +946,10 @@ public class BeanDefinitionParserDelegate {
 	/**
 	 * Get the value of a property element. May be a list etc.
 	 * Also used for constructor arguments, "propertyName" being null in this case.
+	 *
+	 * <bean id="a" class="test.A>
+	 *     <property> name="b" ref="b"/>
+	 * </bean>
 	 */
 	public Object parsePropertyValue(Element ele, BeanDefinition bd, String propertyName) {
 		String elementName = (propertyName != null) ?
@@ -977,11 +981,18 @@ public class BeanDefinitionParserDelegate {
 					" is only allowed to contain either 'ref' attribute OR 'value' attribute OR sub-element", ele);
 		}
 
+		/**
+		 * <bean id="a" class="test.A>
+		 *     <property> name="b" ref="b"/>
+		 * </bean>
+		 */
 		if (hasRefAttribute) {
+			// 获取到refName，比如是B
 			String refName = ele.getAttribute(REF_ATTRIBUTE);
 			if (!StringUtils.hasText(refName)) {
 				error(elementName + " contains empty 'ref' attribute", ele);
 			}
+			// 把refName封装成RuntimeBeanReference对象
 			RuntimeBeanReference ref = new RuntimeBeanReference(refName);
 			ref.setSource(extractSource(ele));
 			return ref;

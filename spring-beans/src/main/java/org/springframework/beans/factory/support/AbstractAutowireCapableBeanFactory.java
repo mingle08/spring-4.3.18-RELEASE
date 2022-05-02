@@ -1534,6 +1534,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			else {
 				String propertyName = pv.getName();
 				Object originalValue = pv.getValue();
+				// 把pv形式的依赖解析成beanName，根据beanName创建bean，这里就是创建依赖bean的地方
 				Object resolvedValue = valueResolver.resolveValueIfNecessary(pv, originalValue);
 				Object convertedValue = resolvedValue;
 				boolean convertible = bw.isWritableProperty(propertyName) &&
