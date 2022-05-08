@@ -358,6 +358,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 			final LinkedList<InjectionMetadata.InjectedElement> currElements =
 					new LinkedList<InjectionMetadata.InjectedElement>();
 
+			// 先处理属性上的注解
 			ReflectionUtils.doWithLocalFields(targetClass, new ReflectionUtils.FieldCallback() {
 				@Override
 				public void doWith(Field field) throws IllegalArgumentException, IllegalAccessException {
@@ -373,6 +374,9 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 						}
 						currElements.add(new EjbRefElement(field, field, null));
 					}
+					/*
+					  属性上的@Resource注解，如果存在则生成一个ResourceElement对象，加入List
+					 */
 					else if (field.isAnnotationPresent(Resource.class)) {
 						if (Modifier.isStatic(field.getModifiers())) {
 							throw new IllegalStateException("@Resource annotation is not supported on static fields");
@@ -384,6 +388,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 				}
 			});
 
+			// 再处理方法上的注解
 			ReflectionUtils.doWithLocalMethods(targetClass, new ReflectionUtils.MethodCallback() {
 				@Override
 				public void doWith(Method method) throws IllegalArgumentException, IllegalAccessException {
@@ -412,6 +417,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 							PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
 							currElements.add(new EjbRefElement(method, bridgedMethod, pd));
 						}
+						// 方法上的@Resource，如果存在，生成一个ResourceElement对象，加入List
 						else if (bridgedMethod.isAnnotationPresent(Resource.class)) {
 							if (Modifier.isStatic(method.getModifiers())) {
 								throw new IllegalStateException("@Resource annotation is not supported on static methods");
@@ -592,6 +598,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 
 		public ResourceElement(Member member, AnnotatedElement ae, PropertyDescriptor pd) {
 			super(member, pd);
+			// 获取注解 @Resource并解析
 			Resource resource = ae.getAnnotation(Resource.class);
 			String resourceName = resource.name();
 			Class<?> resourceType = resource.type();
